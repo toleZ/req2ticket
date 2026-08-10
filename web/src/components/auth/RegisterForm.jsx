@@ -1,20 +1,22 @@
 import { useState } from 'react'
 import { validateRegisterForm } from '@/lib/validate'
-import './RegisterForm.css'
 
 const INITIAL_VALUES = { fullName: '', email: '', password: '', confirmPassword: '' }
 
 const FIELDS = [
-  { name: 'fullName', label: 'Full name', type: 'text', autoComplete: 'name' },
-  { name: 'email', label: 'Email', type: 'email', autoComplete: 'email' },
-  { name: 'password', label: 'Password', type: 'password', autoComplete: 'new-password' },
+  { name: 'fullName', label: 'Nombre completo', type: 'text', autoComplete: 'name' },
+  { name: 'email', label: 'Correo electrónico', type: 'email', autoComplete: 'email' },
+  { name: 'password', label: 'Contraseña', type: 'password', autoComplete: 'new-password' },
   {
     name: 'confirmPassword',
-    label: 'Confirm password',
+    label: 'Confirmar contraseña',
     type: 'password',
     autoComplete: 'new-password',
   },
 ]
+
+const INPUT_CLASSES =
+  'w-full rounded-control border border-separator bg-fill-tertiary px-3 py-2 text-body text-label'
 
 /**
  * @param {{ onSubmit: (values: typeof INITIAL_VALUES) => Promise<void> }} props
@@ -46,7 +48,7 @@ export function RegisterForm({ onSubmit }) {
       await onSubmit(values)
       setSubmitted(true)
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'Something went wrong. Try again.')
+      setFormError(err instanceof Error ? err.message : 'Algo salió mal. Probá de nuevo.')
     } finally {
       setSubmitting(false)
     }
@@ -54,26 +56,28 @@ export function RegisterForm({ onSubmit }) {
 
   if (submitted) {
     return (
-      <div className="register-form register-form--success" role="status">
-        <h2>Account created</h2>
-        <p>Welcome, {values.fullName.split(' ')[0]}. You can sign in now.</p>
+      <div className="text-center" role="status">
+        <h2 className="text-title3 text-label">Cuenta creada</h2>
+        <p className="mt-1 text-footnote text-label-secondary">
+          Bienvenido, {values.fullName.trim().split(' ')[0]}. Ya podés iniciar sesión.
+        </p>
       </div>
     )
   }
 
   return (
-    <form className="register-form" onSubmit={handleSubmit} noValidate>
-      <h2>Create an account</h2>
-
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
       {formError && (
-        <p className="register-form__error" role="alert">
+        <p className="rounded-control bg-fill-tertiary px-3 py-2 text-footnote text-red" role="alert">
           {formError}
         </p>
       )}
 
       {FIELDS.map(({ name, label, type, autoComplete }) => (
-        <div className="register-form__field" key={name}>
-          <label htmlFor={name}>{label}</label>
+        <div key={name}>
+          <label htmlFor={name} className="mb-1 block text-subheadline font-medium text-label">
+            {label}
+          </label>
           <input
             id={name}
             name={name}
@@ -83,17 +87,22 @@ export function RegisterForm({ onSubmit }) {
             onChange={set(name)}
             aria-invalid={Boolean(errors[name])}
             aria-describedby={errors[name] ? `${name}-error` : undefined}
+            className={INPUT_CLASSES}
           />
           {errors[name] && (
-            <p className="register-form__field-error" id={`${name}-error`}>
+            <p className="mt-1 text-footnote text-red" id={`${name}-error`}>
               {errors[name]}
             </p>
           )}
         </div>
       ))}
 
-      <button type="submit" className="register-form__submit" disabled={submitting}>
-        {submitting ? 'Creating account…' : 'Create account'}
+      <button
+        type="submit"
+        disabled={submitting}
+        className="rounded-control bg-blue px-4 py-2 text-body font-medium text-white disabled:opacity-50"
+      >
+        {submitting ? 'Creando cuenta…' : 'Crear cuenta'}
       </button>
     </form>
   )

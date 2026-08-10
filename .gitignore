@@ -3,3 +3,6 @@ CLAUDE.md
 CLAUDE.local.md
 .claude/
 docs/
+
+# macOS
+.DS_Store
