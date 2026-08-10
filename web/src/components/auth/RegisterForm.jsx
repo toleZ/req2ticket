@@ -1,26 +1,16 @@
 import { useState } from 'react'
 import { validateRegisterForm } from '@/lib/validate'
 
-const INITIAL_VALUES = { fullName: '', email: '', password: '', confirmPassword: '' }
+const INITIAL_VALUES = { fullName: '', email: '' }
 
 const FIELDS = [
   { name: 'fullName', label: 'Nombre completo', type: 'text', autoComplete: 'name' },
   { name: 'email', label: 'Correo electrónico', type: 'email', autoComplete: 'email' },
-  { name: 'password', label: 'Contraseña', type: 'password', autoComplete: 'new-password' },
-  {
-    name: 'confirmPassword',
-    label: 'Confirmar contraseña',
-    type: 'password',
-    autoComplete: 'new-password',
-  },
 ]
 
 const INPUT_CLASSES =
   'w-full rounded-control border border-separator bg-fill-tertiary px-3 py-2 text-body text-label'
 
-/**
- * @param {{ onSubmit: (values: typeof INITIAL_VALUES) => Promise<void> }} props
- */
 export function RegisterForm({ onSubmit }) {
   const [values, setValues] = useState(INITIAL_VALUES)
   const [errors, setErrors] = useState({})
@@ -57,9 +47,10 @@ export function RegisterForm({ onSubmit }) {
   if (submitted) {
     return (
       <div className="text-center" role="status">
-        <h2 className="text-title3 text-label">Cuenta creada</h2>
+        <h2 className="text-title3 text-label">Solicitud enviada</h2>
         <p className="mt-1 text-footnote text-label-secondary">
-          Bienvenido, {values.fullName.trim().split(' ')[0]}. Ya podés iniciar sesión.
+          Gracias, {values.fullName.trim().split(' ')[0]}. Te escribimos a {values.email} en
+          cuanto aprobemos tu acceso.
         </p>
       </div>
     )
@@ -67,6 +58,11 @@ export function RegisterForm({ onSubmit }) {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
+      <p className="text-footnote text-label-secondary">
+        Estamos en beta y el acceso es por invitación. Dejanos tus datos y te avisamos por
+        correo en cuanto podamos sumarte.
+      </p>
+
       {formError && (
         <p className="rounded-control bg-fill-tertiary px-3 py-2 text-footnote text-red" role="alert">
           {formError}
@@ -102,7 +98,7 @@ export function RegisterForm({ onSubmit }) {
         disabled={submitting}
         className="rounded-control bg-blue px-4 py-2 text-body font-medium text-white disabled:opacity-50"
       >
-        {submitting ? 'Creando cuenta…' : 'Crear cuenta'}
+        {submitting ? 'Enviando solicitud…' : 'Solicitar acceso'}
       </button>
     </form>
   )

@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { Eye, EyeOff } from 'lucide-react'
+
 import { validateLoginForm } from '@/lib/validate'
 
 const INITIAL_VALUES = { email: '', password: '' }
@@ -6,31 +8,6 @@ const INITIAL_VALUES = { email: '', password: '' }
 const INPUT_CLASSES =
   'w-full rounded-control border border-separator bg-fill-tertiary px-3 py-2 text-body text-label'
 
-// Simple inline icons — no icon library installed yet, and these two are all we need.
-function EyeIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
-      <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z" strokeLinecap="round" strokeLinejoin="round" />
-      <circle cx="12" cy="12" r="3" />
-    </svg>
-  )
-}
-
-function EyeOffIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
-      <path
-        d="M3 3l18 18M10.6 10.6a3 3 0 0 0 4.2 4.2M9.4 5.1A11 11 0 0 1 12 5c7 0 11 7 11 7a17.6 17.6 0 0 1-3.6 4.3M6.5 6.6A17.9 17.9 0 0 0 1 12s4 7 11 7a10.6 10.6 0 0 0 4.2-.86"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  )
-}
-
-/**
- * @param {{ onSubmit: (values: typeof INITIAL_VALUES) => Promise<void> }} props
- */
 export function LoginForm({ onSubmit }) {
   const [values, setValues] = useState(INITIAL_VALUES)
   const [errors, setErrors] = useState({})
@@ -92,7 +69,11 @@ export function LoginForm({ onSubmit }) {
             aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
             className="absolute inset-y-0 right-0 flex items-center px-3 text-label-secondary"
           >
-            {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+            {showPassword ? (
+              <EyeOff className="h-5 w-5" aria-hidden="true" />
+            ) : (
+              <Eye className="h-5 w-5" aria-hidden="true" />
+            )}
           </button>
         </div>
         {errors.password && <p className="mt-1 text-footnote text-red">{errors.password}</p>}

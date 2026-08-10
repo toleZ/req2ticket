@@ -5,10 +5,6 @@ const UPPERCASE_RE = /[A-Z]/
 const NUMBER_RE = /[0-9]/
 const SPECIAL_CHAR_RE = /[^A-Za-z0-9]/
 
-/**
- * @param {string} email
- * @returns {string | undefined} the error, or undefined when the email is valid
- */
 function emailError(email) {
   const trimmed = email.trim()
 
@@ -18,13 +14,6 @@ function emailError(email) {
   return undefined
 }
 
-/**
- * Both forms share this rule on purpose: a password that registration accepts but
- * login rejects locks the account out on the very next screen.
- *
- * @param {string} password
- * @returns {string | undefined} the error, or undefined when the password is valid
- */
 function passwordError(password) {
   if (!password) return 'Ingresá tu contraseña'
   if (password.length < MIN_PASSWORD_LENGTH) {
@@ -39,10 +28,6 @@ function passwordError(password) {
   return undefined
 }
 
-/**
- * @param {{ fullName: string, email: string, password: string, confirmPassword: string }} values
- * @returns {{ [field: string]: string }} error messages, keyed by field
- */
 export function validateRegisterForm(values) {
   const errors = {}
 
@@ -53,20 +38,9 @@ export function validateRegisterForm(values) {
   const email = emailError(values.email)
   if (email) errors.email = email
 
-  const password = passwordError(values.password)
-  if (password) errors.password = password
-
-  if (values.confirmPassword !== values.password) {
-    errors.confirmPassword = 'Las contraseñas no coinciden'
-  }
-
   return errors
 }
 
-/**
- * @param {{ email: string, password: string }} values
- * @returns {{ [field: string]: string }} error messages, keyed by field
- */
 export function validateLoginForm(values) {
   const errors = {}
 
