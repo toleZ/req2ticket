@@ -53,10 +53,13 @@
   --ease-out-quad: cubic-bezier(0.25, 0.46, 0.45, 0.94);
   --ease-in-out-soft: cubic-bezier(0.4, 0, 0.2, 1);
 
-  --duration-fast: 150ms;
-  --duration-base: 250ms;
-  --duration-slow: 380ms;
-  --duration-sheet: 420ms;
+  /* The `--transition-duration-*` prefix is what Tailwind reads to generate the
+     `duration-*` utilities. Named `--duration-*` they would still be valid CSS
+     variables, but `duration-fast` would not exist as a class. */
+  --transition-duration-fast: 150ms;
+  --transition-duration-base: 250ms;
+  --transition-duration-slow: 380ms;
+  --transition-duration-sheet: 420ms;
 
   /* ── Shadows ───────────────────────────────────────────────────────────── */
   --shadow-card: 0 1px 2px rgb(0 0 0 / 0.04), 0 4px 12px -2px rgb(0 0 0 / 0.06);
@@ -123,6 +126,12 @@
   --scrim: rgb(0 0 0 / 0.22);
 
   --highlight-top: rgb(255 255 255 / 0.6);
+
+  /* Brand mark. Written through var() so the dark palette applies on its own:
+     custom properties resolve where they are used, not where they are declared. */
+  --brand-gradient:
+    linear-gradient(150deg, var(--sys-blue) 0%, var(--sys-indigo) 60%, var(--sys-purple) 100%);
+  --brand-glow: 0 2px 8px -2px color-mix(in oklab, var(--sys-blue) 45%, transparent);
 }
 
 /* ── Dark palette ──────────────────────────────────────────────────────────
