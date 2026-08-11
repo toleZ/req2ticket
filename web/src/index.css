@@ -8,6 +8,10 @@
 
 @import './styles/theme.css';
 
+/* The README files list class names in prose. Tailwind scans every file it finds, so
+   without this it ships CSS for every class merely *mentioned* in the docs. */
+@source not "**/*.md";
+
 /* Class-based dark mode. A `dark` class on <html> flips the whole palette. */
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -87,6 +91,13 @@
 /* Subtle inner top highlight on raised surfaces. */
 @utility surface-highlight {
   box-shadow: inset 0 0.5px 0 0 var(--highlight-top);
+}
+
+/* The only gradient in the app. It lives with the tokens, not in the one
+   component that happens to draw it. */
+@utility brand-tile {
+  background-image: var(--brand-gradient);
+  box-shadow: var(--brand-glow);
 }
 
 /* Numbers: display family, tabular figures so values do not jitter on update. */
