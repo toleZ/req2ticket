@@ -1,6 +1,7 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 import { Modal } from '@/components/ui/Modal'
+import { getUsers } from '@/lib/api'
 import { ACCENT_COLORS, PRIORITY_OPTIONS, STATUS_OPTIONS } from '@/lib/epicOptions'
 import { validateEpicForm } from '@/lib/validate'
 
@@ -22,6 +23,19 @@ const LABEL_CLASSES = 'mb-1 block text-subheadline font-medium text-label'
 export function CreateEpicModal({ isOpen, onClose, onCreate }) {
   const [values, setValues] = useState(INITIAL_VALUES)
   const [errors, setErrors] = useState({})
+  const [submitting, setSubmitting] = useState(false)
+  const [formError, setFormError] = useState('')
+  const [users, setUsers] = useState([])
+
+  // Los responsables salen de la API. Si falla, el select queda vacío y la épica se
+  // puede crear igual sin asignar a nadie.
+  useEffect(() => {
+    if (!isOpen) return
+
+    getUsers()
+      .then(setUsers)
+      .catch(() => setUsers([]))
+  }, [isOpen])
 
   const set = (field) => (e) => {
     const nextValues = { ...values, [field]: e.target.value }
@@ -34,28 +48,47 @@ export function CreateEpicModal({ isOpen, onClose, onCreate }) {
   const handleClose = useCallback(() => {
     setValues(INITIAL_VALUES)
     setErrors({})
+    setFormError('')
     onClose()
   }, [onClose])
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault()
     const found = validateEpicForm(values)
     setErrors(found)
     if (Object.keys(found).length) return
 
-    onCreate({
-      ...values,
-      name: values.name.trim(),
-      description: values.description.trim(),
-      body: values.body.trim(),
-      ownerId: values.ownerId.trim(),
-    })
-    handleClose()
+    setFormError('')
+    setSubmitting(true)
+    try {
+      await onCreate({
+        ...values,
+        name: values.name.trim(),
+        description: values.description.trim(),
+        body: values.body.trim(),
+      })
+      // El modal se cierra solo si la épica se creó: si el POST falla, lo cargado
+      // sigue en pantalla y el error se muestra arriba.
+      handleClose()
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : 'Algo salió mal. Probá de nuevo.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title="Nueva épica">
       <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
+        {formError && (
+          <p
+            className="rounded-control bg-fill-tertiary px-3 py-2 text-footnote text-red"
+            role="alert"
+          >
+            {formError}
+          </p>
+        )}
+
         <div>
           <label htmlFor="epic-name" className={LABEL_CLASSES}>
             Nombre
@@ -150,13 +183,19 @@ export function CreateEpicModal({ isOpen, onClose, onCreate }) {
           <label htmlFor="epic-owner" className={LABEL_CLASSES}>
             Responsable <span className="font-normal text-label-tertiary">(opcional)</span>
           </label>
-          <input
+          <select
             id="epic-owner"
             value={values.ownerId}
             onChange={set('ownerId')}
-            placeholder="Nombre de quien lidera la épica"
             className={INPUT_CLASSES}
-          />
+          >
+            <option value="">Sin asignar</option>
+            {users.map((user) => (
+              <option key={user.id} value={user.id}>
+                {user.name}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div>
@@ -190,9 +229,10 @@ export function CreateEpicModal({ isOpen, onClose, onCreate }) {
           </button>
           <button
             type="submit"
-            className="rounded-control bg-blue px-4 py-2 text-body font-medium text-white transition-[filter] duration-fast hover:brightness-110"
+            disabled={submitting}
+            className="rounded-control bg-blue px-4 py-2 text-body font-medium text-white transition-[filter] duration-fast hover:brightness-110 disabled:opacity-50"
           >
-            Crear épica
+            {submitting ? 'Creando…' : 'Crear épica'}
           </button>
         </div>
       </form>

@@ -13,6 +13,7 @@ export function LoginForm({ onSubmit }) {
   const [errors, setErrors] = useState({})
   const [submitting, setSubmitting] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const [formError, setFormError] = useState('')
 
   function handleChange(e) {
     setValues({ ...values, [e.target.name]: e.target.value })
@@ -25,9 +26,12 @@ export function LoginForm({ onSubmit }) {
     setErrors(foundErrors)
     if (Object.keys(foundErrors).length > 0) return
 
+    setFormError('')
     setSubmitting(true)
     try {
       await onSubmit(values)
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : 'Algo salió mal. Probá de nuevo.')
     } finally {
       setSubmitting(false)
     }
@@ -35,6 +39,12 @@ export function LoginForm({ onSubmit }) {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      {formError && (
+        <p className="rounded-control bg-fill-tertiary px-3 py-2 text-footnote text-red" role="alert">
+          {formError}
+        </p>
+      )}
+
       <div>
         <label htmlFor="email" className="mb-1 block text-subheadline font-medium text-label">
           Correo electrónico

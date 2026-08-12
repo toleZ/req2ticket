@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react'
 import { Plus } from 'lucide-react'
 
 import { CreateEpicModal } from '@/components/features/CreateEpicModal'
+import { createEpic } from '@/lib/api'
 import { ACCENT_COLORS, findOption, PRIORITY_OPTIONS, STATUS_OPTIONS } from '@/lib/epicOptions'
 
 const CREATE_BUTTON = `inline-flex shrink-0 items-center gap-1.5 rounded-control bg-blue
@@ -21,8 +22,11 @@ export function Features() {
 
   const closeModal = useCallback(() => setIsModalOpen(false), [])
 
-  function handleCreate(epic) {
-    setEpics((prev) => [...prev, { id: crypto.randomUUID(), ...epic }])
+  // Guarda en la API y suma lo que devuelve, que ya viene con id y código reales.
+  // Si falla, el error sube al modal, que lo muestra y se queda abierto.
+  async function handleCreate(values) {
+    const created = await createEpic(values)
+    setEpics((prev) => [...prev, created])
   }
 
   return (
@@ -53,23 +57,19 @@ export function Features() {
                     />
                   )}
                   <p className="text-body font-medium text-label">{epic.name}</p>
+                  <span className="text-caption text-label-tertiary">{epic.code}</span>
                 </div>
 
                 <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                   <EpicBadge option={findOption(STATUS_OPTIONS, epic.status)} />
                   <EpicBadge option={findOption(PRIORITY_OPTIONS, epic.priority)} />
-                  {epic.ownerId && (
-                    <span className="text-footnote text-label-secondary">{epic.ownerId}</span>
+                  {epic.ownerName && (
+                    <span className="text-footnote text-label-secondary">{epic.ownerName}</span>
                   )}
                 </div>
 
                 {epic.description && (
                   <p className="mt-1.5 text-footnote text-label-secondary">{epic.description}</p>
-                )}
-                {epic.body && (
-                  <p className="mt-1 line-clamp-2 text-footnote text-label-tertiary">
-                    {epic.body}
-                  </p>
                 )}
               </li>
             )
