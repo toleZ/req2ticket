@@ -1,4 +1,4 @@
-import { LogOut, Menu } from 'lucide-react'
+import { LogOut, Menu, Moon, Sun } from 'lucide-react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 
 import { ALL_NAV_ITEMS } from '@/components/layout/navItems'
@@ -15,11 +15,12 @@ const CRUMB_LIST = 'flex items-center gap-1.5 text-subheadline'
 const CRUMB_LINK = 'text-label-secondary transition-colors duration-fast ease-out-quad hover:text-label'
 const CRUMB_CURRENT = 'truncate font-medium text-label'
 
-const LOGOUT_BUTTON = `grid size-8 shrink-0 place-items-center rounded-control
+/* Compartida por el botón de tema y el de cerrar sesión: son el mismo botón de ícono. */
+const ICON_BUTTON = `grid size-8 shrink-0 place-items-center rounded-control
   text-label-secondary transition-colors duration-fast ease-out-quad
   hover:bg-fill-tertiary hover:text-label`
 
-export function TopBar({ onOpenDrawer }) {
+export function TopBar({ onOpenDrawer, isDark, onToggleTheme }) {
   const { pathname } = useLocation()
   const navigate = useNavigate()
   const isHome = pathname === '/'
@@ -70,23 +71,43 @@ export function TopBar({ onOpenDrawer }) {
         </ol>
       </nav>
 
-      {user && (
-        <div className="ml-auto flex min-w-0 items-center gap-2">
-          {/* El nombre se esconde en pantallas chicas: ahí el espacio es para las migas. */}
+      <div className="ml-auto flex min-w-0 items-center gap-2">
+        {/* El nombre se esconde en pantallas chicas: ahí el espacio es para las migas. */}
+        {user && (
           <span className="hidden max-w-40 truncate text-subheadline text-label-secondary sm:block">
             {user.name}
           </span>
+        )}
+
+        {/* Fuera del `user &&` a propósito: el tema es una preferencia de interfaz, no una
+            acción de la cuenta. Si la sesión viene sin el campo `user` igual tiene que estar.
+            La etiqueta describe la acción, no el estado: en oscuro el botón "activa el claro". */}
+        <button
+          type="button"
+          onClick={onToggleTheme}
+          aria-label={isDark ? 'Activar modo claro' : 'Activar modo oscuro'}
+          title={isDark ? 'Activar modo claro' : 'Activar modo oscuro'}
+          className={ICON_BUTTON}
+        >
+          {isDark ? (
+            <Sun className="size-4.5" aria-hidden="true" />
+          ) : (
+            <Moon className="size-4.5" aria-hidden="true" />
+          )}
+        </button>
+
+        {user && (
           <button
             type="button"
             onClick={handleLogout}
             aria-label="Cerrar sesión"
             title="Cerrar sesión"
-            className={LOGOUT_BUTTON}
+            className={ICON_BUTTON}
           >
             <LogOut className="size-4.5" aria-hidden="true" />
           </button>
-        </div>
-      )}
+        )}
+      </div>
     </header>
   )
 }
