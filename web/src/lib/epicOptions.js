@@ -2,16 +2,16 @@
    badges), so the two never drift out of sync on labels or colors. */
 
 export const PRIORITY_OPTIONS = [
-  { value: 'low', label: 'Baja', badgeClasses: 'bg-gray/14 text-gray' },
-  { value: 'medium', label: 'Media', badgeClasses: 'bg-blue/12 text-blue' },
-  { value: 'high', label: 'Alta', badgeClasses: 'bg-orange/14 text-orange' },
-  { value: 'urgent', label: 'Urgente', badgeClasses: 'bg-red/12 text-red' },
+  { value: 'low', label: 'Baja', tone: 'gray' },
+  { value: 'medium', label: 'Media', tone: 'blue' },
+  { value: 'high', label: 'Alta', tone: 'orange' },
+  { value: 'urgent', label: 'Urgente', tone: 'red' },
 ]
 
 export const STATUS_OPTIONS = [
-  { value: 'backlog', label: 'Backlog', badgeClasses: 'bg-gray/14 text-gray' },
-  { value: 'active', label: 'Activa', badgeClasses: 'bg-blue/12 text-blue' },
-  { value: 'closed', label: 'Cerrada', badgeClasses: 'bg-green/12 text-green' },
+  { value: 'backlog', label: 'Backlog', tone: 'gray' },
+  { value: 'active', label: 'Activa', tone: 'blue' },
+  { value: 'closed', label: 'Cerrada', tone: 'green' },
 ]
 
 /* Tailwind needs each class name written out literally somewhere to keep it in the
