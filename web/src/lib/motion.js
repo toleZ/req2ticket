@@ -4,7 +4,7 @@
 /** iOS curve: fast start, long settle. Mirrors --ease-ios in theme.css. */
 export const EASE_IOS = [0.32, 0.72, 0, 1]
 
-/** The mobile drawer sliding in. */
+/** Panels entering in place: the mobile drawer sliding in, a modal scaling up. */
 export const springSoft = { type: 'spring', stiffness: 320, damping: 30, mass: 0.9 }
 
 /** The active nav highlight moving between items. */

@@ -52,3 +52,17 @@ export function validateLoginForm(values) {
 
   return errors
 }
+
+export function validateEpicForm(values) {
+  const errors = {}
+
+  if (!values.name.trim()) {
+    errors.name = 'Ingresá un nombre para la épica'
+  }
+
+  if (!values.body.trim()) {
+    errors.body = 'Ingresá el cuerpo de la épica'
+  }
+
+  return errors
+}
