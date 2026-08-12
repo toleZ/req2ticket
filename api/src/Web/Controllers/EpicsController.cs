@@ -1,10 +1,13 @@
 using Application.Services;
 using Domain.Entities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Web.DTOs;
 
 namespace Web.Controllers;
 
+// Reading only needs a valid token, which the fallback policy in Program.cs already demands.
+// Writing carries an explicit policy, so a Viewer gets 403 instead of changing the backlog.
 [Route("api/[controller]")]
 [ApiController]
 public class EpicsController : ControllerBase
@@ -49,6 +52,7 @@ public class EpicsController : ControllerBase
         return Ok(EpicResponse.FromEntity(epic));
     }
 
+    [Authorize(Policy = "CanEditEpics")]
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] EpicCreateRequest request)
     {
@@ -63,6 +67,7 @@ public class EpicsController : ControllerBase
         }
     }
 
+    [Authorize(Policy = "CanEditEpics")]
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Update([FromRoute] int id, [FromBody] EpicUpdateRequest request)
     {
@@ -82,6 +87,7 @@ public class EpicsController : ControllerBase
         }
     }
 
+    [Authorize(Policy = "CanEditEpics")]
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete([FromRoute] int id)
     {

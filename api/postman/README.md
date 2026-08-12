@@ -6,7 +6,7 @@ acá y lo mandes en un PR.
 
 | Archivo | Qué es |
 |---|---|
-| `req2ticket.postman_collection.json` | La colección: 22 requests en 3 carpetas + subcarpeta `Validaciones`, con tests |
+| `req2ticket.postman_collection.json` | La colección: 27 requests en 3 carpetas + subcarpeta `Validaciones`, con tests |
 | `req2ticket.local.postman_environment.json` | El environment `req2ticket - Local`: solo `baseUrl` |
 
 ## Importar
@@ -14,6 +14,24 @@ acá y lo mandes en un PR.
 1. Postman → **Import** → arrastrá los dos archivos.
 2. Arriba a la derecha, seleccioná el environment **req2ticket - Local**.
 3. Levantá la API: `dotnet run --project src/Web` (queda en `http://localhost:5080`).
+4. Corré **Auth → Login correcto** antes que nada. Sin eso, el resto da 401.
+
+## El token
+
+La API pide JWT en todos los endpoints salvo `/api/auth/login` y `/api/auth/register`.
+
+La colección tiene auth de tipo **Bearer** con el valor `{{token}}` a nivel colección, así que
+todas las requests lo heredan sin que haya que tocarlas una por una. La variable la escribe el
+test de `Login correcto`. Las pocas requests que no tienen que mandarlo — los logins, los
+registros y los dos casos de 401 — lo declaran explícitamente con `noauth`.
+
+Si empezás a ver 401 en todos lados, es que el token venció (`Jwt:ExpiresHours`, 8 por
+defecto): volvé a correr el login.
+
+`Registro nuevo` usa `beta+{{$timestamp}}@req2ticket.com` para que la colección se pueda correr
+muchas veces seguidas sin chocar con el registro de la corrida anterior, y guarda su token en
+`viewerToken`. Eso es lo que hace posible el caso `Viewer no puede crear épicas -> 403`, que
+prueba que la autorización mira el rol y no solo la sesión.
 
 ## Actualizar la colección (cuando agregás o cambiás un endpoint)
 
@@ -51,9 +69,12 @@ están hardcodeados en el JSON son solo defaults para cuando corrés una request
 
 ## Ojo con las contraseñas
 
-`seedPassword` está en texto plano porque son las credenciales del seed de una base SQLite local y
-el login todavía es simulado. Cuando haya auth de verdad, esa variable no va más en la colección:
-va al environment marcada como `secret`, y el environment con el valor real no se commitea.
+`seedPassword` está en texto plano porque es la credencial del seed de una base SQLite local. En la
+base ya no se guarda así: desde la rama del JWT las contraseñas van hasheadas con BCrypt, y lo que
+queda acá es solo el texto plano que hay que mandarle al login para obtener el token.
+
+El día que la colección apunte a un entorno que no sea local, esa variable no va más acá: va al
+environment marcada como `secret`, y el environment con el valor real no se commitea.
 
 ## Alternativa sin Postman
 

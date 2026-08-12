@@ -1,17 +1,28 @@
 @Web_HostAddress = http://localhost:5080
 
+# La API pide JWT en todo salvo /api/auth/login y /api/auth/register.
+# Corré primero el login de acá abajo: REST Client guarda esa respuesta bajo el nombre que le
+# pone `# @name login`, y el resto de las requests sacan el token de ahí con
+# {{login.response.body.token}}. Si el token venció, volvés a correr el login y listo.
+#
+# Usuarios del seed (se guardan hasheados con BCrypt; estas son las contraseñas en texto
+# plano que hay que mandarle al login):
+#   juan@req2ticket.com   / Passw0rd!   -> admin
+#   camila@req2ticket.com / Camila#25   -> productOwner
+#   martin@req2ticket.com / Martin$77   -> scrumMaster
+#   sofia@req2ticket.com  / Sofia*9x1   -> developer
+#
+# Roles, de menor a mayor privilegio:
+#   viewer | qa | developer | scrumMaster | productOwner | admin | superAdmin
+# Escribir épicas (POST, PUT, DELETE) exige cualquier rol menos viewer.
+#
 # Valores válidos (deben coincidir con web/src/lib/epicOptions.js):
 #   priority    -> low | medium | high | urgent
 #   status      -> backlog | active | closed
 #   accentColor -> blue | purple | indigo | teal | green | orange | red | pink | mint | yellow
-#
-# Usuarios del seed (contraseñas en texto plano, el login es simulado):
-#   juan@req2ticket.com   / Passw0rd!
-#   camila@req2ticket.com / Camila#25
-#   martin@req2ticket.com / Martin$77
-#   sofia@req2ticket.com  / Sofia*9x1
 
-### Login correcto -> 200 con el usuario
+### Login correcto -> 200 con { token, expiresAt, user }
+# @name login
 POST {{Web_HostAddress}}/api/auth/login
 Content-Type: application/json
 
@@ -56,33 +67,80 @@ Content-Type: application/json
   "password": ""
 }
 
+### Registro -> 200 con token. La cuenta nace siempre como viewer.
+# @name registro
+POST {{Web_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "name": "Beta Tester",
+  "email": "beta@req2ticket.com",
+  "password": "BetaPass123"
+}
+
+### Registro con un email que ya existe -> 400 (NOCASE: la capitalización no lo salva)
+POST {{Web_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "name": "Otro Juan",
+  "email": "JUAN@req2ticket.com",
+  "password": "BetaPass123"
+}
+
+### Registro con email inválido -> 400. A diferencia del login, acá sí se valida el formato.
+POST {{Web_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "name": "Equis",
+  "email": "no-es-un-mail",
+  "password": "BetaPass123"
+}
+
+### Sin token -> 401. La fallback policy cubre todo lo que no sea AllowAnonymous.
+GET {{Web_HostAddress}}/api/epics
+Accept: application/json
+
+### Con un token inválido -> 401
+GET {{Web_HostAddress}}/api/epics
+Accept: application/json
+Authorization: Bearer no.es.un.token
+
 ### Listar usuarios (nunca devuelve la contraseña)
 GET {{Web_HostAddress}}/api/users
 Accept: application/json
+Authorization: Bearer {{login.response.body.token}}
 
 ### Obtener un usuario por id
 GET {{Web_HostAddress}}/api/users/1
 Accept: application/json
+Authorization: Bearer {{login.response.body.token}}
 
 ### Listar todas las épicas
 GET {{Web_HostAddress}}/api/epics
 Accept: application/json
+Authorization: Bearer {{login.response.body.token}}
 
 ### Obtener una épica por id
 GET {{Web_HostAddress}}/api/epics/1
 Accept: application/json
+Authorization: Bearer {{login.response.body.token}}
 
 ### Obtener una épica por su código público
 GET {{Web_HostAddress}}/api/epics/code/EPIC-7F3A2B9K
 Accept: application/json
+Authorization: Bearer {{login.response.body.token}}
 
 ### Un id que no es número -> 404 (por la restricción :int), no 400
 GET {{Web_HostAddress}}/api/epics/abc
 Accept: application/json
+Authorization: Bearer {{login.response.body.token}}
 
 ### Crear una épica (mismo payload que manda el modal del front)
 POST {{Web_HostAddress}}/api/epics
 Content-Type: application/json
+Authorization: Bearer {{login.response.body.token}}
 
 {
   "name": "Reportes",
@@ -96,14 +154,25 @@ Content-Type: application/json
 ### Crear una épica con lo mínimo: solo el nombre
 POST {{Web_HostAddress}}/api/epics
 Content-Type: application/json
+Authorization: Bearer {{login.response.body.token}}
 
 {
   "name": "Solo nombre"
 }
 
+### Un viewer no puede crear -> 403, no 401: el token es válido, el rol no alcanza.
+POST {{Web_HostAddress}}/api/epics
+Content-Type: application/json
+Authorization: Bearer {{registro.response.body.token}}
+
+{
+  "name": "No debería entrar"
+}
+
 ### Nombre demasiado corto -> 400
 POST {{Web_HostAddress}}/api/epics
 Content-Type: application/json
+Authorization: Bearer {{login.response.body.token}}
 
 {
   "name": "ab"
@@ -112,6 +181,7 @@ Content-Type: application/json
 ### Color fuera de la paleta -> 400
 POST {{Web_HostAddress}}/api/epics
 Content-Type: application/json
+Authorization: Bearer {{login.response.body.token}}
 
 {
   "name": "Color inválido",
@@ -121,6 +191,7 @@ Content-Type: application/json
 ### Prioridad inexistente -> 400
 POST {{Web_HostAddress}}/api/epics
 Content-Type: application/json
+Authorization: Bearer {{login.response.body.token}}
 
 {
   "name": "Prioridad inválida",
@@ -130,6 +201,7 @@ Content-Type: application/json
 ### Estado inexistente -> 400
 POST {{Web_HostAddress}}/api/epics
 Content-Type: application/json
+Authorization: Bearer {{login.response.body.token}}
 
 {
   "name": "Estado inválido",
@@ -139,6 +211,7 @@ Content-Type: application/json
 ### Responsable inexistente -> 400
 POST {{Web_HostAddress}}/api/epics
 Content-Type: application/json
+Authorization: Bearer {{login.response.body.token}}
 
 {
   "name": "Sin dueño",
@@ -148,6 +221,7 @@ Content-Type: application/json
 ### Actualizar una épica (reemplazo completo)
 PUT {{Web_HostAddress}}/api/epics/2
 Content-Type: application/json
+Authorization: Bearer {{login.response.body.token}}
 
 {
   "name": "Tablero Kanban",
@@ -160,3 +234,4 @@ Content-Type: application/json
 
 ### Borrar una épica
 DELETE {{Web_HostAddress}}/api/epics/3
+Authorization: Bearer {{login.response.body.token}}

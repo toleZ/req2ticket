@@ -39,34 +39,46 @@ public class Req2TicketContext : DbContext
             .HasIndex(u => u.Email)
             .IsUnique();
 
+        // The hashes are hardcoded for the same reason the epic codes below are: HasData
+        // compares its values against the model snapshot on every "migrations add", and
+        // BCrypt salts randomly, so hashing here would produce a different value on every
+        // run and a permanent "pending model changes" warning.
+        //
+        // The passwords behind them are the ones documented in api/postman and Web.http:
+        // Passw0rd! · Camila#25 · Martin$77 · Sofia*9x1 — seed data for a local database,
+        // not credentials for anything that matters.
         modelBuilder.Entity<User>().HasData(
             new User
             {
                 Id = 1,
                 Name = "Juan Cruz",
                 Email = "juan@req2ticket.com",
-                Password = "Passw0rd!"
+                PasswordHash = "$2a$11$OxumkutAnNycObUAp.sI5OR8/FoDacrtay0b2z61feEKJxGR5Tzd6",
+                Role = UserRole.Admin
             },
             new User
             {
                 Id = 2,
                 Name = "Camila Rossi",
                 Email = "camila@req2ticket.com",
-                Password = "Camila#25"
+                PasswordHash = "$2a$11$9JK.29wC/YYDMPrx/17SzuQXEnij2SgPTrAAVOfG6BWtoBwgtOA5e",
+                Role = UserRole.ProductOwner
             },
             new User
             {
                 Id = 3,
                 Name = "Martín Díaz",
                 Email = "martin@req2ticket.com",
-                Password = "Martin$77"
+                PasswordHash = "$2a$11$5YLkOMjlsgsrGOqYxhb8s.0V9wC7UKQOn3zrHRH5SZh4oMMIOdt/S",
+                Role = UserRole.ScrumMaster
             },
             new User
             {
                 Id = 4,
                 Name = "Sofía Vega",
                 Email = "sofia@req2ticket.com",
-                Password = "Sofia*9x1"
+                PasswordHash = "$2a$11$LtN.MT4Q48L1DP4qVhzCK.FpO09sg2QRWHfkiFpJxBHqQM21ftqGS",
+                Role = UserRole.Developer
             }
         );
 

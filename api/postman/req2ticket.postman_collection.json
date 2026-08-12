@@ -2,8 +2,18 @@
   "info": {
     "_postman_id": "96b60245-2e59-42fd-ad7d-4e12f2abe3aa",
     "name": "req2ticket API",
-    "description": "API del proyecto req2ticket (ASP.NET Core, api/src/Web).\n\nUsuarios del seed (contraseñas en texto plano, el login es simulado):\n- juan@req2ticket.com   / Passw0rd!\n- camila@req2ticket.com / Camila#25\n- martin@req2ticket.com / Martin$77\n- sofia@req2ticket.com  / Sofia*9x1\n\nValores válidos (deben coincidir con web/src/lib/epicOptions.js):\n- priority    -> low | medium | high | urgent\n- status      -> backlog | active | closed\n- accentColor -> blue | purple | indigo | teal | green | orange | red | pink | mint | yellow\n\nLevantar la API antes: dotnet run --project src/Web (http://localhost:5080).\nLa colección se puede correr entera con el Runner en el orden en que están las carpetas.\n\nEste archivo es la fuente de verdad: ver api/postman/README.md antes de editar.",
+    "description": "API del proyecto req2ticket (ASP.NET Core, api/src/Web).\n\nLa API pide JWT en todos los endpoints salvo /api/auth/login y /api/auth/register.\nCorré 'Login correcto' primero: guarda el token y el resto de la colección lo hereda\ncomo Bearer.\n\nUsuarios del seed (las contraseñas se guardan hasheadas con BCrypt; estas son las de\ntexto plano que hay que mandar al login):\n- juan@req2ticket.com   / Passw0rd!  -> admin\n- camila@req2ticket.com / Camila#25  -> productOwner\n- martin@req2ticket.com / Martin$77  -> scrumMaster\n- sofia@req2ticket.com  / Sofia*9x1  -> developer\n\nRoles, de menor a mayor privilegio:\n  viewer | qa | developer | scrumMaster | productOwner | admin | superAdmin\nEscribir épicas (POST, PUT, DELETE) exige cualquier rol menos viewer.\n\nValores válidos (deben coincidir con web/src/lib/epicOptions.js):\n- priority    -> low | medium | high | urgent\n- status      -> backlog | active | closed\n- accentColor -> blue | purple | indigo | teal | green | orange | red | pink | mint | yellow\n\nLevantar la API antes: dotnet run --project src/Web (http://localhost:5080).\nLa colección se puede correr entera con el Runner en el orden en que están las carpetas.\n\nEste archivo es la fuente de verdad: ver api/postman/README.md antes de editar.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
   },
   "variable": [
     {
@@ -39,12 +49,24 @@
       "value": "EPIC-7F3A2B9K",
       "type": "string",
       "description": "Lo sobrescribe 'Crear épica (completa)' con el code que generó el back."
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string",
+      "description": "Lo escribe 'Login correcto'. La colección lo manda como Bearer en todas las requests salvo las que declaran noauth."
+    },
+    {
+      "key": "viewerToken",
+      "value": "",
+      "type": "string",
+      "description": "Lo escribe 'Registro nuevo'. Es el token de una cuenta recién creada, que siempre nace con rol viewer."
     }
   ],
   "item": [
     {
       "name": "Auth",
-      "description": "POST /api/auth/login. Devuelve el UserResponse directo, sin token: todavía no hay auth real.",
+      "description": "Login y registro, los dos únicos endpoints anónimos. El login devuelve { token, expiresAt, user } y guarda el token para el resto de la colección. Las dos últimas requests comprueban que fuera de acá no se entra sin token válido.",
       "item": [
         {
           "name": "Login correcto -> 200",
@@ -60,36 +82,66 @@
                   "",
                   "const body = pm.response.json();",
                   "",
-                  "pm.test('devuelve id, name y email', function () {",
-                  "  pm.expect(body).to.have.property('id');",
-                  "  pm.expect(body).to.have.property('name');",
-                  "  pm.expect(body).to.have.property('email');",
+                  "pm.test('el usuario viene anidado en user', function () {",
+                  "  pm.expect(body.user).to.have.property('id');",
+                  "  pm.expect(body.user).to.have.property('name');",
+                  "  pm.expect(body.user).to.have.property('email');",
+                  "});",
+                  "",
+                  "pm.test('devuelve token y expiresAt', function () {",
+                  "  pm.expect(body.token).to.be.a('string').and.to.have.length.above(0);",
+                  "  pm.expect(body.expiresAt).to.be.a('string');",
+                  "});",
+                  "",
+                  "pm.test('el usuario trae su rol', function () {",
+                  "  pm.expect(body.user.role).to.eql('admin');",
                   "});",
                   "",
                   "pm.test('nunca devuelve la contraseña', function () {",
-                  "  pm.expect(body).to.not.have.property('password');",
+                  "  pm.expect(body.user).to.not.have.property('password');",
+                  "  pm.expect(body.user).to.not.have.property('passwordHash');",
                   "});",
                   "",
-                  "pm.collectionVariables.set('userId', String(body.id));"
+                  "// El token alimenta el auth Bearer de la colección: de acá en adelante",
+                  "// todas las requests lo mandan salvo las que declaran noauth.",
+                  "pm.collectionVariables.set('token', body.token);",
+                  "pm.collectionVariables.set('userId', String(body.user.id));"
                 ]
               }
             }
           ],
           "request": {
+            "auth": {
+              "type": "noauth"
+            },
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"email\": \"{{seedEmail}}\",\n  \"password\": \"{{seedPassword}}\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/api/auth/login",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "login"]
-            }
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Guarda el token en la variable de colección. Es la primera request de la colección a propósito: sin ella el resto da 401."
           },
           "response": []
         },
@@ -111,17 +163,33 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"email\": \"JUAN@Req2Ticket.com\",\n  \"password\": \"Passw0rd!\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/api/auth/login",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "login"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
             }
           },
           "response": []
@@ -148,17 +216,33 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"email\": \"juan@req2ticket.com\",\n  \"password\": \"otra\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/api/auth/login",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "login"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
             }
           },
           "response": []
@@ -185,17 +269,33 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"email\": \"nadie@req2ticket.com\",\n  \"password\": \"Passw0rd!\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/api/auth/login",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "login"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
             }
           },
           "response": []
@@ -218,18 +318,230 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"email\": \"\",\n  \"password\": \"\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/api/auth/login",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "login"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
             }
+          },
+          "response": []
+        },
+        {
+          "name": "Registro nuevo -> 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test('toda cuenta nueva nace como viewer', function () {",
+                  "  pm.expect(body.user.role).to.eql('viewer');",
+                  "});",
+                  "",
+                  "// Lo consume 'Viewer no puede crear épicas' para probar el 403.",
+                  "pm.collectionVariables.set('viewerToken', body.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Beta Tester\",\n  \"email\": \"beta+{{$timestamp}}@req2ticket.com\",\n  \"password\": \"BetaPass123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "El email lleva {{$timestamp}} para que la colección se pueda correr muchas veces sin chocar con el registro anterior."
+          },
+          "response": []
+        },
+        {
+          "name": "Registro con email existente -> 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('body { message }', function () {",
+                  "  pm.expect(pm.response.json()).to.have.property('message');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Otro Juan\",\n  \"email\": \"JUAN@req2ticket.com\",\n  \"password\": \"BetaPass123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "El email del seed en otra capitalización: la columna es NOCASE, así que también cuenta como duplicado."
+          },
+          "response": []
+        },
+        {
+          "name": "Sin token -> 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('401: la fallback policy protege todo lo que no sea AllowAnonymous', function () {",
+                  "  pm.response.to.have.status(401);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/epics",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "epics"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Token inválido -> 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 401', function () {",
+                  "  pm.response.to.have.status(401);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer no.es.un.token"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/epics",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "epics"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Header puesto a mano en vez de heredar el de la colección, para que la firma no valide."
           },
           "response": []
         }
@@ -269,12 +581,20 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Accept", "value": "application/json" }
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/users",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "users"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users"
+              ]
             }
           },
           "response": []
@@ -297,12 +617,21 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Accept", "value": "application/json" }
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/users/{{userId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "users", "{{userId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "{{userId}}"
+              ]
             }
           },
           "response": []
@@ -325,12 +654,21 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Accept", "value": "application/json" }
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/users/999",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "users", "999"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "999"
+              ]
             }
           },
           "response": []
@@ -363,12 +701,20 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Accept", "value": "application/json" }
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/epics",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "epics"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "epics"
+              ]
             }
           },
           "response": []
@@ -405,17 +751,29 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"name\": \"Reportes\",\n  \"description\": \"Métricas de velocity y burndown por sprint.\",\n  \"accentColor\": \"green\",\n  \"priority\": \"urgent\",\n  \"status\": \"active\",\n  \"ownerId\": {{userId}}\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/api/epics",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "epics"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "epics"
+              ]
             },
             "description": "Mismo payload que manda CreateEpicModal en el front."
           },
@@ -446,17 +804,29 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"name\": \"Solo nombre\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/api/epics",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "epics"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "epics"
+              ]
             }
           },
           "response": []
@@ -486,12 +856,21 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Accept", "value": "application/json" }
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/epics/{{epicId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "epics", "{{epicId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "epics",
+                "{{epicId}}"
+              ]
             }
           },
           "response": []
@@ -514,12 +893,22 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Accept", "value": "application/json" }
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/epics/code/{{epicCode}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "epics", "code", "{{epicCode}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "epics",
+                "code",
+                "{{epicCode}}"
+              ]
             }
           },
           "response": []
@@ -542,12 +931,21 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Accept", "value": "application/json" }
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/epics/999999",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "epics", "999999"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "epics",
+                "999999"
+              ]
             }
           },
           "response": []
@@ -570,12 +968,21 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Accept", "value": "application/json" }
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/epics/abc",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "epics", "abc"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "epics",
+                "abc"
+              ]
             }
           },
           "response": []
@@ -602,17 +1009,30 @@
           "request": {
             "method": "PUT",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"name\": \"Tablero Kanban\",\n  \"description\": \"Columnas configurables y drag & drop.\",\n  \"accentColor\": \"purple\",\n  \"priority\": \"high\",\n  \"status\": \"closed\",\n  \"ownerId\": {{userId}}\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/api/epics/{{epicId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "epics", "{{epicId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "epics",
+                "{{epicId}}"
+              ]
             },
             "description": "PUT es reemplazo total: los campos que no mandes vuelven a su default (priority medium, status backlog)."
           },
@@ -638,10 +1058,69 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/epics/{{epicId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "epics", "{{epicId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "epics",
+                "{{epicId}}"
+              ]
             },
             "description": "Borra la épica creada por 'Crear épica (completa)'. Si corrés esta request suelta, revisá qué tiene epicId."
+          },
+          "response": []
+        },
+        {
+          "name": "Viewer no puede crear épicas -> 403",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('403, no 401: el token es válido, el rol no alcanza', function () {",
+                  "  pm.response.to.have.status(403);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{viewerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/epics",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "epics"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"No debería entrar\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Usa el token que guardó 'Registro nuevo'. Es la prueba de que la policy CanEditEpics discrimina por rol y no solo por sesión."
           },
           "response": []
         },
@@ -667,17 +1146,29 @@
               "request": {
                 "method": "POST",
                 "header": [
-                  { "key": "Content-Type", "value": "application/json" }
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
                 ],
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"name\": \"ab\"\n}",
-                  "options": { "raw": { "language": "json" } }
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
                 },
                 "url": {
                   "raw": "{{baseUrl}}/api/epics",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "epics"]
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "epics"
+                  ]
                 }
               },
               "response": []
@@ -700,17 +1191,29 @@
               "request": {
                 "method": "POST",
                 "header": [
-                  { "key": "Content-Type", "value": "application/json" }
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
                 ],
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"name\": \"Color inválido\",\n  \"accentColor\": \"#3B82F6\"\n}",
-                  "options": { "raw": { "language": "json" } }
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
                 },
                 "url": {
                   "raw": "{{baseUrl}}/api/epics",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "epics"]
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "epics"
+                  ]
                 }
               },
               "response": []
@@ -733,17 +1236,29 @@
               "request": {
                 "method": "POST",
                 "header": [
-                  { "key": "Content-Type", "value": "application/json" }
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
                 ],
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"name\": \"Prioridad inválida\",\n  \"priority\": \"critical\"\n}",
-                  "options": { "raw": { "language": "json" } }
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
                 },
                 "url": {
                   "raw": "{{baseUrl}}/api/epics",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "epics"]
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "epics"
+                  ]
                 }
               },
               "response": []
@@ -766,17 +1281,29 @@
               "request": {
                 "method": "POST",
                 "header": [
-                  { "key": "Content-Type", "value": "application/json" }
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
                 ],
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"name\": \"Estado inválido\",\n  \"status\": \"inProgress\"\n}",
-                  "options": { "raw": { "language": "json" } }
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
                 },
                 "url": {
                   "raw": "{{baseUrl}}/api/epics",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "epics"]
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "epics"
+                  ]
                 }
               },
               "response": []
@@ -803,17 +1330,29 @@
               "request": {
                 "method": "POST",
                 "header": [
-                  { "key": "Content-Type", "value": "application/json" }
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
                 ],
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"name\": \"Sin dueño\",\n  \"ownerId\": 999\n}",
-                  "options": { "raw": { "language": "json" } }
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
                 },
                 "url": {
                   "raw": "{{baseUrl}}/api/epics",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "epics"]
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "epics"
+                  ]
                 }
               },
               "response": []
