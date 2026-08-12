@@ -86,6 +86,27 @@ dotnet user-secrets set "ConnectionStrings:DefaultConnection" "..." --project sr
 dotnet user-secrets list --project src/Web
 ```
 
+### Jwt:Key (obligatoria)
+
+La API no arranca sin la clave de firma de los tokens, y a propósito no está en
+`appsettings.json`. Cada uno se genera la suya una vez:
+
+```bash
+dotnet user-secrets set "Jwt:Key" "$(openssl rand -base64 48)" --project src/Web
+```
+
+Tiene que tener al menos 32 bytes: HMAC-SHA256 no firma con una clave más corta que su
+propia salida, y `Program.cs` lo chequea al arrancar.
+
+Los `dotnet ef` también la necesitan, porque construyen el host: si te tira
+`Falta la configuración Jwt:Key`, corré el comando de arriba antes de la migración.
+
+En Azure no van user-secrets: la clave se carga como App Setting `Jwt__Key` (doble guión
+bajo, que es como App Service representa el `:` de la configuración).
+
+El resto de la sección `Jwt` (`Issuer`, `Audience`, `ExpiresHours`) sí está commiteada en
+`appsettings.json`, porque no son secretos.
+
 ## Testing
 
 ```bash

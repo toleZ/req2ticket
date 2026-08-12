@@ -23,4 +23,9 @@ public class UserRepository : BaseRepository<User>, IUserRepository
         await _dbSet
             .AsNoTracking()
             .FirstOrDefaultAsync(u => u.Email == email);
+
+    // Inherits the NOCASE collation from the same column, so registering "Juan@..." when
+    // "juan@..." already exists is caught here and not by the unique index.
+    public async Task<bool> ExistsByEmailAsync(string email) =>
+        await _dbSet.AnyAsync(u => u.Email == email);
 }
