@@ -142,7 +142,13 @@ Estas no son valores del theme sino clases completas, definidas con `@utility` e
 | `ease-out-quad` | | Más suave, para cambios de color. |
 | `ease-in-out-soft` | | |
 
-Sombras: `shadow-card`, `shadow-raised`, `shadow-popover`.
+Sombras, de menos a más elevación: `shadow-hairline`, `shadow-card`, `shadow-raised`,
+`shadow-dragging`, `shadow-popover`.
+
+Cambian solas con el tema. En claro son negros muy suaves (4–18% de opacidad); en oscuro
+suben a 40–70%, porque un negro al 6% sobre un fondo casi negro no se ve. Por eso los
+valores viven en `:root`/`.dark` como `--elev-*` y no dentro del `@theme`: ahí adentro el
+valor se incrusta en la clase y no habría forma de cambiarlo por tema.
 
 > Una transición necesita **las tres**: qué animar, cuánto y con qué curva.
 > `transition-colors duration-fast ease-out-quad`. Si te falta `duration`, Tailwind usa su

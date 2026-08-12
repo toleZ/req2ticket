@@ -61,12 +61,6 @@
   --transition-duration-slow: 380ms;
   --transition-duration-sheet: 420ms;
 
-  /* ── Shadows ───────────────────────────────────────────────────────────── */
-  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.04), 0 4px 12px -2px rgb(0 0 0 / 0.06);
-  --shadow-raised: 0 2px 6px rgb(0 0 0 / 0.06), 0 12px 32px -6px rgb(0 0 0 / 0.12);
-  --shadow-popover:
-    0 0 0 0.5px rgb(0 0 0 / 0.06), 0 6px 16px -4px rgb(0 0 0 / 0.1),
-    0 24px 48px -12px rgb(0 0 0 / 0.18);
 }
 
 /* ── Light palette (default) ───────────────────────────────────────────────
@@ -127,6 +121,16 @@
 
   --highlight-top: rgb(255 255 255 / 0.6);
 
+  /* Elevación. Se llaman --elev-* y no --shadow-* porque el @theme inline del final
+     necesita un nombre distinto al del token de Tailwind para no autorreferenciarse. */
+  --elev-hairline: 0 0 0 0.5px var(--separator);
+  --elev-card: 0 1px 2px rgb(0 0 0 / 0.04), 0 4px 12px -2px rgb(0 0 0 / 0.06);
+  --elev-raised: 0 2px 6px rgb(0 0 0 / 0.06), 0 12px 32px -6px rgb(0 0 0 / 0.12);
+  --elev-dragging: 0 8px 16px rgb(0 0 0 / 0.1), 0 24px 48px -12px rgb(0 0 0 / 0.22);
+  --elev-popover:
+    0 0 0 0.5px rgb(0 0 0 / 0.06), 0 6px 16px -4px rgb(0 0 0 / 0.1),
+    0 24px 48px -12px rgb(0 0 0 / 0.18);
+
   /* Brand mark. Written through var() so the dark palette applies on its own:
      custom properties resolve where they are used, not where they are declared. */
   --brand-gradient:
@@ -141,6 +145,8 @@
 .dark {
   color-scheme: dark;
 
+  /* Los acentos quedan como estaban: son los colores de sistema de Apple para oscuro,
+     ya subidos de saturación respecto de los claros para no apagarse sobre el fondo. */
   --sys-blue: #0a84ff;
   --sys-green: #30d158;
   --sys-red: #ff453a;
@@ -152,37 +158,54 @@
   --sys-indigo: #5e5ce6;
   --sys-mint: #63e6e2;
 
-  --sys-gray: #8e8e93;
-  --sys-gray2: #636366;
-  --sys-gray3: #48484a;
-  --sys-gray4: #3a3a3c;
-  --sys-gray5: #2c2c2e;
-  --sys-gray6: #1c1c1e;
+  /* Grises con una punta de azul (el canal B queda unos puntos por encima del R). Un gris
+     perfectamente neutro sobre un fondo frío se lee sucio, tirando a marrón. */
+  --sys-gray: #8e9199;
+  --sys-gray2: #63666e;
+  --sys-gray3: #494c54;
+  --sys-gray4: #3b3e45;
+  --sys-gray5: #2b2e35;
+  --sys-gray6: #1d2026;
 
-  --label: #ffffff;
-  --label-secondary: rgb(235 235 245 / 0.6);
-  --label-tertiary: rgb(235 235 245 / 0.35);
-  --label-quaternary: rgb(235 235 245 / 0.18);
+  /* Blanco puro sobre casi negro produce halación: el texto parece vibrar y cansa a los
+     dos minutos. Un blanco roto corta eso sin perder contraste (sigue por encima de 15:1). */
+  --label: #f2f3f5;
+  --label-secondary: rgb(235 236 245 / 0.62);
+  --label-tertiary: rgb(235 236 245 / 0.38);
+  --label-quaternary: rgb(235 236 245 / 0.2);
 
-  --bg-base: #000000;
-  --bg-elevated: #1c1c1e;
-  --bg-grouped: #121214;
-  --bg-sunken: #0a0a0c;
+  /* La escalera de elevación. Antes --bg-base era #000000, y con la página en negro puro
+     no queda nada por debajo: `sunken` terminaba siendo MÁS CLARO que el fondo, al revés
+     que en el tema claro. Ahora sube parejo, sunken < base < grouped < elevated, y las
+     sombras vuelven a tener sobre qué dibujarse. */
+  --bg-sunken: #0d0e11;
+  --bg-grouped: #101115;
+  --bg-base: #121317;
+  --bg-elevated: #1e2026;
 
-  --fill: rgb(120 120 128 / 0.36);
-  --fill-secondary: rgb(120 120 128 / 0.32);
-  --fill-tertiary: rgb(118 118 128 / 0.24);
-  --fill-quaternary: rgb(118 118 128 / 0.18);
+  --fill: rgb(126 130 145 / 0.34);
+  --fill-secondary: rgb(126 130 145 / 0.28);
+  --fill-tertiary: rgb(126 130 145 / 0.2);
+  --fill-quaternary: rgb(126 130 145 / 0.14);
 
-  --separator: rgb(84 84 88 / 0.6);
-  --separator-opaque: #38383a;
+  --separator: rgb(128 134 150 / 0.32);
+  --separator-opaque: #2f333b;
 
-  --material-thick: rgb(30 30 32 / 0.86);
-  --material-regular: rgb(28 28 30 / 0.72);
-  --material-thin: rgb(40 40 42 / 0.55);
-  --scrim: rgb(0 0 0 / 0.45);
+  --material-thick: rgb(30 32 38 / 0.88);
+  --material-regular: rgb(24 26 31 / 0.76);
+  --material-thin: rgb(38 41 48 / 0.6);
+  --scrim: rgb(0 0 0 / 0.55);
 
-  --highlight-top: rgb(255 255 255 / 0.08);
+  --highlight-top: rgb(255 255 255 / 0.07);
+
+  /* Las mismas sombras del tema claro son invisibles acá: un negro al 6% sobre un fondo
+     casi negro no se ve. Suben mucho de opacidad para que la elevación siga leyéndose. */
+  --elev-card: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 12px -2px rgb(0 0 0 / 0.5);
+  --elev-raised: 0 2px 6px rgb(0 0 0 / 0.45), 0 12px 32px -6px rgb(0 0 0 / 0.6);
+  --elev-dragging: 0 8px 16px rgb(0 0 0 / 0.5), 0 24px 48px -12px rgb(0 0 0 / 0.7);
+  --elev-popover:
+    0 0 0 0.5px rgb(0 0 0 / 0.6), 0 6px 16px -4px rgb(0 0 0 / 0.5),
+    0 24px 48px -12px rgb(0 0 0 / 0.7);
 }
 
 /* ── Bridge to Tailwind utilities ──────────────────────────────────────────
@@ -226,5 +249,14 @@
   --color-separator: var(--separator);
   --color-separator-opaque: var(--separator-opaque);
 
+  --color-material-thick: var(--material-thick);
+  --color-material-regular: var(--material-regular);
+  --color-material-thin: var(--material-thin);
   --color-scrim: var(--scrim);
+
+  --shadow-hairline: var(--elev-hairline);
+  --shadow-card: var(--elev-card);
+  --shadow-raised: var(--elev-raised);
+  --shadow-dragging: var(--elev-dragging);
+  --shadow-popover: var(--elev-popover);
 }

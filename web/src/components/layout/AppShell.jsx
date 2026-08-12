@@ -4,6 +4,7 @@ import { Outlet } from 'react-router-dom'
 import { MobileDrawer } from '@/components/layout/MobileDrawer'
 import { SidebarBody } from '@/components/layout/SidebarBody'
 import { TopBar } from '@/components/layout/TopBar'
+import { useTheme } from '@/hooks/useTheme'
 import { readUiPref, writeUiPref } from '@/lib/uiPrefs'
 
 const RAIL = `material-regular hairline-r sticky top-0 z-20 hidden h-screen shrink-0
@@ -22,6 +23,10 @@ export function AppShell() {
   const [isCollapsed, setIsCollapsed] = useState(() => readUiPref(COLLAPSED_PREF, false))
   /* Never persisted — a drawer that is open on load is a bug, not a preference. */
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
+
+  /* Acá y en ningún otro lado: el hook es el único dueño de la clase `dark` de <html>. Las
+     pantallas de login quedan fuera de este árbol y las cubre el script de index.html. */
+  const { isDark, toggleTheme } = useTheme()
 
   /* useCallback keeps this the same function across renders. MobileDrawer passes it to
      useFocusTrap as an effect dependency, and a new arrow each render would re-arm the
@@ -56,7 +61,11 @@ export function AppShell() {
 
       {/* min-w-0 is load-bearing: without it wide content pushes the rail off screen. */}
       <div className={CONTENT}>
-        <TopBar onOpenDrawer={() => setIsDrawerOpen(true)} />
+        <TopBar
+          onOpenDrawer={() => setIsDrawerOpen(true)}
+          isDark={isDark}
+          onToggleTheme={toggleTheme}
+        />
         <main className={MAIN}>
           <Outlet />
         </main>
