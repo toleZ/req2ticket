@@ -1,6 +1,8 @@
 /* Único lugar que sabe hablar con la API. Los componentes llaman a las funciones de
    abajo y nunca usan fetch directo. */
 
+import { clearSession, getToken } from '@/lib/auth'
+
 const API_URL = 'http://localhost:5080'
 
 const FALLBACK_ERROR = 'Algo salió mal. Probá de nuevo.'
@@ -21,11 +23,17 @@ function readError(body) {
   return FALLBACK_ERROR
 }
 
-async function request(path, options) {
+async function request(path, options = {}) {
+  /* La API pide JWT en todo menos el login. El header se arma acá y no en post() para que
+     también lo lleven los GET. */
+  const token = getToken()
+  const headers = { ...options.headers }
+  if (token) headers.Authorization = `Bearer ${token}`
+
   let response
 
   try {
-    response = await fetch(`${API_URL}${path}`, options)
+    response = await fetch(`${API_URL}${path}`, { ...options, headers })
   } catch {
     // fetch solo rechaza si no hubo respuesta: API caída, DNS, CORS.
     throw new Error('No se pudo conectar con el servidor. ¿Está levantada la API?')
@@ -35,6 +43,11 @@ async function request(path, options) {
   const body = await response.json().catch(() => null)
 
   if (!response.ok) {
+    if (response.status === 401 && token) {
+      clearSession()
+      window.location.assign('/login')
+    }
+
     throw new Error(readError(body))
   }
 

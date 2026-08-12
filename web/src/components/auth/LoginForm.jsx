@@ -3,7 +3,7 @@ import { Eye, EyeOff } from 'lucide-react'
 
 import { validateLoginForm } from '@/lib/validate'
 
-const INITIAL_VALUES = { email: '', password: '' }
+const INITIAL_VALUES = { email: '', password: '', remember: false }
 
 const INPUT_CLASSES =
   'w-full rounded-control border border-separator bg-fill-tertiary px-3 py-2 text-body text-label'
@@ -16,7 +16,9 @@ export function LoginForm({ onSubmit }) {
   const [formError, setFormError] = useState('')
 
   function handleChange(e) {
-    setValues({ ...values, [e.target.name]: e.target.value })
+    const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value
+    
+    setValues({ ...values, [e.target.name]: value })
   }
 
   async function handleSubmit(e) {
@@ -88,6 +90,20 @@ export function LoginForm({ onSubmit }) {
         </div>
         {errors.password && <p className="mt-1 text-footnote text-red">{errors.password}</p>}
       </div>
+
+      {/* Sin marcar, la sesión vive en sessionStorage y muere al cerrar la pestaña.
+          Marcado, va a localStorage y sobrevive cerrar el navegador. */}
+      <label htmlFor="remember" className="flex items-center gap-2 text-subheadline text-label">
+        <input
+          id="remember"
+          name="remember"
+          type="checkbox"
+          checked={values.remember}
+          onChange={handleChange}
+          className="size-4 shrink-0 accent-blue"
+        />
+        Mantener sesión
+      </label>
 
       <button
         type="submit"
