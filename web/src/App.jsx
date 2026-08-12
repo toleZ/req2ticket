@@ -1,6 +1,8 @@
 import { Route, Routes } from 'react-router-dom'
 
 import { AuthLayout } from '@/components/auth/AuthLayout'
+import { RedirectIfAuth } from '@/components/auth/RedirectIfAuth'
+import { RequireAuth } from '@/components/auth/RequireAuth'
 import { AppShell } from '@/components/layout/AppShell'
 import { Board } from '@/pages/Board'
 import { Dashboard } from '@/pages/Dashboard'
@@ -17,20 +19,24 @@ import { Team } from '@/pages/Team'
 export function App() {
   return (
     <Routes>
-      <Route element={<AuthLayout />}>
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+      <Route element={<RedirectIfAuth />}>
+        <Route element={<AuthLayout />}>
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+        </Route>
       </Route>
 
-      <Route element={<AppShell />}>
-        <Route index element={<Dashboard />} />
-        <Route path="/resumen" element={<Summary />} />
-        <Route path="/tablero" element={<Board />} />
-        <Route path="/funcionalidades" element={<Features />} />
-        <Route path="/historias" element={<Stories />} />
-        <Route path="/sprints" element={<Sprints />} />
-        <Route path="/equipo" element={<Team />} />
-        <Route path="/ajustes" element={<Settings />} />
+      <Route element={<RequireAuth />}>
+        <Route element={<AppShell />}>
+          <Route index element={<Dashboard />} />
+          <Route path="/resumen" element={<Summary />} />
+          <Route path="/tablero" element={<Board />} />
+          <Route path="/funcionalidades" element={<Features />} />
+          <Route path="/historias" element={<Stories />} />
+          <Route path="/sprints" element={<Sprints />} />
+          <Route path="/equipo" element={<Team />} />
+          <Route path="/ajustes" element={<Settings />} />
+        </Route>
       </Route>
 
       <Route path="*" element={<NotFound />} />
