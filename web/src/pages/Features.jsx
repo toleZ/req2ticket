@@ -1,32 +1,56 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Plus } from 'lucide-react'
 
 import { CreateEpicModal } from '@/components/features/CreateEpicModal'
-import { createEpic } from '@/lib/api'
-import { ACCENT_COLORS, findOption, PRIORITY_OPTIONS, STATUS_OPTIONS } from '@/lib/epicOptions'
+import { EpicRow } from '@/components/features/EpicRow'
+import { createEpic, deleteEpic, getEpics, updateEpic } from '@/lib/api'
 
 const CREATE_BUTTON = `inline-flex shrink-0 items-center gap-1.5 rounded-control bg-blue
   px-3 py-2 text-subheadline font-medium text-white transition-[filter] duration-fast
   hover:brightness-110`
 
-const BADGE_CLASSES = 'rounded-full px-2 py-0.5 text-caption font-medium'
-
-function EpicBadge({ option }) {
-  if (!option) return null
-  return <span className={`${BADGE_CLASSES} ${option.badgeClasses}`}>{option.label}</span>
-}
-
 export function Features() {
   const [epics, setEpics] = useState([])
+  const [loadState, setLoadState] = useState('loading') // 'loading' | 'ready' | 'error'
   const [isModalOpen, setIsModalOpen] = useState(false)
 
   const closeModal = useCallback(() => setIsModalOpen(false), [])
 
-  // Guarda en la API y suma lo que devuelve, que ya viene con id y código reales.
-  // Si falla, el error sube al modal, que lo muestra y se queda abierto.
+  // No pone loadState en 'loading' acá: el estado inicial ya lo es, y hacerlo de forma
+  // síncrona dentro del efecto dispara un render en cascada. `handleRetry` sí lo hace,
+  // porque ahí es una respuesta a un click, no el cuerpo del efecto.
+  const fetchEpics = useCallback(() => {
+    getEpics()
+      .then((nextEpics) => {
+        setEpics(nextEpics)
+        setLoadState('ready')
+      })
+      .catch(() => setLoadState('error'))
+  }, [])
+
+  useEffect(() => {
+    fetchEpics()
+  }, [fetchEpics])
+
+  function handleRetry() {
+    setLoadState('loading')
+    fetchEpics()
+  }
+
+  // Suma lo que devuelve el POST, que ya viene con el id y el código que asignó el backend.
   async function handleCreate(values) {
     const created = await createEpic(values)
     setEpics((prev) => [...prev, created])
+  }
+
+  async function handleUpdateEpic(epic, patch) {
+    await updateEpic(epic, patch)
+    setEpics((prev) => prev.map((e) => (e.id === epic.id ? { ...e, ...patch } : e)))
+  }
+
+  async function handleDeleteEpic(epic) {
+    await deleteEpic(epic.id)
+    setEpics((prev) => prev.filter((e) => e.id !== epic.id))
   }
 
   return (
@@ -39,41 +63,41 @@ export function Features() {
         </button>
       </div>
 
-      {epics.length === 0 ? (
+      {loadState === 'loading' && (
+        <p className="mt-2 max-w-prose text-body text-label-secondary">Cargando funcionalidades…</p>
+      )}
+
+      {loadState === 'error' && (
+        <div className="mt-2 flex items-center gap-3">
+          <p className="max-w-prose text-body text-label-secondary">
+            No se pudieron cargar las funcionalidades.
+          </p>
+          <button
+            type="button"
+            onClick={handleRetry}
+            className="text-subheadline font-medium text-blue hover:underline"
+          >
+            Reintentar
+          </button>
+        </div>
+      )}
+
+      {loadState === 'ready' && epics.length === 0 && (
         <p className="mt-2 max-w-prose text-body text-label-secondary">
           Todavía no hay funcionalidades cargadas.
         </p>
-      ) : (
+      )}
+
+      {loadState === 'ready' && epics.length > 0 && (
         <ul className="mt-4 flex flex-col gap-2">
-          {epics.map((epic) => {
-            const accent = findOption(ACCENT_COLORS, epic.accentColor)
-            return (
-              <li key={epic.id} className="rounded-control bg-fill-tertiary px-3 py-2.5">
-                <div className="flex items-center gap-2">
-                  {accent && (
-                    <span
-                      className={`size-2.5 shrink-0 rounded-full ${accent.dotClass}`}
-                      aria-hidden="true"
-                    />
-                  )}
-                  <p className="text-body font-medium text-label">{epic.name}</p>
-                  <span className="text-caption text-label-tertiary">{epic.code}</span>
-                </div>
-
-                <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                  <EpicBadge option={findOption(STATUS_OPTIONS, epic.status)} />
-                  <EpicBadge option={findOption(PRIORITY_OPTIONS, epic.priority)} />
-                  {epic.ownerName && (
-                    <span className="text-footnote text-label-secondary">{epic.ownerName}</span>
-                  )}
-                </div>
-
-                {epic.description && (
-                  <p className="mt-1.5 text-footnote text-label-secondary">{epic.description}</p>
-                )}
-              </li>
-            )
-          })}
+          {epics.map((epic) => (
+            <EpicRow
+              key={epic.id}
+              epic={epic}
+              onUpdateEpic={handleUpdateEpic}
+              onDeleteEpic={handleDeleteEpic}
+            />
+          ))}
         </ul>
       )}
 

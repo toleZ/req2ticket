@@ -8,7 +8,6 @@ import { validateEpicForm } from '@/lib/validate'
 const INITIAL_VALUES = {
   name: '',
   description: '',
-  body: '',
   accentColor: 'blue',
   priority: 'medium',
   status: 'backlog',
@@ -65,7 +64,6 @@ export function CreateEpicModal({ isOpen, onClose, onCreate }) {
         ...values,
         name: values.name.trim(),
         description: values.description.trim(),
-        body: values.body.trim(),
       })
       // El modal se cierra solo si la épica se creó: si el POST falla, lo cargado
       // sigue en pantalla y el error se muestra arriba.
@@ -119,26 +117,6 @@ export function CreateEpicModal({ isOpen, onClose, onCreate }) {
             onChange={set('description')}
             className={`${INPUT_CLASSES} resize-none`}
           />
-        </div>
-
-        <div>
-          <label htmlFor="epic-body" className={LABEL_CLASSES}>
-            Cuerpo
-          </label>
-          <textarea
-            id="epic-body"
-            rows={4}
-            value={values.body}
-            onChange={set('body')}
-            aria-invalid={Boolean(errors.body)}
-            aria-describedby={errors.body ? 'epic-body-error' : undefined}
-            className={`${INPUT_CLASSES} resize-none`}
-          />
-          {errors.body && (
-            <p id="epic-body-error" className="mt-1 text-footnote text-red">
-              {errors.body}
-            </p>
-          )}
         </div>
 
         <div className="grid grid-cols-2 gap-3">

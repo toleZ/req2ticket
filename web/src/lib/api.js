@@ -49,12 +49,28 @@ function post(path, payload) {
   })
 }
 
+function put(path, payload) {
+  return request(path, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+}
+
+function del(path) {
+  return request(path, { method: 'DELETE' })
+}
+
 export function login({ email, password }) {
   return post('/api/auth/login', { email: email.trim(), password })
 }
 
 export function getUsers() {
   return request('/api/users')
+}
+
+export function getEpics() {
+  return request('/api/epics')
 }
 
 /* Traduce los valores del formulario al contrato de la API. El campo `body` del modal
@@ -68,4 +84,22 @@ export function createEpic(values) {
     status: values.status,
     ownerId: values.ownerId ? Number(values.ownerId) : null,
   })
+}
+
+/* El PUT del backend reemplaza la épica entera, así que `patch` se mezcla sobre `epic`
+   (la que ya tenemos en memoria) para no perder los campos que no cambiaron. */
+export function updateEpic(epic, patch) {
+  const merged = { ...epic, ...patch }
+  return put(`/api/epics/${epic.id}`, {
+    name: merged.name,
+    description: merged.description || null,
+    accentColor: merged.accentColor,
+    priority: merged.priority,
+    status: merged.status,
+    ownerId: merged.ownerId ? Number(merged.ownerId) : null,
+  })
+}
+
+export function deleteEpic(id) {
+  return del(`/api/epics/${id}`)
 }
