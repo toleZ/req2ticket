@@ -1,0 +1,167 @@
+using Domain.Entities;
+using Microsoft.EntityFrameworkCore;
+
+namespace Infrastructure;
+
+public class Req2TicketContext : DbContext
+{
+    public DbSet<User> Users { get; set; }
+
+    public DbSet<Epic> Epics { get; set; }
+
+    public Req2TicketContext(DbContextOptions<Req2TicketContext> options) : base(options)
+    {
+    }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+
+        // Deleting a user does not delete their epics: they are left without an owner.
+        modelBuilder.Entity<Epic>()
+            .HasOne(e => e.Owner)
+            .WithMany()
+            .HasForeignKey(e => e.OwnerId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<Epic>()
+            .HasIndex(e => e.Code)
+            .IsUnique();
+
+        // NOCASE so logging in does not depend on how the email was typed. SQLite compares
+        // strings case-sensitively by default, and the unique index inherits the collation,
+        // so two users cannot differ only in capitalization either.
+        modelBuilder.Entity<User>()
+            .Property(u => u.Email)
+            .UseCollation("NOCASE");
+
+        modelBuilder.Entity<User>()
+            .HasIndex(u => u.Email)
+            .IsUnique();
+
+        modelBuilder.Entity<User>().HasData(
+            new User
+            {
+                Id = 1,
+                Name = "Juan Cruz",
+                Email = "juan@req2ticket.com",
+                Password = "Passw0rd!"
+            },
+            new User
+            {
+                Id = 2,
+                Name = "Camila Rossi",
+                Email = "camila@req2ticket.com",
+                Password = "Camila#25"
+            },
+            new User
+            {
+                Id = 3,
+                Name = "Martín Díaz",
+                Email = "martin@req2ticket.com",
+                Password = "Martin$77"
+            },
+            new User
+            {
+                Id = 4,
+                Name = "Sofía Vega",
+                Email = "sofia@req2ticket.com",
+                Password = "Sofia*9x1"
+            }
+        );
+
+        // The codes are hardcoded on purpose: HasData compares its values against the model
+        // snapshot on every "migrations add", so a generated one would produce a spurious
+        // UpdateData and a permanent "pending model changes" warning.
+        modelBuilder.Entity<Epic>().HasData(
+            new Epic
+            {
+                Id = 1,
+                Code = "EPIC-7F3A2B9K",
+                Name = "Autenticación",
+                Description = "Login, registro y recuperación de contraseña.",
+                AccentColor = EpicAccentColor.Blue,
+                Priority = EpicPriority.High,
+                Status = EpicStatus.Active,
+                OwnerId = 1
+            },
+            new Epic
+            {
+                Id = 2,
+                Code = "EPIC-M4XQ8T2V",
+                Name = "Tablero Kanban",
+                Description = "Columnas configurables y drag & drop.",
+                AccentColor = EpicAccentColor.Purple,
+                Priority = EpicPriority.Medium,
+                Status = EpicStatus.Backlog,
+                OwnerId = 2
+            },
+            new Epic
+            {
+                Id = 3,
+                Code = "EPIC-9DZP5R3W",
+                Name = "Gestión de sprints",
+                Description = "Planificación, capacidad del equipo y cierre de sprint.",
+                AccentColor = EpicAccentColor.Indigo,
+                Priority = EpicPriority.High,
+                Status = EpicStatus.Active,
+                OwnerId = 3
+            },
+            new Epic
+            {
+                Id = 4,
+                Code = "EPIC-2H6NKY4S",
+                Name = "Historias de usuario",
+                Description = "Alta, edición y estimación en puntos.",
+                AccentColor = EpicAccentColor.Teal,
+                Priority = EpicPriority.Urgent,
+                Status = EpicStatus.Active,
+                OwnerId = 4
+            },
+            new Epic
+            {
+                Id = 5,
+                Code = "EPIC-QB8V3JM7",
+                Name = "Panel de métricas",
+                Description = "Velocity, burndown y lead time por equipo.",
+                AccentColor = EpicAccentColor.Green,
+                Priority = EpicPriority.Medium,
+                Status = EpicStatus.Backlog,
+                OwnerId = 1
+            },
+            new Epic
+            {
+                Id = 6,
+                Code = "EPIC-5T9WGX2A",
+                Name = "Notificaciones",
+                Description = "Avisos por email y centro de notificaciones in-app.",
+                AccentColor = EpicAccentColor.Orange,
+                Priority = EpicPriority.Low,
+                Status = EpicStatus.Backlog,
+                OwnerId = 2
+            },
+            new Epic
+            {
+                Id = 7,
+                Code = "EPIC-3RJ7C4ZP",
+                Name = "Importador de requerimientos",
+                Description = "Carga de documentos y extracción automática de tickets.",
+                AccentColor = EpicAccentColor.Pink,
+                Priority = EpicPriority.Urgent,
+                Status = EpicStatus.Active,
+                OwnerId = 3
+            },
+            new Epic
+            {
+                Id = 8,
+                Code = "EPIC-K2M5NQ8D",
+                Name = "Modo oscuro",
+                Description = "Tema claro/oscuro con preferencia persistida.",
+                AccentColor = EpicAccentColor.Yellow,
+                Priority = EpicPriority.Low,
+                Status = EpicStatus.Closed,
+                OwnerId = 4
+            }
+        );
+    }
+}

@@ -1,0 +1,162 @@
+@Web_HostAddress = http://localhost:5080
+
+# Valores válidos (deben coincidir con web/src/lib/epicOptions.js):
+#   priority    -> low | medium | high | urgent
+#   status      -> backlog | active | closed
+#   accentColor -> blue | purple | indigo | teal | green | orange | red | pink | mint | yellow
+#
+# Usuarios del seed (contraseñas en texto plano, el login es simulado):
+#   juan@req2ticket.com   / Passw0rd!
+#   camila@req2ticket.com / Camila#25
+#   martin@req2ticket.com / Martin$77
+#   sofia@req2ticket.com  / Sofia*9x1
+
+### Login correcto -> 200 con el usuario
+POST {{Web_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "juan@req2ticket.com",
+  "password": "Passw0rd!"
+}
+
+### Login con el email en otra capitalización -> 200 igual (collation NOCASE)
+POST {{Web_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "JUAN@Req2Ticket.com",
+  "password": "Passw0rd!"
+}
+
+### Contraseña incorrecta -> 401
+POST {{Web_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "juan@req2ticket.com",
+  "password": "otra"
+}
+
+### Email inexistente -> 401 con el mismo mensaje
+POST {{Web_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "nadie@req2ticket.com",
+  "password": "Passw0rd!"
+}
+
+### Campos vacíos -> 400, no 401
+POST {{Web_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "",
+  "password": ""
+}
+
+### Listar usuarios (nunca devuelve la contraseña)
+GET {{Web_HostAddress}}/api/users
+Accept: application/json
+
+### Obtener un usuario por id
+GET {{Web_HostAddress}}/api/users/1
+Accept: application/json
+
+### Listar todas las épicas
+GET {{Web_HostAddress}}/api/epics
+Accept: application/json
+
+### Obtener una épica por id
+GET {{Web_HostAddress}}/api/epics/1
+Accept: application/json
+
+### Obtener una épica por su código público
+GET {{Web_HostAddress}}/api/epics/code/EPIC-7F3A2B9K
+Accept: application/json
+
+### Un id que no es número -> 404 (por la restricción :int), no 400
+GET {{Web_HostAddress}}/api/epics/abc
+Accept: application/json
+
+### Crear una épica (mismo payload que manda el modal del front)
+POST {{Web_HostAddress}}/api/epics
+Content-Type: application/json
+
+{
+  "name": "Reportes",
+  "description": "Métricas de velocity y burndown por sprint.",
+  "accentColor": "green",
+  "priority": "urgent",
+  "status": "active",
+  "ownerId": 1
+}
+
+### Crear una épica con lo mínimo: solo el nombre
+POST {{Web_HostAddress}}/api/epics
+Content-Type: application/json
+
+{
+  "name": "Solo nombre"
+}
+
+### Nombre demasiado corto -> 400
+POST {{Web_HostAddress}}/api/epics
+Content-Type: application/json
+
+{
+  "name": "ab"
+}
+
+### Color fuera de la paleta -> 400
+POST {{Web_HostAddress}}/api/epics
+Content-Type: application/json
+
+{
+  "name": "Color inválido",
+  "accentColor": "#3B82F6"
+}
+
+### Prioridad inexistente -> 400
+POST {{Web_HostAddress}}/api/epics
+Content-Type: application/json
+
+{
+  "name": "Prioridad inválida",
+  "priority": "critical"
+}
+
+### Estado inexistente -> 400
+POST {{Web_HostAddress}}/api/epics
+Content-Type: application/json
+
+{
+  "name": "Estado inválido",
+  "status": "inProgress"
+}
+
+### Responsable inexistente -> 400
+POST {{Web_HostAddress}}/api/epics
+Content-Type: application/json
+
+{
+  "name": "Sin dueño",
+  "ownerId": 999
+}
+
+### Actualizar una épica (reemplazo completo)
+PUT {{Web_HostAddress}}/api/epics/2
+Content-Type: application/json
+
+{
+  "name": "Tablero Kanban",
+  "description": "Columnas configurables y drag & drop.",
+  "accentColor": "purple",
+  "priority": "high",
+  "status": "closed",
+  "ownerId": 2
+}
+
+### Borrar una épica
+DELETE {{Web_HostAddress}}/api/epics/3

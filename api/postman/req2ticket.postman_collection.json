@@ -1,0 +1,826 @@
+{
+  "info": {
+    "_postman_id": "96b60245-2e59-42fd-ad7d-4e12f2abe3aa",
+    "name": "req2ticket API",
+    "description": "API del proyecto req2ticket (ASP.NET Core, api/src/Web).\n\nUsuarios del seed (contraseñas en texto plano, el login es simulado):\n- juan@req2ticket.com   / Passw0rd!\n- camila@req2ticket.com / Camila#25\n- martin@req2ticket.com / Martin$77\n- sofia@req2ticket.com  / Sofia*9x1\n\nValores válidos (deben coincidir con web/src/lib/epicOptions.js):\n- priority    -> low | medium | high | urgent\n- status      -> backlog | active | closed\n- accentColor -> blue | purple | indigo | teal | green | orange | red | pink | mint | yellow\n\nLevantar la API antes: dotnet run --project src/Web (http://localhost:5080).\nLa colección se puede correr entera con el Runner en el orden en que están las carpetas.\n\nEste archivo es la fuente de verdad: ver api/postman/README.md antes de editar.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5080",
+      "type": "string",
+      "description": "Host de la API. El perfil http de launchSettings.json usa el 5080; el perfil https agrega https://localhost:7080. El environment 'req2ticket - Local' pisa esta variable."
+    },
+    {
+      "key": "seedEmail",
+      "value": "juan@req2ticket.com",
+      "type": "string"
+    },
+    {
+      "key": "seedPassword",
+      "value": "Passw0rd!",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "1",
+      "type": "string",
+      "description": "Lo sobrescribe el login con el id del usuario que respondió."
+    },
+    {
+      "key": "epicId",
+      "value": "1",
+      "type": "string",
+      "description": "Lo sobrescribe 'Crear épica (completa)' con el id de la épica recién creada."
+    },
+    {
+      "key": "epicCode",
+      "value": "EPIC-7F3A2B9K",
+      "type": "string",
+      "description": "Lo sobrescribe 'Crear épica (completa)' con el code que generó el back."
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "description": "POST /api/auth/login. Devuelve el UserResponse directo, sin token: todavía no hay auth real.",
+      "item": [
+        {
+          "name": "Login correcto -> 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test('devuelve id, name y email', function () {",
+                  "  pm.expect(body).to.have.property('id');",
+                  "  pm.expect(body).to.have.property('name');",
+                  "  pm.expect(body).to.have.property('email');",
+                  "});",
+                  "",
+                  "pm.test('nunca devuelve la contraseña', function () {",
+                  "  pm.expect(body).to.not.have.property('password');",
+                  "});",
+                  "",
+                  "pm.collectionVariables.set('userId', String(body.id));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{seedEmail}}\",\n  \"password\": \"{{seedPassword}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login con otra capitalización -> 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200 (la columna Email es NOCASE)', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"JUAN@Req2Ticket.com\",\n  \"password\": \"Passw0rd!\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Contraseña incorrecta -> 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 401', function () {",
+                  "  pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test('body { message } — la forma que lee el front', function () {",
+                  "  pm.expect(pm.response.json()).to.have.property('message');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"juan@req2ticket.com\",\n  \"password\": \"otra\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Email inexistente -> 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 401', function () {",
+                  "  pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test('mismo mensaje que password incorrecta (no filtra si el email existe)', function () {",
+                  "  pm.expect(pm.response.json().message).to.eql('Email o contraseña incorrectos.');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"nadie@req2ticket.com\",\n  \"password\": \"Passw0rd!\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Campos vacíos -> 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400, no 401 ([ApiController] corta antes de la action)', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"\",\n  \"password\": \"\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "description": "Solo lectura: todavía no hay POST/PUT/DELETE de usuarios.",
+      "item": [
+        {
+          "name": "Listar usuarios",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const users = pm.response.json();",
+                  "",
+                  "pm.test('es un array', function () {",
+                  "  pm.expect(users).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test('ningún usuario expone la contraseña', function () {",
+                  "  users.forEach(function (u) {",
+                  "    pm.expect(u).to.not.have.property('password');",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Obtener usuario por id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "{{userId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Usuario inexistente -> 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 404', function () {",
+                  "  pm.response.to.have.status(404);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/999",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "999"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Epics",
+      "description": "CRUD completo sobre /api/epics.",
+      "item": [
+        {
+          "name": "Listar épicas",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('es un array', function () {",
+                  "  pm.expect(pm.response.json()).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/epics",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "epics"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Crear épica (completa)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('trae header Location', function () {",
+                  "  pm.expect(pm.response.headers.get('Location')).to.be.a('string');",
+                  "});",
+                  "",
+                  "const epic = pm.response.json();",
+                  "",
+                  "pm.test('el back genera el code', function () {",
+                  "  pm.expect(epic.code).to.be.a('string').and.to.have.length.above(0);",
+                  "});",
+                  "",
+                  "// Las requests siguientes (get by id, get by code, update, delete) usan estas dos.",
+                  "pm.collectionVariables.set('epicId', String(epic.id));",
+                  "pm.collectionVariables.set('epicCode', epic.code);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Reportes\",\n  \"description\": \"Métricas de velocity y burndown por sprint.\",\n  \"accentColor\": \"green\",\n  \"priority\": \"urgent\",\n  \"status\": \"active\",\n  \"ownerId\": {{userId}}\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/epics",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "epics"]
+            },
+            "description": "Mismo payload que manda CreateEpicModal en el front."
+          },
+          "response": []
+        },
+        {
+          "name": "Crear épica (solo nombre)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "const epic = pm.response.json();",
+                  "",
+                  "pm.test('los defaults del DTO: priority medium, status backlog', function () {",
+                  "  pm.expect(epic.priority).to.eql('medium');",
+                  "  pm.expect(epic.status).to.eql('backlog');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Solo nombre\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/epics",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "epics"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Obtener épica por id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('el owner viene aplanado en ownerId + ownerName', function () {",
+                  "  const epic = pm.response.json();",
+                  "  pm.expect(epic).to.have.property('ownerId');",
+                  "  pm.expect(epic).to.have.property('ownerName');",
+                  "  pm.expect(epic).to.not.have.property('owner');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/epics/{{epicId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "epics", "{{epicId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Obtener épica por código",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/epics/code/{{epicCode}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "epics", "code", "{{epicCode}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Épica inexistente -> 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 404', function () {",
+                  "  pm.response.to.have.status(404);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/epics/999999",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "epics", "999999"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Id no numérico -> 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('404 por la restricción :int, no 400 de model binding', function () {",
+                  "  pm.response.to.have.status(404);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/epics/abc",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "epics", "abc"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar épica (reemplazo completo)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 204', function () {",
+                  "  pm.response.to.have.status(204);",
+                  "});",
+                  "",
+                  "pm.test('sin body', function () {",
+                  "  pm.expect(pm.response.text()).to.eql('');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Tablero Kanban\",\n  \"description\": \"Columnas configurables y drag & drop.\",\n  \"accentColor\": \"purple\",\n  \"priority\": \"high\",\n  \"status\": \"closed\",\n  \"ownerId\": {{userId}}\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/epics/{{epicId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "epics", "{{epicId}}"]
+            },
+            "description": "PUT es reemplazo total: los campos que no mandes vuelven a su default (priority medium, status backlog)."
+          },
+          "response": []
+        },
+        {
+          "name": "Borrar épica",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 204', function () {",
+                  "  pm.response.to.have.status(204);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/epics/{{epicId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "epics", "{{epicId}}"]
+            },
+            "description": "Borra la épica creada por 'Crear épica (completa)'. Si corrés esta request suelta, revisá qué tiene epicId."
+          },
+          "response": []
+        },
+        {
+          "name": "Validaciones",
+          "description": "Todos estos casos deben dar 400.",
+          "item": [
+            {
+              "name": "Nombre demasiado corto -> 400",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 400', function () {",
+                      "  pm.response.to.have.status(400);",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"ab\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/epics",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "epics"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Color fuera de la paleta -> 400",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 400', function () {",
+                      "  pm.response.to.have.status(400);",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Color inválido\",\n  \"accentColor\": \"#3B82F6\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/epics",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "epics"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Prioridad inexistente -> 400",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 400', function () {",
+                      "  pm.response.to.have.status(400);",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Prioridad inválida\",\n  \"priority\": \"critical\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/epics",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "epics"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Estado inexistente -> 400",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 400', function () {",
+                      "  pm.response.to.have.status(400);",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Estado inválido\",\n  \"status\": \"inProgress\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/epics",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "epics"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Responsable inexistente -> 400",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 400', function () {",
+                      "  pm.response.to.have.status(400);",
+                      "});",
+                      "",
+                      "pm.test('body { message } — viene del ArgumentException del service', function () {",
+                      "  pm.expect(pm.response.json()).to.have.property('message');",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Sin dueño\",\n  \"ownerId\": 999\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/epics",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "epics"]
+                }
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
