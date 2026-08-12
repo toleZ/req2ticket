@@ -3,7 +3,7 @@ import { Plus } from 'lucide-react'
 
 import { CreateEpicModal } from '@/components/features/CreateEpicModal'
 import { EpicRow } from '@/components/features/EpicRow'
-import { createEpic, deleteEpic, getEpics, getUsers, updateEpic } from '@/lib/api'
+import { createEpic, deleteEpic, getEpics, updateEpic } from '@/lib/api'
 
 const CREATE_BUTTON = `inline-flex shrink-0 items-center gap-1.5 rounded-control bg-blue
   px-3 py-2 text-subheadline font-medium text-white transition-[filter] duration-fast
@@ -11,7 +11,6 @@ const CREATE_BUTTON = `inline-flex shrink-0 items-center gap-1.5 rounded-control
 
 export function Features() {
   const [epics, setEpics] = useState([])
-  const [users, setUsers] = useState([])
   const [loadState, setLoadState] = useState('loading') // 'loading' | 'ready' | 'error'
   const [isModalOpen, setIsModalOpen] = useState(false)
 
@@ -21,10 +20,9 @@ export function Features() {
   // síncrona dentro del efecto dispara un render en cascada. `handleRetry` sí lo hace,
   // porque ahí es una respuesta a un click, no el cuerpo del efecto.
   const fetchEpics = useCallback(() => {
-    Promise.all([getEpics(), getUsers()])
-      .then(([nextEpics, nextUsers]) => {
+    getEpics()
+      .then((nextEpics) => {
         setEpics(nextEpics)
-        setUsers(nextUsers)
         setLoadState('ready')
       })
       .catch(() => setLoadState('error'))
@@ -39,15 +37,11 @@ export function Features() {
     fetchEpics()
   }
 
-
-  // El backend todavía no tiene columna para `body` (ver createEpic en lib/api.js), así
-  // que no vuelve en `created`: se guarda acá nomás para poder mostrarlo debajo del
-  // título. No sobrevive a un refresh, porque nunca llegó a persistirse.
+  // Suma lo que devuelve el POST, que ya viene con el id y el código que asignó el backend.
   async function handleCreate(values) {
     const created = await createEpic(values)
-    setEpics((prev) => [...prev, { ...created, body: values.body }])
+    setEpics((prev) => [...prev, created])
   }
-
 
   async function handleUpdateEpic(epic, patch) {
     await updateEpic(epic, patch)
@@ -100,7 +94,6 @@ export function Features() {
             <EpicRow
               key={epic.id}
               epic={epic}
-              users={users}
               onUpdateEpic={handleUpdateEpic}
               onDeleteEpic={handleDeleteEpic}
             />

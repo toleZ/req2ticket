@@ -60,9 +60,5 @@ export function validateEpicForm(values) {
     errors.name = 'Ingresá un nombre para la épica'
   }
 
-  if (!values.body.trim()) {
-    errors.body = 'Ingresá el cuerpo de la épica'
-  }
-
   return errors
 }

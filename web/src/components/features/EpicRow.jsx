@@ -1,12 +1,9 @@
-import { useId, useMemo, useState } from 'react'
+import { useId, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { ChevronRight, Trash2 } from 'lucide-react'
 
 import { DeleteEpicModal } from '@/components/features/DeleteEpicModal'
-import { StoryRow } from '@/components/features/StoryRow'
 import { Badge } from '@/components/ui/Badge'
-import { ProgressBar } from '@/components/ui/ProgressBar'
-import { getMockStories } from '@/data/stories'
 import { cn } from '@/lib/cn'
 import { ACCENT_COLORS, findOption, PRIORITY_OPTIONS, STATUS_OPTIONS } from '@/lib/epicOptions'
 import { springSoft } from '@/lib/motion'
@@ -20,16 +17,12 @@ const TOGGLE_BUTTON = `mt-0.5 grid size-6 shrink-0 place-items-center rounded-co
 const DELETE_BUTTON = `grid size-8 shrink-0 place-items-center rounded-control text-label-tertiary
   transition-colors duration-fast hover:bg-red/12 hover:text-red`
 
-export function EpicRow({ epic, users, onUpdateEpic, onDeleteEpic }) {
+export function EpicRow({ epic, onUpdateEpic, onDeleteEpic }) {
   const panelId = useId()
-  const [isExpanded, setIsExpanded] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
   const [savingField, setSavingField] = useState(null)
   const [saveError, setSaveError] = useState('')
-
-  const stories = useMemo(() => getMockStories(epic, users), [epic, users])
-  const storiesDone = stories.filter((story) => story.done).length
-  const pointsTotal = stories.reduce((sum, story) => sum + story.points, 0)
 
   const accent = findOption(ACCENT_COLORS, epic.accentColor)
   const status = findOption(STATUS_OPTIONS, epic.status)
@@ -52,14 +45,14 @@ export function EpicRow({ epic, users, onUpdateEpic, onDeleteEpic }) {
       <div className="flex items-start gap-2">
         <button
           type="button"
-          onClick={() => setIsExpanded((value) => !value)}
-          aria-expanded={isExpanded}
+          onClick={() => setIsEditing((value) => !value)}
+          aria-expanded={isEditing}
           aria-controls={panelId}
-          aria-label={isExpanded ? 'Colapsar épica' : 'Expandir épica'}
+          aria-label={isEditing ? 'Cerrar edición' : 'Editar épica'}
           className={TOGGLE_BUTTON}
         >
           <ChevronRight
-            className={cn('size-4 transition-transform duration-fast ease-out-quad', isExpanded && 'rotate-90')}
+            className={cn('size-4 transition-transform duration-fast ease-out-quad', isEditing && 'rotate-90')}
             aria-hidden="true"
           />
         </button>
@@ -73,20 +66,15 @@ export function EpicRow({ epic, users, onUpdateEpic, onDeleteEpic }) {
             <span className="text-caption text-label-tertiary">{epic.code}</span>
             <h3 className="text-body font-medium text-label">{epic.name}</h3>
             {status && <Badge tone={status.tone}>{status.label}</Badge>}
+            {priority && <Badge tone={priority.tone}>{priority.label}</Badge>}
+            {epic.ownerName && (
+              <span className="text-footnote text-label-secondary">{epic.ownerName}</span>
+            )}
           </div>
-
-          {epic.body && <p className="mt-1 text-footnote text-label-secondary">{epic.body}</p>}
 
           {epic.description && (
             <p className="mt-1 text-footnote text-label-secondary">{epic.description}</p>
           )}
-
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <ProgressBar value={storiesDone} max={stories.length} className="max-w-52" />
-            <span className="shrink-0 text-caption text-label-tertiary">
-              {storiesDone}/{stories.length} historias · {pointsTotal} pts · {priority?.label}
-            </span>
-          </div>
         </div>
 
         <button
@@ -100,7 +88,7 @@ export function EpicRow({ epic, users, onUpdateEpic, onDeleteEpic }) {
       </div>
 
       <AnimatePresence initial={false}>
-        {isExpanded && (
+        {isEditing && (
           <motion.div
             id={panelId}
             initial={{ height: 0, opacity: 0 }}
@@ -149,16 +137,6 @@ export function EpicRow({ epic, users, onUpdateEpic, onDeleteEpic }) {
                   </select>
                 </label>
               </div>
-
-              {stories.length > 0 ? (
-                <ul className="flex flex-col gap-1">
-                  {stories.map((story) => (
-                    <StoryRow key={story.id} story={story} epicName={epic.name} />
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-footnote text-label-tertiary">Sin historias todavía.</p>
-              )}
             </div>
           </motion.div>
         )}
