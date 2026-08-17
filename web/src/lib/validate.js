@@ -62,3 +62,29 @@ export function validateEpicForm(values) {
 
   return errors
 }
+
+export function validateSprintForm(values) {
+  const errors = {}
+
+  if (!values.name.trim()) {
+    errors.name = 'Ingresá un nombre para el sprint'
+  }
+
+  if (!values.startDate) {
+    errors.startDate = 'Ingresá la fecha de inicio'
+  }
+
+  if (!values.endDate) {
+    errors.endDate = 'Ingresá la fecha de fin'
+  }
+
+  if (values.startDate && values.endDate && values.endDate < values.startDate) {
+    errors.endDate = 'La fecha de fin no puede ser anterior a la de inicio'
+  }
+
+  if (values.capacity === '' || Number(values.capacity) < 0) {
+    errors.capacity = 'Ingresá una capacidad válida'
+  }
+
+  return errors
+}

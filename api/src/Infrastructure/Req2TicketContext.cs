@@ -9,6 +9,8 @@ public class Req2TicketContext : DbContext
 
     public DbSet<Epic> Epics { get; set; }
 
+    public DbSet<Sprint> Sprints { get; set; }
+
     public Req2TicketContext(DbContextOptions<Req2TicketContext> options) : base(options)
     {
     }
@@ -173,6 +175,39 @@ public class Req2TicketContext : DbContext
                 Priority = EpicPriority.Low,
                 Status = EpicStatus.Closed,
                 OwnerId = 4
+            }
+        );
+
+        modelBuilder.Entity<Sprint>().HasData(
+            new Sprint
+            {
+                Id = 1,
+                Name = "Sprint 6",
+                Goal = "Cerrar el bloque de autenticación y dejar el listado de facturas en producción.",
+                StartDate = new DateOnly(2026, 7, 22),
+                EndDate = new DateOnly(2026, 8, 5),
+                Capacity = 13,
+                Status = SprintStatus.Completed
+            },
+            new Sprint
+            {
+                Id = 2,
+                Name = "Sprint 7",
+                Goal = "Segundo factor operativo y centro de incidencias abierto a los primeros clientes.",
+                StartDate = new DateOnly(2026, 8, 5),
+                EndDate = new DateOnly(2026, 8, 19),
+                Capacity = 34,
+                Status = SprintStatus.Active
+            },
+            new Sprint
+            {
+                Id = 3,
+                Name = "Sprint 8",
+                Goal = "Pagos con tarjeta y panel de administración de cuentas.",
+                StartDate = new DateOnly(2026, 8, 19),
+                EndDate = new DateOnly(2026, 9, 2),
+                Capacity = 30,
+                Status = SprintStatus.Planned
             }
         );
     }

@@ -116,3 +116,36 @@ export function updateEpic(epic, patch) {
 export function deleteEpic(id) {
   return del(`/api/epics/${id}`)
 }
+
+export function getSprints() {
+  return request('/api/sprints')
+}
+
+export function createSprint(values) {
+  return post('/api/sprints', {
+    name: values.name,
+    goal: values.goal || null,
+    startDate: values.startDate,
+    endDate: values.endDate,
+    capacity: Number(values.capacity),
+    status: values.status,
+  })
+}
+
+/* El PUT del backend reemplaza el sprint entero, así que `patch` se mezcla sobre `sprint`
+   (el que ya tenemos en memoria) para no perder los campos que no cambiaron. */
+export function updateSprint(sprint, patch) {
+  const merged = { ...sprint, ...patch }
+  return put(`/api/sprints/${sprint.id}`, {
+    name: merged.name,
+    goal: merged.goal || null,
+    startDate: merged.startDate,
+    endDate: merged.endDate,
+    capacity: Number(merged.capacity),
+    status: merged.status,
+  })
+}
+
+export function deleteSprint(id) {
+  return del(`/api/sprints/${id}`)
+}
