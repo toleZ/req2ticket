@@ -3,7 +3,15 @@ import { ArrowUpDown, Plus, Search } from 'lucide-react'
 
 import { CreateStoryModal } from '@/components/features/CreateStoryModal'
 import { StoryRow } from '@/components/features/StoryRow'
-import { createStory, deleteStory, getEpics, getStories, getUsers, updateStory } from '@/lib/api'
+import {
+  createStory,
+  deleteStory,
+  getEpics,
+  getSprints,
+  getStories,
+  getUsers,
+  updateStory,
+} from '@/lib/api'
 import { STORY_PRIORITY_OPTIONS, STORY_STATUS_OPTIONS } from '@/lib/storyOptions'
 
 const CREATE_BUTTON = `inline-flex shrink-0 items-center gap-1.5 rounded-control bg-blue
@@ -23,12 +31,14 @@ export function Stories() {
   const [stories, setStories] = useState([])
   const [epics, setEpics] = useState([])
   const [users, setUsers] = useState([])
+  const [sprints, setSprints] = useState([])
   const [loadState, setLoadState] = useState('loading') // 'loading' | 'ready' | 'error'
   const [isModalOpen, setIsModalOpen] = useState(false)
 
   const [search, setSearch] = useState('')
   const [assigneeFilter, setAssigneeFilter] = useState('')
   const [epicFilter, setEpicFilter] = useState('')
+  const [sprintFilter, setSprintFilter] = useState('')
   const [priorityFilter, setPriorityFilter] = useState('')
   const [sortByPriority, setSortByPriority] = useState(false)
 
@@ -38,11 +48,12 @@ export function Stories() {
   // síncrona dentro del efecto dispara un render en cascada. `handleRetry` sí lo hace,
   // porque ahí es una respuesta a un click, no el cuerpo del efecto.
   const fetchAll = useCallback(() => {
-    Promise.all([getStories(), getEpics(), getUsers()])
-      .then(([nextStories, nextEpics, nextUsers]) => {
+    Promise.all([getStories(), getEpics(), getUsers(), getSprints()])
+      .then(([nextStories, nextEpics, nextUsers, nextSprints]) => {
         setStories(nextStories)
         setEpics(nextEpics)
         setUsers(nextUsers)
+        setSprints(nextSprints)
         setLoadState('ready')
       })
       .catch(() => setLoadState('error'))
@@ -63,9 +74,20 @@ export function Stories() {
     setStories((prev) => [...prev, created])
   }
 
+  // El PUT no devuelve cuerpo, así que el merge es local. Si lo que cambió es el sprint
+  // hay que recalcular también su nombre, que es lo que muestra el badge de la fila.
   async function handleUpdateStory(story, patch) {
     await updateStory(story, patch)
-    setStories((prev) => prev.map((s) => (s.id === story.id ? { ...s, ...patch } : s)))
+
+    const merged = { ...patch }
+    if ('sprintId' in patch) {
+      const sprintId = patch.sprintId ? Number(patch.sprintId) : null
+      const sprint = sprints.find((s) => s.id === sprintId)
+      merged.sprintId = sprintId
+      merged.sprintName = sprint ? sprint.name : null
+    }
+
+    setStories((prev) => prev.map((s) => (s.id === story.id ? { ...s, ...merged } : s)))
   }
 
   async function handleDeleteStory(story) {
@@ -80,10 +102,12 @@ export function Stories() {
       if (term && !story.title.toLowerCase().includes(term)) return false
       if (assigneeFilter && String(story.assigneeId) !== assigneeFilter) return false
       if (epicFilter && String(story.epicId) !== epicFilter) return false
+      if (sprintFilter === 'backlog' && story.sprintId !== null) return false
+      if (sprintFilter && sprintFilter !== 'backlog' && String(story.sprintId) !== sprintFilter) return false
       if (priorityFilter && story.priority !== priorityFilter) return false
       return true
     })
-  }, [stories, search, assigneeFilter, epicFilter, priorityFilter])
+  }, [stories, search, assigneeFilter, epicFilter, sprintFilter, priorityFilter])
 
   const columns = useMemo(
     () =>
@@ -160,6 +184,16 @@ export function Stories() {
             ))}
           </select>
 
+          <select value={sprintFilter} onChange={(e) => setSprintFilter(e.target.value)} className={FILTER_SELECT}>
+            <option value="">Sprint</option>
+            <option value="backlog">Sin sprint</option>
+            {sprints.map((sprint) => (
+              <option key={sprint.id} value={sprint.id}>
+                {sprint.name}
+              </option>
+            ))}
+          </select>
+
           <select
             value={priorityFilter}
             onChange={(e) => setPriorityFilter(e.target.value)}
@@ -215,6 +249,7 @@ export function Stories() {
                     <StoryRow
                       key={story.id}
                       story={story}
+                      sprints={sprints}
                       onUpdateStory={handleUpdateStory}
                       onDeleteStory={handleDeleteStory}
                     />
@@ -226,7 +261,13 @@ export function Stories() {
         </div>
       )}
 
-      <CreateStoryModal isOpen={isModalOpen} onClose={closeModal} onCreate={handleCreate} epics={epics} />
+      <CreateStoryModal
+        isOpen={isModalOpen}
+        onClose={closeModal}
+        onCreate={handleCreate}
+        epics={epics}
+        sprints={sprints}
+      />
     </section>
   )
 }

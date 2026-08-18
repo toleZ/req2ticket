@@ -20,7 +20,7 @@ const TOGGLE_BUTTON = `mt-0.5 grid size-6 shrink-0 place-items-center rounded-co
 const DELETE_BUTTON = `grid size-8 shrink-0 place-items-center rounded-control text-label-tertiary
   transition-colors duration-fast hover:bg-red/12 hover:text-red`
 
-export function StoryRow({ story, onUpdateStory, onDeleteStory }) {
+export function StoryRow({ story, sprints, onUpdateStory, onDeleteStory }) {
   const panelId = useId()
   const [isEditing, setIsEditing] = useState(false)
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
@@ -65,6 +65,8 @@ export function StoryRow({ story, onUpdateStory, onDeleteStory }) {
         <span className="min-w-0 flex-1 truncate text-subheadline text-label">{story.title}</span>
 
         {story.epicName && <Badge tone="neutral">{story.epicName}</Badge>}
+
+        {story.sprintName && <Badge tone="purple">{story.sprintName}</Badge>}
 
         <span className="flex shrink-0 items-center gap-1.5">
           <span className="text-caption text-label-tertiary">
@@ -118,6 +120,23 @@ export function StoryRow({ story, onUpdateStory, onDeleteStory }) {
                     {STORY_STATUS_OPTIONS.map((option) => (
                       <option key={option.value} value={option.value}>
                         {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="flex items-center gap-1.5 text-footnote text-label-secondary">
+                  Sprint
+                  <select
+                    value={story.sprintId ?? ''}
+                    disabled={savingField === 'sprintId'}
+                    onChange={(e) => handleFieldChange('sprintId', e.target.value)}
+                    className={SELECT_CLASSES}
+                  >
+                    <option value="">Sin sprint</option>
+                    {sprints.map((sprint) => (
+                      <option key={sprint.id} value={sprint.id}>
+                        {sprint.name}
                       </option>
                     ))}
                   </select>

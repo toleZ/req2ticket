@@ -6,7 +6,7 @@ acá y lo mandes en un PR.
 
 | Archivo | Qué es |
 |---|---|
-| `req2ticket.postman_collection.json` | La colección: 27 requests en 3 carpetas + subcarpeta `Validaciones`, con tests |
+| `req2ticket.postman_collection.json` | La colección: 63 requests en 5 carpetas (Auth, Users, Epics, Sprints, Historias) + una subcarpeta `Validaciones` en las tres últimas, con tests |
 | `req2ticket.local.postman_environment.json` | El environment `req2ticket - Local`: solo `baseUrl` |
 
 ## Importar
@@ -30,8 +30,8 @@ defecto): volvé a correr el login.
 
 `Registro nuevo` usa `beta+{{$timestamp}}@req2ticket.com` para que la colección se pueda correr
 muchas veces seguidas sin chocar con el registro de la corrida anterior, y guarda su token en
-`viewerToken`. Eso es lo que hace posible el caso `Viewer no puede crear épicas -> 403`, que
-prueba que la autorización mira el rol y no solo la sesión.
+`viewerToken`. Eso es lo que hace posible los casos `Viewer no puede crear épicas / historias /
+sprints -> 403`, que prueban que la autorización mira el rol y no solo la sesión.
 
 ## Actualizar la colección (cuando agregás o cambiás un endpoint)
 
@@ -53,19 +53,28 @@ antes de commitear — si no, el resto del equipo va a empezar a ver duplicados.
 
 ## Cómo están armadas las variables
 
-Las variables de colección (`baseUrl`, `seedEmail`, `seedPassword`, `userId`, `epicId`, `epicCode`)
-viven adentro del JSON de la colección, así que la colección funciona aunque no selecciones ningún
-environment. El environment define **solo** `baseUrl` y pisa la de la colección: es el único valor
-que cambia si algún día apuntamos a un server que no sea local.
+Las variables de colección (`baseUrl`, `seedEmail`, `seedPassword`, `userId`, `epicId`, `epicCode`,
+`sprintId`, `storyId`, `storyCode`, `backlogStoryId`) viven adentro del JSON de la colección, así que
+la colección funciona aunque no selecciones ningún environment. El environment define **solo**
+`baseUrl` y pisa la de la colección: es el único valor que cambia si algún día apuntamos a un server
+que no sea local.
 
-Tres de esas variables las escriben los tests solos durante la corrida:
+Varias de esas variables las escriben los tests solos durante la corrida:
 
 - `Login correcto` guarda `userId`
 - `Crear épica (completa)` guarda `epicId` y `epicCode`, y las usan las requests de GET by id,
   GET by code, PUT y DELETE
+- `Crear sprint` guarda `sprintId`
+- `Crear historia (en un sprint)` guarda `storyId` y `storyCode`, y
+  `Crear historia (sin sprint, va al backlog)` guarda `backlogStoryId`
 
 Por eso la colección se puede correr entera con el **Runner** de arriba a abajo. Los valores que
 están hardcodeados en el JSON son solo defaults para cuando corrés una request suelta.
+
+Las requests que cruzan entidades (`Historias de la épica`, `Historias del sprint`, y la creación de
+historias) apuntan a ids del seed —épica 1, sprint 2— y no a los recién creados: así siguen andando
+cuando las corrés sueltas, sin depender de que la request anterior haya pasado. Las carpetas
+`Sprints` e `Historias` borran al final todo lo que crearon, así que la base queda como estaba.
 
 ## Ojo con las contraseñas
 

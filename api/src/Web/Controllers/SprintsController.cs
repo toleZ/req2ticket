@@ -13,10 +13,12 @@ namespace Web.Controllers;
 public class SprintsController : ControllerBase
 {
     private readonly SprintService _sprintService;
+    private readonly StoryService _storyService;
 
-    public SprintsController(SprintService sprintService)
+    public SprintsController(SprintService sprintService, StoryService storyService)
     {
         _sprintService = sprintService;
+        _storyService = storyService;
     }
 
     [HttpGet]
@@ -38,6 +40,21 @@ public class SprintsController : ControllerBase
         }
 
         return Ok(SprintResponse.FromEntity(sprint));
+    }
+
+    // 404 when the sprint does not exist, so an empty list always means "no stories" and
+    // never "wrong id".
+    [HttpGet("{id:int}/stories")]
+    public async Task<IActionResult> GetStories([FromRoute] int id)
+    {
+        Sprint? sprint = await _sprintService.GetByIdAsync(id);
+        if (sprint is null)
+        {
+            return NotFound();
+        }
+
+        List<Story> stories = await _storyService.GetBySprintIdAsync(id);
+        return Ok(stories.Select(StoryResponse.FromEntity));
     }
 
     [Authorize(Policy = "CanEditSprints")]

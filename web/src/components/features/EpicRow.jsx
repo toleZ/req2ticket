@@ -3,10 +3,13 @@ import { AnimatePresence, motion } from 'motion/react'
 import { ChevronRight, Trash2 } from 'lucide-react'
 
 import { DeleteEpicModal } from '@/components/features/DeleteEpicModal'
+import { StoryList } from '@/components/features/StoryList'
 import { Badge } from '@/components/ui/Badge'
+import { ProgressBar } from '@/components/ui/ProgressBar'
 import { cn } from '@/lib/cn'
 import { ACCENT_COLORS, findOption, PRIORITY_OPTIONS, STATUS_OPTIONS } from '@/lib/epicOptions'
 import { springSoft } from '@/lib/motion'
+import { summarizeStories } from '@/lib/storyStats'
 
 const SELECT_CLASSES =
   'rounded-control border border-separator bg-elevated px-2 py-1 text-footnote text-label disabled:opacity-50'
@@ -17,7 +20,7 @@ const TOGGLE_BUTTON = `mt-0.5 grid size-6 shrink-0 place-items-center rounded-co
 const DELETE_BUTTON = `grid size-8 shrink-0 place-items-center rounded-control text-label-tertiary
   transition-colors duration-fast hover:bg-red/12 hover:text-red`
 
-export function EpicRow({ epic, onUpdateEpic, onDeleteEpic }) {
+export function EpicRow({ epic, stories, onUpdateEpic, onDeleteEpic }) {
   const panelId = useId()
   const [isEditing, setIsEditing] = useState(false)
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
@@ -27,6 +30,7 @@ export function EpicRow({ epic, onUpdateEpic, onDeleteEpic }) {
   const accent = findOption(ACCENT_COLORS, epic.accentColor)
   const status = findOption(STATUS_OPTIONS, epic.status)
   const priority = findOption(PRIORITY_OPTIONS, epic.priority)
+  const stats = summarizeStories(stories)
 
   async function handleFieldChange(field, value) {
     setSaveError('')
@@ -70,6 +74,14 @@ export function EpicRow({ epic, onUpdateEpic, onDeleteEpic }) {
             {epic.ownerName && (
               <span className="text-footnote text-label-secondary">{epic.ownerName}</span>
             )}
+          </div>
+
+          <div className="mt-1.5 flex flex-wrap items-center gap-2">
+            <span className="text-caption text-label-tertiary">
+              {stats.completed}/{stats.total} {stats.total === 1 ? 'historia' : 'historias'} ·{' '}
+              {stats.pointsCompleted}/{stats.points} pts
+            </span>
+            <ProgressBar value={stats.completed} max={stats.total} size="sm" className="w-20" />
           </div>
 
           {epic.description && (
@@ -136,6 +148,19 @@ export function EpicRow({ epic, onUpdateEpic, onDeleteEpic }) {
                     ))}
                   </select>
                 </label>
+              </div>
+
+              <div>
+                <p className="text-footnote font-medium text-label-secondary">Historias</p>
+                {stats.total === 0 ? (
+                  <p className="mt-1.5 text-footnote text-label-tertiary">
+                    Esta épica todavía no tiene historias.
+                  </p>
+                ) : (
+                  <div className="mt-1.5">
+                    <StoryList stories={stories} />
+                  </div>
+                )}
               </div>
             </div>
           </motion.div>

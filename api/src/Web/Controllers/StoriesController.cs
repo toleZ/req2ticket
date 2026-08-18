@@ -26,6 +26,15 @@ public class StoriesController : ControllerBase
         return Ok(stories.Select(StoryResponse.FromEntity));
     }
 
+    // The backlog is the stories that are not planned into any sprint. It lives here and
+    // not under /api/sprints because there is no sprint to hang it from.
+    [HttpGet("backlog")]
+    public async Task<IActionResult> GetBacklog()
+    {
+        List<Story> stories = await _storyService.GetBySprintIdAsync(null);
+        return Ok(stories.Select(StoryResponse.FromEntity));
+    }
+
     // The :int constraint keeps /api/stories/abc from matching and failing model binding
     // with a 400; without it, a bad id looks like a validation error instead of a 404.
     [HttpGet("{id:int}")]

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Calendar, CheckCheck, Flag, Trash2 } from 'lucide-react'
 
+import { StoryList } from '@/components/features/StoryList'
 import { CompleteSprintModal } from '@/components/sprints/CompleteSprintModal'
 import { DeleteSprintModal } from '@/components/sprints/DeleteSprintModal'
 import { Badge } from '@/components/ui/Badge'
@@ -8,6 +9,7 @@ import { ProgressBar } from '@/components/ui/ProgressBar'
 import { daysRemaining, formatDateRange } from '@/lib/dates'
 import { findOption } from '@/lib/epicOptions'
 import { SPRINT_STATUS_OPTIONS } from '@/lib/sprintOptions'
+import { summarizeStories } from '@/lib/storyStats'
 
 const COMPLETE_BUTTON = `inline-flex shrink-0 items-center gap-1.5 rounded-control bg-fill-tertiary
   px-3 py-1.5 text-footnote font-medium text-label transition-colors duration-fast
@@ -19,7 +21,7 @@ const DELETE_BUTTON = `grid size-8 shrink-0 place-items-center rounded-control t
 const TOGGLE_BUTTON = `mt-3 w-full border-t border-separator pt-3 text-left text-subheadline
   text-label-secondary transition-colors duration-fast hover:text-label`
 
-export function SprintCard({ sprint, onUpdateSprint, onDeleteSprint }) {
+export function SprintCard({ sprint, stories, onUpdateSprint, onDeleteSprint }) {
   const [isExpanded, setIsExpanded] = useState(false)
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
   const [isCompleteOpen, setIsCompleteOpen] = useState(false)
@@ -27,13 +29,13 @@ export function SprintCard({ sprint, onUpdateSprint, onDeleteSprint }) {
   const status = findOption(SPRINT_STATUS_OPTIONS, sprint.status)
   const daysLeft = daysRemaining(sprint.endDate)
 
-  // Story existe, pero no tiene SprintId: no hay relación Sprint-Story en ninguna de las
-  // dos direcciones, así que un sprint todavía no puede tener tickets asignados y estos
-  // contadores quedan en 0 hasta que esa relación se agregue.
-  const ticketsTotal = 0
-  const ticketsCompleted = 0
-  const pointsCompleted = 0
-  const pointsAssigned = 0
+  // `stories` son las historias que tienen este sprint asignado, ya filtradas por la
+  // página: la card no vuelve a pedirlas a la API.
+  const stats = summarizeStories(stories)
+  const ticketsTotal = stats.total
+  const ticketsCompleted = stats.completed
+  const pointsCompleted = stats.pointsCompleted
+  const pointsAssigned = stats.points
   const progressPct = ticketsTotal > 0 ? Math.round((ticketsCompleted / ticketsTotal) * 100) : 0
 
   return (
@@ -86,7 +88,7 @@ export function SprintCard({ sprint, onUpdateSprint, onDeleteSprint }) {
         <div className="min-w-48 flex-1">
           <div className="flex items-center justify-between text-footnote text-label-secondary">
             <span>
-              {ticketsCompleted} de {ticketsTotal} tickets completados
+              {ticketsCompleted} de {ticketsTotal} historias completadas
             </span>
             <span>{progressPct}%</span>
           </div>
@@ -119,14 +121,21 @@ export function SprintCard({ sprint, onUpdateSprint, onDeleteSprint }) {
         aria-expanded={isExpanded}
         className={TOGGLE_BUTTON}
       >
-        {isExpanded ? 'Ocultar tickets' : `Ver ${ticketsTotal} tickets`}
+        {isExpanded
+          ? 'Ocultar historias'
+          : `Ver ${ticketsTotal} ${ticketsTotal === 1 ? 'historia' : 'historias'}`}
       </button>
 
-      {isExpanded && (
-        <p className="px-0.5 pb-0.5 text-footnote text-label-tertiary">
-          Todavía no hay tickets asignados a este sprint.
-        </p>
-      )}
+      {isExpanded &&
+        (ticketsTotal === 0 ? (
+          <p className="px-0.5 pb-0.5 text-footnote text-label-tertiary">
+            Todavía no hay historias asignadas a este sprint.
+          </p>
+        ) : (
+          <div className="px-0.5 pb-0.5">
+            <StoryList stories={stories} />
+          </div>
+        ))}
 
       <CompleteSprintModal
         isOpen={isCompleteOpen}
