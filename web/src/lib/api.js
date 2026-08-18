@@ -86,8 +86,7 @@ export function getEpics() {
   return request('/api/epics')
 }
 
-/* Traduce los valores del formulario al contrato de la API. El campo `body` del modal
-   todavía no existe en el backend, así que no se envía. */
+/* Traduce los valores del formulario al contrato de la API. */
 export function createEpic(values) {
   return post('/api/epics', {
     name: values.name,
@@ -130,6 +129,7 @@ export function createStory(values) {
     status: values.status,
     points: Number(values.points) || 0,
     assigneeId: values.assigneeId ? Number(values.assigneeId) : null,
+    sprintId: values.sprintId ? Number(values.sprintId) : null,
     criteriaTotal: Number(values.criteriaTotal) || 0,
   })
 }
@@ -146,6 +146,7 @@ export function updateStory(story, patch) {
     status: merged.status,
     points: Number(merged.points) || 0,
     assigneeId: merged.assigneeId ? Number(merged.assigneeId) : null,
+    sprintId: merged.sprintId ? Number(merged.sprintId) : null,
     criteriaTotal: Number(merged.criteriaTotal) || 0,
     criteriaDone: Number(merged.criteriaDone) || 0,
   })

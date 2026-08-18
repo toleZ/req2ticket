@@ -12,12 +12,18 @@ public class StoryService
     private readonly IStoryRepository _storyRepository;
     private readonly IEpicRepository _epicRepository;
     private readonly IUserRepository _userRepository;
+    private readonly ISprintRepository _sprintRepository;
 
-    public StoryService(IStoryRepository storyRepository, IEpicRepository epicRepository, IUserRepository userRepository)
+    public StoryService(
+        IStoryRepository storyRepository,
+        IEpicRepository epicRepository,
+        IUserRepository userRepository,
+        ISprintRepository sprintRepository)
     {
         _storyRepository = storyRepository;
         _epicRepository = epicRepository;
         _userRepository = userRepository;
+        _sprintRepository = sprintRepository;
     }
 
     public async Task<List<Story>> GetAllAsync() =>
@@ -29,10 +35,18 @@ public class StoryService
     public async Task<Story?> GetByCodeAsync(string code) =>
         await _storyRepository.GetByCodeAsync(code);
 
+    public async Task<List<Story>> GetByEpicIdAsync(int epicId) =>
+        await _storyRepository.GetByEpicIdAsync(epicId);
+
+    // A null sprintId returns the backlog.
+    public async Task<List<Story>> GetBySprintIdAsync(int? sprintId) =>
+        await _storyRepository.GetBySprintIdAsync(sprintId);
+
     public async Task<Story> CreateAsync(Story story)
     {
         await EnsureEpicExistsAsync(story.EpicId);
         await EnsureAssigneeExistsAsync(story.AssigneeId);
+        await EnsureSprintExistsAsync(story.SprintId);
 
         story.Code = await GenerateUniqueCodeAsync();
 
@@ -51,6 +65,7 @@ public class StoryService
 
         await EnsureEpicExistsAsync(changes.EpicId);
         await EnsureAssigneeExistsAsync(changes.AssigneeId);
+        await EnsureSprintExistsAsync(changes.SprintId);
 
         // Code is deliberately absent: it is assigned once on create and never updated.
         story.Title = changes.Title;
@@ -60,6 +75,7 @@ public class StoryService
         story.Status = changes.Status;
         story.Points = changes.Points;
         story.AssigneeId = changes.AssigneeId;
+        story.SprintId = changes.SprintId;
         story.CriteriaTotal = changes.CriteriaTotal;
         story.CriteriaDone = changes.CriteriaDone;
 
@@ -117,6 +133,21 @@ public class StoryService
         if (assignee is null)
         {
             throw new ArgumentException($"No existe un usuario con Id {assigneeId}.");
+        }
+    }
+
+    // Null is valid and means the backlog, so only a sprint that was named has to exist.
+    private async Task EnsureSprintExistsAsync(int? sprintId)
+    {
+        if (sprintId is null)
+        {
+            return;
+        }
+
+        Sprint? sprint = await _sprintRepository.GetByIdAsync(sprintId.Value);
+        if (sprint is null)
+        {
+            throw new ArgumentException($"No existe un sprint con Id {sprintId}.");
         }
     }
 }

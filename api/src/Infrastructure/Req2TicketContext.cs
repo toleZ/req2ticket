@@ -47,6 +47,15 @@ public class Req2TicketContext : DbContext
             .HasForeignKey(s => s.AssigneeId)
             .OnDelete(DeleteBehavior.SetNull);
 
+        // Deleting a sprint does not delete its stories: they go back to the backlog,
+        // same rule as Epic.OwnerId and Story.AssigneeId. A story outlives the sprint it
+        // was planned into.
+        modelBuilder.Entity<Story>()
+            .HasOne(s => s.Sprint)
+            .WithMany()
+            .HasForeignKey(s => s.SprintId)
+            .OnDelete(DeleteBehavior.SetNull);
+
         modelBuilder.Entity<Story>()
             .HasIndex(s => s.Code)
             .IsUnique();
@@ -212,6 +221,7 @@ public class Req2TicketContext : DbContext
                 Status = StoryStatus.Done,
                 Points = 5,
                 AssigneeId = 1,
+                SprintId = 1,
                 CriteriaTotal = 3,
                 CriteriaDone = 3
             },
@@ -225,6 +235,7 @@ public class Req2TicketContext : DbContext
                 Status = StoryStatus.InProgress,
                 Points = 3,
                 AssigneeId = 4,
+                SprintId = 2,
                 CriteriaTotal = 3,
                 CriteriaDone = 1
             },
@@ -238,6 +249,7 @@ public class Req2TicketContext : DbContext
                 Status = StoryStatus.Todo,
                 Points = 8,
                 AssigneeId = 2,
+                SprintId = null,
                 CriteriaTotal = 4,
                 CriteriaDone = 0
             },
@@ -251,6 +263,7 @@ public class Req2TicketContext : DbContext
                 Status = StoryStatus.Todo,
                 Points = 8,
                 AssigneeId = null,
+                SprintId = 3,
                 CriteriaTotal = 2,
                 CriteriaDone = 0
             },
@@ -264,6 +277,7 @@ public class Req2TicketContext : DbContext
                 Status = StoryStatus.InProgress,
                 Points = 5,
                 AssigneeId = 3,
+                SprintId = 2,
                 CriteriaTotal = 3,
                 CriteriaDone = 2
             },
@@ -277,6 +291,7 @@ public class Req2TicketContext : DbContext
                 Status = StoryStatus.Todo,
                 Points = 5,
                 AssigneeId = 3,
+                SprintId = 3,
                 CriteriaTotal = 2,
                 CriteriaDone = 0
             },
@@ -290,6 +305,7 @@ public class Req2TicketContext : DbContext
                 Status = StoryStatus.InProgress,
                 Points = 3,
                 AssigneeId = 4,
+                SprintId = 2,
                 CriteriaTotal = 3,
                 CriteriaDone = 1
             },
@@ -303,6 +319,7 @@ public class Req2TicketContext : DbContext
                 Status = StoryStatus.Todo,
                 Points = 2,
                 AssigneeId = 2,
+                SprintId = null,
                 CriteriaTotal = 2,
                 CriteriaDone = 0
             },
@@ -316,6 +333,7 @@ public class Req2TicketContext : DbContext
                 Status = StoryStatus.Done,
                 Points = 2,
                 AssigneeId = 4,
+                SprintId = 1,
                 CriteriaTotal = 2,
                 CriteriaDone = 2
             }

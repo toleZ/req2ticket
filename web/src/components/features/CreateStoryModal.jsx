@@ -13,6 +13,7 @@ const INITIAL_VALUES = {
   status: 'todo',
   points: '',
   assigneeId: '',
+  sprintId: '',
   criteriaTotal: '',
 }
 
@@ -21,7 +22,7 @@ const INPUT_CLASSES =
 
 const LABEL_CLASSES = 'mb-1 block text-subheadline font-medium text-label'
 
-export function CreateStoryModal({ isOpen, onClose, onCreate, epics }) {
+export function CreateStoryModal({ isOpen, onClose, onCreate, epics, sprints }) {
   const [values, setValues] = useState(INITIAL_VALUES)
   const [errors, setErrors] = useState({})
   const [submitting, setSubmitting] = useState(false)
@@ -229,6 +230,25 @@ export function CreateStoryModal({ isOpen, onClose, onCreate, epics }) {
             {users.map((user) => (
               <option key={user.id} value={user.id}>
                 {user.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label htmlFor="story-sprint" className={LABEL_CLASSES}>
+            Sprint <span className="font-normal text-label-tertiary">(opcional)</span>
+          </label>
+          <select
+            id="story-sprint"
+            value={values.sprintId}
+            onChange={set('sprintId')}
+            className={INPUT_CLASSES}
+          >
+            <option value="">Sin sprint (backlog)</option>
+            {sprints.map((sprint) => (
+              <option key={sprint.id} value={sprint.id}>
+                {sprint.name}
               </option>
             ))}
           </select>

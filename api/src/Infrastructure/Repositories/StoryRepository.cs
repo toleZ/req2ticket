@@ -14,6 +14,7 @@ public class StoryRepository : BaseRepository<Story>, IStoryRepository
         await _dbSet
             .Include(s => s.Epic)
             .Include(s => s.Assignee)
+            .Include(s => s.Sprint)
             .AsNoTracking()
             .OrderBy(s => s.Id)
             .ToListAsync();
@@ -22,6 +23,7 @@ public class StoryRepository : BaseRepository<Story>, IStoryRepository
         await _dbSet
             .Include(s => s.Epic)
             .Include(s => s.Assignee)
+            .Include(s => s.Sprint)
             .AsNoTracking()
             .FirstOrDefaultAsync(s => s.Code == code);
 
@@ -32,6 +34,27 @@ public class StoryRepository : BaseRepository<Story>, IStoryRepository
         await _dbSet
             .Include(s => s.Epic)
             .Include(s => s.Assignee)
+            .Include(s => s.Sprint)
             .AsNoTracking()
             .FirstOrDefaultAsync(s => s.Id == id);
+
+    public async Task<List<Story>> GetByEpicIdAsync(int epicId) =>
+        await _dbSet
+            .Include(s => s.Epic)
+            .Include(s => s.Assignee)
+            .Include(s => s.Sprint)
+            .AsNoTracking()
+            .Where(s => s.EpicId == epicId)
+            .OrderBy(s => s.Id)
+            .ToListAsync();
+
+    public async Task<List<Story>> GetBySprintIdAsync(int? sprintId) =>
+        await _dbSet
+            .Include(s => s.Epic)
+            .Include(s => s.Assignee)
+            .Include(s => s.Sprint)
+            .AsNoTracking()
+            .Where(s => s.SprintId == sprintId)
+            .OrderBy(s => s.Id)
+            .ToListAsync();
 }

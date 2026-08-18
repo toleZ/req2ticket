@@ -14,12 +14,22 @@
 #
 # Roles, de menor a mayor privilegio:
 #   viewer | qa | developer | scrumMaster | productOwner | admin | superAdmin
-# Escribir épicas (POST, PUT, DELETE) exige cualquier rol menos viewer.
+# Escribir épicas, historias y sprints (POST, PUT, DELETE) exige cualquier rol menos viewer.
 #
-# Valores válidos (deben coincidir con web/src/lib/epicOptions.js):
+# Valores válidos de épica (deben coincidir con web/src/lib/epicOptions.js):
 #   priority    -> low | medium | high | urgent
 #   status      -> backlog | active | closed
 #   accentColor -> blue | purple | indigo | teal | green | orange | red | pink | mint | yellow
+#
+# Valores válidos de historia (web/src/lib/storyOptions.js):
+#   priority -> low | medium | high | critical
+#   status   -> todo | inProgress | done
+#
+# Valores válidos de sprint (web/src/lib/sprintOptions.js):
+#   status -> planned | active | completed
+#
+# Una historia pertenece siempre a una épica (epicId obligatorio) y opcionalmente a un
+# sprint (sprintId nullable): sin sprint queda en el backlog.
 
 ### Login correcto -> 200 con { token, expiresAt, user }
 # @name login
@@ -234,4 +244,249 @@ Authorization: Bearer {{login.response.body.token}}
 
 ### Borrar una épica
 DELETE {{Web_HostAddress}}/api/epics/3
+Authorization: Bearer {{login.response.body.token}}
+
+
+# ---------------------------------------------------------------------------------------
+# Historias
+# ---------------------------------------------------------------------------------------
+
+### Listar todas las historias (cada una trae sprintId y sprintName aplanados)
+GET {{Web_HostAddress}}/api/stories
+Accept: application/json
+Authorization: Bearer {{login.response.body.token}}
+
+### Historias sin sprint asignado, o sea el backlog
+GET {{Web_HostAddress}}/api/stories/backlog
+Accept: application/json
+Authorization: Bearer {{login.response.body.token}}
+
+### Obtener una historia por id
+GET {{Web_HostAddress}}/api/stories/1
+Accept: application/json
+Authorization: Bearer {{login.response.body.token}}
+
+### Obtener una historia por su código público
+GET {{Web_HostAddress}}/api/stories/code/STORY-2F8K3M9Q
+Accept: application/json
+Authorization: Bearer {{login.response.body.token}}
+
+### Historias de una épica
+GET {{Web_HostAddress}}/api/epics/1/stories
+Accept: application/json
+Authorization: Bearer {{login.response.body.token}}
+
+### Historias de un sprint
+GET {{Web_HostAddress}}/api/sprints/2/stories
+Accept: application/json
+Authorization: Bearer {{login.response.body.token}}
+
+### Historias de un sprint que no existe -> 404, no un array vacío
+GET {{Web_HostAddress}}/api/sprints/999/stories
+Accept: application/json
+Authorization: Bearer {{login.response.body.token}}
+
+### Crear una historia dentro de un sprint (mismo payload que manda el modal del front)
+POST {{Web_HostAddress}}/api/stories
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.token}}
+
+{
+  "title": "Filtrar el backlog por responsable",
+  "description": "Un select arriba del listado, igual que el de prioridad.",
+  "epicId": 4,
+  "priority": "high",
+  "status": "todo",
+  "points": 3,
+  "assigneeId": 2,
+  "sprintId": 2,
+  "criteriaTotal": 2
+}
+
+### Crear una historia sin sprint: queda en el backlog
+POST {{Web_HostAddress}}/api/stories
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.token}}
+
+{
+  "title": "Historia sin planificar",
+  "epicId": 4,
+  "points": 2,
+  "criteriaTotal": 1
+}
+
+### Un sprint que no existe -> 400 con mensaje del service
+POST {{Web_HostAddress}}/api/stories
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.token}}
+
+{
+  "title": "Historia con sprint inválido",
+  "epicId": 4,
+  "sprintId": 999
+}
+
+### Una épica que no existe -> 400. A diferencia del sprint, la épica es obligatoria.
+POST {{Web_HostAddress}}/api/stories
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.token}}
+
+{
+  "title": "Historia sin épica válida",
+  "epicId": 999
+}
+
+### Prioridad inexistente -> 400. La escala de historia usa critical, no urgent.
+POST {{Web_HostAddress}}/api/stories
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.token}}
+
+{
+  "title": "Prioridad inválida",
+  "epicId": 4,
+  "priority": "urgent"
+}
+
+### Un viewer no puede crear historias -> 403, no 401: el token es válido, el rol no alcanza.
+POST {{Web_HostAddress}}/api/stories
+Content-Type: application/json
+Authorization: Bearer {{registro.response.body.token}}
+
+{
+  "title": "No debería entrar",
+  "epicId": 4
+}
+
+### Actualizar una historia (reemplazo completo). Si omitís sprintId, se va al backlog.
+PUT {{Web_HostAddress}}/api/stories/3
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.token}}
+
+{
+  "title": "Columnas configurables en el tablero",
+  "description": "Columnas configurables y drag & drop.",
+  "epicId": 2,
+  "priority": "medium",
+  "status": "inProgress",
+  "points": 8,
+  "assigneeId": 2,
+  "sprintId": 3,
+  "criteriaTotal": 4,
+  "criteriaDone": 1
+}
+
+### Sacar una historia de su sprint: sprintId en null
+PUT {{Web_HostAddress}}/api/stories/3
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.token}}
+
+{
+  "title": "Columnas configurables en el tablero",
+  "epicId": 2,
+  "priority": "medium",
+  "status": "todo",
+  "points": 8,
+  "assigneeId": 2,
+  "sprintId": null,
+  "criteriaTotal": 4,
+  "criteriaDone": 0
+}
+
+### Borrar una historia
+DELETE {{Web_HostAddress}}/api/stories/10
+Authorization: Bearer {{login.response.body.token}}
+
+# ---------------------------------------------------------------------------------------
+# Sprints
+# ---------------------------------------------------------------------------------------
+
+### Listar todos los sprints
+GET {{Web_HostAddress}}/api/sprints
+Accept: application/json
+Authorization: Bearer {{login.response.body.token}}
+
+### Obtener un sprint por id
+GET {{Web_HostAddress}}/api/sprints/2
+Accept: application/json
+Authorization: Bearer {{login.response.body.token}}
+
+### Crear un sprint
+POST {{Web_HostAddress}}/api/sprints
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.token}}
+
+{
+  "name": "Sprint 9",
+  "goal": "Cerrar el importador de requerimientos.",
+  "startDate": "2026-09-02",
+  "endDate": "2026-09-16",
+  "capacity": 28,
+  "status": "planned"
+}
+
+### Fecha de fin anterior a la de inicio -> 400
+POST {{Web_HostAddress}}/api/sprints
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.token}}
+
+{
+  "name": "Sprint imposible",
+  "startDate": "2026-09-16",
+  "endDate": "2026-09-02",
+  "capacity": 10
+}
+
+### Un segundo sprint activo -> 400: el Sprint 7 del seed ya lo está
+POST {{Web_HostAddress}}/api/sprints
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.token}}
+
+{
+  "name": "Sprint activo duplicado",
+  "startDate": "2026-09-02",
+  "endDate": "2026-09-16",
+  "capacity": 10,
+  "status": "active"
+}
+
+### Capacidad fuera de rango (0 a 999) -> 400
+POST {{Web_HostAddress}}/api/sprints
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.token}}
+
+{
+  "name": "Capacidad absurda",
+  "startDate": "2026-09-02",
+  "endDate": "2026-09-16",
+  "capacity": 5000
+}
+
+### Un viewer no puede crear sprints -> 403
+POST {{Web_HostAddress}}/api/sprints
+Content-Type: application/json
+Authorization: Bearer {{registro.response.body.token}}
+
+{
+  "name": "No debería entrar",
+  "startDate": "2026-09-02",
+  "endDate": "2026-09-16",
+  "capacity": 10
+}
+
+### Actualizar un sprint (reemplazo completo)
+PUT {{Web_HostAddress}}/api/sprints/3
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.token}}
+
+{
+  "name": "Sprint 8",
+  "goal": "Pagos con tarjeta y panel de administración de cuentas.",
+  "startDate": "2026-08-19",
+  "endDate": "2026-09-02",
+  "capacity": 30,
+  "status": "planned"
+}
+
+### Borrar un sprint. Sus historias no se borran: vuelven al backlog (ON DELETE SET NULL).
+DELETE {{Web_HostAddress}}/api/sprints/4
 Authorization: Bearer {{login.response.body.token}}

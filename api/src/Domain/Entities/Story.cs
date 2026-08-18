@@ -36,6 +36,13 @@ public class Story
 
     public User? Assignee { get; set; }
 
+    // Nullable on purpose, unlike EpicId: a story without a sprint is the backlog, not
+    // missing data. Deleting the sprint sends its stories back there instead of removing
+    // them, which is why the relationship is configured with SetNull.
+    public int? SprintId { get; set; }
+
+    public Sprint? Sprint { get; set; }
+
     public int CriteriaTotal { get; set; }
 
     public int CriteriaDone { get; set; }

@@ -2,8 +2,8 @@ using Domain.Entities;
 
 namespace Web.DTOs;
 
-// Epic and Assignee are flattened into scalar fields so the navigation graph is never
-// serialized. The enums serialize as the lowercase names declared on each type.
+// Epic, Assignee and Sprint are flattened into scalar fields so the navigation graph is
+// never serialized. The enums serialize as the lowercase names declared on each type.
 public record StoryResponse(
     int Id,
     string Code,
@@ -16,6 +16,8 @@ public record StoryResponse(
     int Points,
     int? AssigneeId,
     string? AssigneeName,
+    int? SprintId,
+    string? SprintName,
     int CriteriaTotal,
     int CriteriaDone)
 {
@@ -31,6 +33,8 @@ public record StoryResponse(
         story.Points,
         story.AssigneeId,
         story.Assignee?.Name,
+        story.SprintId,
+        story.Sprint?.Name,
         story.CriteriaTotal,
         story.CriteriaDone);
 }

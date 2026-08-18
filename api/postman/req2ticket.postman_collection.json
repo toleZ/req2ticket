@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "96b60245-2e59-42fd-ad7d-4e12f2abe3aa",
     "name": "req2ticket API",
-    "description": "API del proyecto req2ticket (ASP.NET Core, api/src/Web).\n\nLa API pide JWT en todos los endpoints salvo /api/auth/login y /api/auth/register.\nCorré 'Login correcto' primero: guarda el token y el resto de la colección lo hereda\ncomo Bearer.\n\nUsuarios del seed (las contraseñas se guardan hasheadas con BCrypt; estas son las de\ntexto plano que hay que mandar al login):\n- juan@req2ticket.com   / Passw0rd!  -> admin\n- camila@req2ticket.com / Camila#25  -> productOwner\n- martin@req2ticket.com / Martin$77  -> scrumMaster\n- sofia@req2ticket.com  / Sofia*9x1  -> developer\n\nRoles, de menor a mayor privilegio:\n  viewer | qa | developer | scrumMaster | productOwner | admin | superAdmin\nEscribir épicas (POST, PUT, DELETE) exige cualquier rol menos viewer.\n\nValores válidos (deben coincidir con web/src/lib/epicOptions.js):\n- priority    -> low | medium | high | urgent\n- status      -> backlog | active | closed\n- accentColor -> blue | purple | indigo | teal | green | orange | red | pink | mint | yellow\n\nLevantar la API antes: dotnet run --project src/Web (http://localhost:5080).\nLa colección se puede correr entera con el Runner en el orden en que están las carpetas.\n\nEste archivo es la fuente de verdad: ver api/postman/README.md antes de editar.",
+    "description": "API del proyecto req2ticket (ASP.NET Core, api/src/Web).\n\nLa API pide JWT en todos los endpoints salvo /api/auth/login y /api/auth/register.\nCorré 'Login correcto' primero: guarda el token y el resto de la colección lo hereda\ncomo Bearer.\n\nUsuarios del seed (las contraseñas se guardan hasheadas con BCrypt; estas son las de\ntexto plano que hay que mandar al login):\n- juan@req2ticket.com   / Passw0rd!  -> admin\n- camila@req2ticket.com / Camila#25  -> productOwner\n- martin@req2ticket.com / Martin$77  -> scrumMaster\n- sofia@req2ticket.com  / Sofia*9x1  -> developer\n\nRoles, de menor a mayor privilegio:\n  viewer | qa | developer | scrumMaster | productOwner | admin | superAdmin\nEscribir épicas, historias y sprints (POST, PUT, DELETE) exige cualquier rol menos viewer.\n\nValores válidos de épica (deben coincidir con web/src/lib/epicOptions.js):\n- priority    -> low | medium | high | urgent\n- status      -> backlog | active | closed\n- accentColor -> blue | purple | indigo | teal | green | orange | red | pink | mint | yellow\n\nValores válidos de historia (web/src/lib/storyOptions.js):\n- priority -> low | medium | high | critical\n- status   -> todo | inProgress | done\n\nValores válidos de sprint (web/src/lib/sprintOptions.js):\n- status -> planned | active | completed\n\nUna historia pertenece siempre a una épica (epicId obligatorio) y opcionalmente a un\nsprint (sprintId nullable): sin sprint queda en el backlog.\n\nLevantar la API antes: dotnet run --project src/Web (http://localhost:5080).\nLa colección se puede correr entera con el Runner en el orden en que están las carpetas.\n\nEste archivo es la fuente de verdad: ver api/postman/README.md antes de editar.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -61,6 +61,30 @@
       "value": "",
       "type": "string",
       "description": "Lo escribe 'Registro nuevo'. Es el token de una cuenta recién creada, que siempre nace con rol viewer."
+    },
+    {
+      "key": "sprintId",
+      "value": "1",
+      "type": "string",
+      "description": "Lo sobrescribe 'Crear sprint' con el id del sprint recién creado."
+    },
+    {
+      "key": "storyId",
+      "value": "1",
+      "type": "string",
+      "description": "Lo sobrescribe 'Crear historia (en un sprint)' con el id de la historia recién creada."
+    },
+    {
+      "key": "storyCode",
+      "value": "STORY-2F8K3M9Q",
+      "type": "string",
+      "description": "Lo sobrescribe 'Crear historia (en un sprint)' con el code que generó el back."
+    },
+    {
+      "key": "backlogStoryId",
+      "value": "1",
+      "type": "string",
+      "description": "Lo sobrescribe 'Crear historia (sin sprint, va al backlog)'."
     }
   ],
   "item": [
@@ -914,6 +938,93 @@
           "response": []
         },
         {
+          "name": "Historias de la épica",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('todas pertenecen a la épica 1', function () {",
+                  "  const stories = pm.response.json();",
+                  "  pm.expect(stories).to.be.an('array');",
+                  "  stories.forEach(function (story) {",
+                  "    pm.expect(story.epicId).to.eql(1);",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/epics/1/stories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "epics",
+                "1",
+                "stories"
+              ]
+            },
+            "description": "Usa la épica 'Autenticación' del seed (id 1), no la creada acá arriba: así la request se puede correr suelta."
+          },
+          "response": []
+        },
+        {
+          "name": "Historias de una épica inexistente -> 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 404', function () {",
+                  "  pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "// 404 y no un array vacío: vacío significaría 'la épica existe y no tiene historias'."
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/epics/999999/stories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "epics",
+                "999999",
+                "stories"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
           "name": "Épica inexistente -> 404",
           "event": [
             {
@@ -1352,6 +1463,1568 @@
                   "path": [
                     "api",
                     "epics"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Sprints",
+      "item": [
+        {
+          "name": "Listar sprints",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('es un array', function () {",
+                  "  pm.expect(pm.response.json()).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/sprints",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "sprints"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Crear sprint",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('trae header Location', function () {",
+                  "  pm.expect(pm.response.headers.get('Location')).to.be.a('string');",
+                  "});",
+                  "",
+                  "// Las requests siguientes (get by id, update, delete) usan esta variable.",
+                  "pm.collectionVariables.set('sprintId', String(pm.response.json().id));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Sprint de prueba\",\n  \"goal\": \"Validar la colección de Postman.\",\n  \"startDate\": \"2026-10-01\",\n  \"endDate\": \"2026-10-15\",\n  \"capacity\": 20,\n  \"status\": \"planned\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/sprints",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "sprints"
+              ]
+            },
+            "description": "Nace planificado: crearlo activo choca con el Sprint 7 del seed, que ya lo está."
+          },
+          "response": []
+        },
+        {
+          "name": "Obtener sprint por id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('las fechas viajan como YYYY-MM-DD', function () {",
+                  "  const sprint = pm.response.json();",
+                  "  pm.expect(sprint.startDate).to.match(/^\\d{4}-\\d{2}-\\d{2}$/);",
+                  "  pm.expect(sprint.endDate).to.match(/^\\d{4}-\\d{2}-\\d{2}$/);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/sprints/{{sprintId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "sprints",
+                "{{sprintId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Sprint inexistente -> 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 404', function () {",
+                  "  pm.response.to.have.status(404);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/sprints/999999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "sprints",
+                "999999"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Historias del sprint",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('todas pertenecen al sprint 2', function () {",
+                  "  const stories = pm.response.json();",
+                  "  pm.expect(stories).to.be.an('array');",
+                  "  stories.forEach(function (story) {",
+                  "    pm.expect(story.sprintId).to.eql(2);",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/sprints/2/stories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "sprints",
+                "2",
+                "stories"
+              ]
+            },
+            "description": "Usa el Sprint 7 del seed (id 2), no el creado acá arriba: así la request se puede correr suelta."
+          },
+          "response": []
+        },
+        {
+          "name": "Historias de un sprint inexistente -> 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 404', function () {",
+                  "  pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "// 404 y no un array vacío: vacío significaría 'el sprint existe y no tiene historias'."
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/sprints/999999/stories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "sprints",
+                "999999",
+                "stories"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar sprint (reemplazo completo)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 204', function () {",
+                  "  pm.response.to.have.status(204);",
+                  "});",
+                  "",
+                  "pm.test('sin body', function () {",
+                  "  pm.expect(pm.response.text()).to.eql('');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Sprint de prueba (editado)\",\n  \"goal\": \"Meta actualizada.\",\n  \"startDate\": \"2026-10-01\",\n  \"endDate\": \"2026-10-22\",\n  \"capacity\": 25,\n  \"status\": \"planned\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/sprints/{{sprintId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "sprints",
+                "{{sprintId}}"
+              ]
+            },
+            "description": "PUT es reemplazo total: los campos que no mandes vuelven a su default (status planned)."
+          },
+          "response": []
+        },
+        {
+          "name": "Borrar sprint",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 204', function () {",
+                  "  pm.response.to.have.status(204);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/sprints/{{sprintId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "sprints",
+                "{{sprintId}}"
+              ]
+            },
+            "description": "Las historias que tuviera asignadas no se borran: vuelven al backlog (FK con ON DELETE SET NULL)."
+          },
+          "response": []
+        },
+        {
+          "name": "Viewer no puede crear sprints -> 403",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('403, no 401: el token es válido, el rol no alcanza', function () {",
+                  "  pm.response.to.have.status(403);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{viewerToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"No debería entrar\",\n  \"startDate\": \"2026-11-01\",\n  \"endDate\": \"2026-11-15\",\n  \"capacity\": 10\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/sprints",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "sprints"
+              ]
+            },
+            "description": "Usa el token que guardó 'Registro nuevo'. Prueba que la policy CanEditSprints mira el rol.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Validaciones",
+          "item": [
+            {
+              "name": "Nombre demasiado corto -> 400",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 400', function () {",
+                      "  pm.response.to.have.status(400);",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"ab\",\n  \"startDate\": \"2026-10-01\",\n  \"endDate\": \"2026-10-15\",\n  \"capacity\": 10\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/sprints",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "sprints"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Fecha de fin anterior al inicio -> 400",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 400', function () {",
+                      "  pm.response.to.have.status(400);",
+                      "});",
+                      "",
+                      "pm.test('lo valida el service, no las DataAnnotations', function () {",
+                      "  pm.expect(pm.response.json().message).to.include('fecha de fin');",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Sprint imposible\",\n  \"startDate\": \"2026-10-15\",\n  \"endDate\": \"2026-10-01\",\n  \"capacity\": 10\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/sprints",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "sprints"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Segundo sprint activo -> 400",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 400', function () {",
+                      "  pm.response.to.have.status(400);",
+                      "});",
+                      "",
+                      "pm.test('solo puede haber un sprint activo', function () {",
+                      "  pm.expect(pm.response.json().message).to.include('sprint activo');",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Sprint activo duplicado\",\n  \"startDate\": \"2026-10-01\",\n  \"endDate\": \"2026-10-15\",\n  \"capacity\": 10,\n  \"status\": \"active\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/sprints",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "sprints"
+                  ]
+                },
+                "description": "El Sprint 7 del seed ya está activo."
+              },
+              "response": []
+            },
+            {
+              "name": "Capacidad fuera de rango -> 400",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 400', function () {",
+                      "  pm.response.to.have.status(400);",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Sprint con capacidad absurda\",\n  \"startDate\": \"2026-10-01\",\n  \"endDate\": \"2026-10-15\",\n  \"capacity\": 5000\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/sprints",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "sprints"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Estado inexistente -> 400",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 400', function () {",
+                      "  pm.response.to.have.status(400);",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Sprint con estado raro\",\n  \"startDate\": \"2026-10-01\",\n  \"endDate\": \"2026-10-15\",\n  \"capacity\": 10,\n  \"status\": \"pausado\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/sprints",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "sprints"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Historias",
+      "item": [
+        {
+          "name": "Listar historias",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('el sprint viene aplanado en sprintId + sprintName', function () {",
+                  "  const stories = pm.response.json();",
+                  "  pm.expect(stories).to.be.an('array');",
+                  "  stories.forEach(function (story) {",
+                  "    pm.expect(story).to.have.property('sprintId');",
+                  "    pm.expect(story).to.have.property('sprintName');",
+                  "    pm.expect(story).to.not.have.property('sprint');",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/stories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "stories"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Crear historia (en un sprint)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "const story = pm.response.json();",
+                  "",
+                  "pm.test('el back genera el code', function () {",
+                  "  pm.expect(story.code).to.be.a('string').and.to.have.length.above(0);",
+                  "});",
+                  "",
+                  "pm.test('queda asignada al sprint 2', function () {",
+                  "  pm.expect(story.sprintId).to.eql(2);",
+                  "  pm.expect(story.sprintName).to.be.a('string');",
+                  "});",
+                  "",
+                  "// Las requests siguientes (get by id, get by code, update, delete) usan estas dos.",
+                  "pm.collectionVariables.set('storyId', String(story.id));",
+                  "pm.collectionVariables.set('storyCode', story.code);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Historia de prueba\",\n  \"description\": \"Creada por la colección de Postman.\",\n  \"epicId\": 1,\n  \"priority\": \"high\",\n  \"status\": \"todo\",\n  \"points\": 5,\n  \"assigneeId\": 1,\n  \"sprintId\": 2,\n  \"criteriaTotal\": 3\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/stories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "stories"
+              ]
+            },
+            "description": "epicId 1 y sprintId 2 son la épica 'Autenticación' y el 'Sprint 7' del seed. Mismo payload que manda CreateStoryModal en el front."
+          },
+          "response": []
+        },
+        {
+          "name": "Crear historia (sin sprint, va al backlog)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('sin sprint asignado', function () {",
+                  "  const story = pm.response.json();",
+                  "  pm.expect(story.sprintId).to.eql(null);",
+                  "  pm.expect(story.sprintName).to.eql(null);",
+                  "});",
+                  "",
+                  "pm.collectionVariables.set('backlogStoryId', String(pm.response.json().id));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Historia sin sprint\",\n  \"epicId\": 1,\n  \"points\": 2,\n  \"criteriaTotal\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/stories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "stories"
+              ]
+            },
+            "description": "sprintId es opcional: omitirlo deja la historia en el backlog."
+          },
+          "response": []
+        },
+        {
+          "name": "Historias del backlog",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('ninguna tiene sprint', function () {",
+                  "  const stories = pm.response.json();",
+                  "  pm.expect(stories).to.be.an('array');",
+                  "  stories.forEach(function (story) {",
+                  "    pm.expect(story.sprintId).to.eql(null);",
+                  "  });",
+                  "});",
+                  "",
+                  "pm.test('incluye la historia recién creada sin sprint', function () {",
+                  "  const ids = pm.response.json().map(function (story) { return String(story.id); });",
+                  "  pm.expect(ids).to.include(pm.collectionVariables.get('backlogStoryId'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/stories/backlog",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "stories",
+                "backlog"
+              ]
+            },
+            "description": "'backlog' no choca con /api/stories/{id}: esa ruta tiene la restricción :int."
+          },
+          "response": []
+        },
+        {
+          "name": "Obtener historia por id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('épica, responsable y sprint vienen aplanados', function () {",
+                  "  const story = pm.response.json();",
+                  "  pm.expect(story).to.have.property('epicName');",
+                  "  pm.expect(story).to.have.property('assigneeName');",
+                  "  pm.expect(story).to.have.property('sprintName');",
+                  "  pm.expect(story).to.not.have.property('epic');",
+                  "  pm.expect(story).to.not.have.property('sprint');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/stories/{{storyId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "stories",
+                "{{storyId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Obtener historia por código",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('es la misma historia', function () {",
+                  "  pm.expect(String(pm.response.json().id)).to.eql(pm.collectionVariables.get('storyId'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/stories/code/{{storyCode}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "stories",
+                "code",
+                "{{storyCode}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Historia inexistente -> 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 404', function () {",
+                  "  pm.response.to.have.status(404);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/stories/999999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "stories",
+                "999999"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar historia sin tocar el sprint",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 204', function () {",
+                  "  pm.response.to.have.status(204);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Historia de prueba (editada)\",\n  \"description\": \"Solo cambió el título.\",\n  \"epicId\": 1,\n  \"priority\": \"high\",\n  \"status\": \"inProgress\",\n  \"points\": 5,\n  \"assigneeId\": 1,\n  \"sprintId\": 2,\n  \"criteriaTotal\": 3,\n  \"criteriaDone\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/stories/{{storyId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "stories",
+                "{{storyId}}"
+              ]
+            },
+            "description": "PUT es reemplazo total: si no mandás sprintId, la historia se va al backlog."
+          },
+          "response": []
+        },
+        {
+          "name": "La historia sigue en el sprint",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('el PUT no perdió la asignación', function () {",
+                  "  pm.expect(pm.response.json().sprintId).to.eql(2);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/stories/{{storyId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "stories",
+                "{{storyId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Mover la historia al backlog",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 204', function () {",
+                  "  pm.response.to.have.status(204);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Historia de prueba (editada)\",\n  \"epicId\": 1,\n  \"priority\": \"high\",\n  \"status\": \"todo\",\n  \"points\": 5,\n  \"assigneeId\": 1,\n  \"sprintId\": null,\n  \"criteriaTotal\": 3,\n  \"criteriaDone\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/stories/{{storyId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "stories",
+                "{{storyId}}"
+              ]
+            },
+            "description": "sprintId en null es como se desasigna una historia de su sprint."
+          },
+          "response": []
+        },
+        {
+          "name": "La historia quedó sin sprint",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('volvió al backlog', function () {",
+                  "  pm.expect(pm.response.json().sprintId).to.eql(null);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/stories/{{storyId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "stories",
+                "{{storyId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Borrar historia",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 204', function () {",
+                  "  pm.response.to.have.status(204);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/stories/{{storyId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "stories",
+                "{{storyId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Borrar la historia del backlog",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 204', function () {",
+                  "  pm.response.to.have.status(204);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/stories/{{backlogStoryId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "stories",
+                "{{backlogStoryId}}"
+              ]
+            },
+            "description": "Deja la base como estaba antes de correr la carpeta."
+          },
+          "response": []
+        },
+        {
+          "name": "Viewer no puede crear historias -> 403",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('403, no 401: el token es válido, el rol no alcanza', function () {",
+                  "  pm.response.to.have.status(403);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{viewerToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"No debería entrar\",\n  \"epicId\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/stories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "stories"
+              ]
+            },
+            "description": "Usa el token que guardó 'Registro nuevo'. Prueba que la policy CanEditStories mira el rol.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Validaciones",
+          "item": [
+            {
+              "name": "Título demasiado corto -> 400",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 400', function () {",
+                      "  pm.response.to.have.status(400);",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"ab\",\n  \"epicId\": 1\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/stories",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "stories"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Épica inexistente -> 400",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 400', function () {",
+                      "  pm.response.to.have.status(400);",
+                      "});",
+                      "",
+                      "pm.test('lo valida el service', function () {",
+                      "  pm.expect(pm.response.json().message).to.include('épica');",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Historia sin épica válida\",\n  \"epicId\": 999999\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/stories",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "stories"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Sprint inexistente -> 400",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 400', function () {",
+                      "  pm.response.to.have.status(400);",
+                      "});",
+                      "",
+                      "pm.test('lo valida el service', function () {",
+                      "  pm.expect(pm.response.json().message).to.include('sprint');",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Historia con sprint inválido\",\n  \"epicId\": 1,\n  \"sprintId\": 999999\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/stories",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "stories"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Responsable inexistente -> 400",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 400', function () {",
+                      "  pm.response.to.have.status(400);",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Historia sin responsable válido\",\n  \"epicId\": 1,\n  \"assigneeId\": 999999\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/stories",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "stories"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Prioridad inexistente -> 400",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 400', function () {",
+                      "  pm.response.to.have.status(400);",
+                      "});",
+                      "",
+                      "// La escala de historia es low | medium | high | critical: 'urgent' es de épica."
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Historia con prioridad rara\",\n  \"epicId\": 1,\n  \"priority\": \"urgentísima\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/stories",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "stories"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Estado inexistente -> 400",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 400', function () {",
+                      "  pm.response.to.have.status(400);",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Historia con estado raro\",\n  \"epicId\": 1,\n  \"status\": \"enRevisión\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/stories",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "stories"
                   ]
                 }
               },

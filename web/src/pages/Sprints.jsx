@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Plus } from 'lucide-react'
 
+import { StoryList } from '@/components/features/StoryList'
 import { CreateSprintModal } from '@/components/sprints/CreateSprintModal'
 import { SprintCard } from '@/components/sprints/SprintCard'
 import { Badge } from '@/components/ui/Badge'
-import { createSprint, deleteSprint, getSprints, updateSprint } from '@/lib/api'
+import { createSprint, deleteSprint, getSprints, getStories, updateSprint } from '@/lib/api'
 
 const CREATE_BUTTON = `inline-flex shrink-0 items-center gap-1.5 rounded-control bg-blue
   px-3 py-2 text-subheadline font-medium text-white transition-[filter] duration-fast
@@ -12,6 +13,7 @@ const CREATE_BUTTON = `inline-flex shrink-0 items-center gap-1.5 rounded-control
 
 export function Sprints() {
   const [sprints, setSprints] = useState([])
+  const [stories, setStories] = useState([])
   const [loadState, setLoadState] = useState('loading') // 'loading' | 'ready' | 'error'
   const [isModalOpen, setIsModalOpen] = useState(false)
 
@@ -20,22 +22,23 @@ export function Sprints() {
   // No pone loadState en 'loading' acá: el estado inicial ya lo es, y hacerlo de forma
   // síncrona dentro del efecto dispara un render en cascada. `handleRetry` sí lo hace,
   // porque ahí es una respuesta a un click, no el cuerpo del efecto.
-  const fetchSprints = useCallback(() => {
-    getSprints()
-      .then((nextSprints) => {
+  const fetchAll = useCallback(() => {
+    Promise.all([getSprints(), getStories()])
+      .then(([nextSprints, nextStories]) => {
         setSprints(nextSprints)
+        setStories(nextStories)
         setLoadState('ready')
       })
       .catch(() => setLoadState('error'))
   }, [])
 
   useEffect(() => {
-    fetchSprints()
-  }, [fetchSprints])
+    fetchAll()
+  }, [fetchAll])
 
   function handleRetry() {
     setLoadState('loading')
-    fetchSprints()
+    fetchAll()
   }
 
   // Suma lo que devuelve el POST, que ya viene con el id que asignó el backend.
@@ -49,12 +52,20 @@ export function Sprints() {
     setSprints((prev) => prev.map((s) => (s.id === sprint.id ? { ...s, ...patch } : s)))
   }
 
+  // El backend deja las historias del sprint borrado sin sprint (SetNull), así que acá
+  // hay que hacer lo mismo: vuelven al backlog en vez de desaparecer.
   async function handleDeleteSprint(sprint) {
     await deleteSprint(sprint.id)
     setSprints((prev) => prev.filter((s) => s.id !== sprint.id))
+    setStories((prev) =>
+      prev.map((story) =>
+        story.sprintId === sprint.id ? { ...story, sprintId: null, sprintName: null } : story,
+      ),
+    )
   }
 
   const activeSprint = sprints.find((sprint) => sprint.status === 'active')
+  const backlogStories = stories.filter((story) => story.sprintId === null)
 
   return (
     <section>
@@ -103,6 +114,7 @@ export function Sprints() {
             <SprintCard
               key={sprint.id}
               sprint={sprint}
+              stories={stories.filter((story) => story.sprintId === sprint.id)}
               onUpdateSprint={handleUpdateSprint}
               onDeleteSprint={handleDeleteSprint}
             />
@@ -110,15 +122,24 @@ export function Sprints() {
         </ul>
       )}
 
-      <div className="mt-6 border-t border-separator pt-4">
-        <div className="flex items-center gap-2">
-          <h2 className="text-headline text-label">Backlog</h2>
-          <Badge tone="neutral">0</Badge>
+      {loadState === 'ready' && (
+        <div className="mt-6 border-t border-separator pt-4">
+          <div className="flex items-center gap-2">
+            <h2 className="text-headline text-label">Backlog</h2>
+            <Badge tone="neutral">{backlogStories.length}</Badge>
+          </div>
+          <p className="mt-1 max-w-prose text-footnote text-label-secondary">
+            Historias sin sprint asignado. Se asignan desde el panel de cada historia, en
+            Historias.
+          </p>
+
+          {backlogStories.length > 0 && (
+            <div className="mt-3">
+              <StoryList stories={backlogStories} />
+            </div>
+          )}
         </div>
-        <p className="mt-1 max-w-prose text-footnote text-label-secondary">
-          Tickets sin sprint asignado. Se asignan desde el panel de cada ticket.
-        </p>
-      </div>
+      )}
 
       <CreateSprintModal isOpen={isModalOpen} onClose={closeModal} onCreate={handleCreate} />
     </section>

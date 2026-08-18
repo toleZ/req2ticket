@@ -30,6 +30,10 @@ public record StoryUpdateRequest
     [Range(1, int.MaxValue, ErrorMessage = "AssigneeId inválido.")]
     public int? AssigneeId { get; init; }
 
+    // Optional: a story without a sprint stays in the backlog.
+    [Range(1, int.MaxValue, ErrorMessage = "SprintId inválido.")]
+    public int? SprintId { get; init; }
+
     [Range(0, int.MaxValue, ErrorMessage = "La cantidad de criterios no puede ser negativa.")]
     public int CriteriaTotal { get; init; }
 
@@ -45,6 +49,7 @@ public record StoryUpdateRequest
         Status = Status ?? StoryStatus.Todo,
         Points = Points,
         AssigneeId = AssigneeId,
+        SprintId = SprintId,
         CriteriaTotal = CriteriaTotal,
         CriteriaDone = CriteriaDone
     };
