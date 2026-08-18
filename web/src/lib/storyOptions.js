@@ -8,3 +8,9 @@ export const STORY_PRIORITY_OPTIONS = [
   { value: 'high', label: 'Alta', tone: 'orange' },
   { value: 'critical', label: 'Crítica', tone: 'red' },
 ]
+
+export const STORY_STATUS_OPTIONS = [
+  { value: 'todo', label: 'Por hacer', tone: 'gray' },
+  { value: 'inProgress', label: 'En progreso', tone: 'blue' },
+  { value: 'done', label: 'Hecho', tone: 'green' },
+]

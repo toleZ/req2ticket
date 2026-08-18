@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react'
 
 import { Modal } from '@/components/ui/Modal'
-import { STATUS_OPTIONS } from '@/lib/sprintOptions'
+import { SPRINT_STATUS_OPTIONS } from '@/lib/sprintOptions'
 import { validateSprintForm } from '@/lib/validate'
 
 const INITIAL_VALUES = {
@@ -181,7 +181,7 @@ export function CreateSprintModal({ isOpen, onClose, onCreate }) {
               onChange={set('status')}
               className={INPUT_CLASSES}
             >
-              {STATUS_OPTIONS.map((option) => (
+              {SPRINT_STATUS_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>

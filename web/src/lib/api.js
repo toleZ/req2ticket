@@ -117,6 +117,44 @@ export function deleteEpic(id) {
   return del(`/api/epics/${id}`)
 }
 
+export function getStories() {
+  return request('/api/stories')
+}
+
+export function createStory(values) {
+  return post('/api/stories', {
+    title: values.title,
+    description: values.description || null,
+    epicId: Number(values.epicId),
+    priority: values.priority,
+    status: values.status,
+    points: Number(values.points) || 0,
+    assigneeId: values.assigneeId ? Number(values.assigneeId) : null,
+    criteriaTotal: Number(values.criteriaTotal) || 0,
+  })
+}
+
+/* El PUT del backend reemplaza la historia entera, así que `patch` se mezcla sobre
+   `story` (la que ya tenemos en memoria) para no perder los campos que no cambiaron. */
+export function updateStory(story, patch) {
+  const merged = { ...story, ...patch }
+  return put(`/api/stories/${story.id}`, {
+    title: merged.title,
+    description: merged.description || null,
+    epicId: Number(merged.epicId),
+    priority: merged.priority,
+    status: merged.status,
+    points: Number(merged.points) || 0,
+    assigneeId: merged.assigneeId ? Number(merged.assigneeId) : null,
+    criteriaTotal: Number(merged.criteriaTotal) || 0,
+    criteriaDone: Number(merged.criteriaDone) || 0,
+  })
+}
+
+export function deleteStory(id) {
+  return del(`/api/stories/${id}`)
+}
+
 export function getSprints() {
   return request('/api/sprints')
 }

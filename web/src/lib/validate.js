@@ -63,6 +63,20 @@ export function validateEpicForm(values) {
   return errors
 }
 
+export function validateStoryForm(values) {
+  const errors = {}
+
+  if (!values.title.trim()) {
+    errors.title = 'Ingresá un título para la historia'
+  }
+
+  if (!values.epicId) {
+    errors.epicId = 'Elegí una funcionalidad'
+  }
+
+  return errors
+}
+
 export function validateSprintForm(values) {
   const errors = {}
 

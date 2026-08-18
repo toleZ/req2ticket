@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Infrastructure.Migrations
 {
     [DbContext(typeof(Req2TicketContext))]
-    [Migration("20260817203758_AddSprint")]
+    [Migration("20260818202305_AddSprint")]
     partial class AddSprint
     {
         /// <inheritdoc />
@@ -216,6 +216,177 @@ namespace Infrastructure.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Domain.Entities.Story", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("AssigneeId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(14)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("CriteriaDone")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("CriteriaTotal")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("EpicId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Points")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Priority")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AssigneeId");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.HasIndex("EpicId");
+
+                    b.ToTable("Stories");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            AssigneeId = 1,
+                            Code = "STORY-2F8K3M9Q",
+                            CriteriaDone = 3,
+                            CriteriaTotal = 3,
+                            EpicId = 1,
+                            Points = 5,
+                            Priority = 2,
+                            Status = 2,
+                            Title = "Inicio de sesión con email y contraseña"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            AssigneeId = 4,
+                            Code = "STORY-7H4N2P6R",
+                            CriteriaDone = 1,
+                            CriteriaTotal = 3,
+                            EpicId = 1,
+                            Points = 3,
+                            Priority = 1,
+                            Status = 1,
+                            Title = "Recuperación de contraseña por email"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            AssigneeId = 2,
+                            Code = "STORY-9D5Q8T3W",
+                            CriteriaDone = 0,
+                            CriteriaTotal = 4,
+                            EpicId = 2,
+                            Points = 8,
+                            Priority = 1,
+                            Status = 0,
+                            Title = "Columnas configurables en el tablero"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            Code = "STORY-3K7V2X5Z",
+                            CriteriaDone = 0,
+                            CriteriaTotal = 2,
+                            EpicId = 2,
+                            Points = 8,
+                            Priority = 2,
+                            Status = 0,
+                            Title = "Arrastrar y soltar tarjetas entre columnas"
+                        },
+                        new
+                        {
+                            Id = 5,
+                            AssigneeId = 3,
+                            Code = "STORY-5M9R4H2N",
+                            CriteriaDone = 2,
+                            CriteriaTotal = 3,
+                            EpicId = 3,
+                            Points = 5,
+                            Priority = 2,
+                            Status = 1,
+                            Title = "Planificación de sprint con capacidad del equipo"
+                        },
+                        new
+                        {
+                            Id = 6,
+                            AssigneeId = 3,
+                            Code = "STORY-8P2W6D4K",
+                            CriteriaDone = 0,
+                            CriteriaTotal = 2,
+                            EpicId = 3,
+                            Points = 5,
+                            Priority = 1,
+                            Status = 0,
+                            Title = "Cierre de sprint con reporte de velocity"
+                        },
+                        new
+                        {
+                            Id = 7,
+                            AssigneeId = 4,
+                            Code = "STORY-4T6Z9M3V",
+                            CriteriaDone = 1,
+                            CriteriaTotal = 3,
+                            EpicId = 4,
+                            Points = 3,
+                            Priority = 3,
+                            Status = 1,
+                            Title = "Alta de historias con estimación en puntos"
+                        },
+                        new
+                        {
+                            Id = 8,
+                            AssigneeId = 2,
+                            Code = "STORY-6X3H8P5Q",
+                            CriteriaDone = 0,
+                            CriteriaTotal = 2,
+                            EpicId = 4,
+                            Points = 2,
+                            Priority = 1,
+                            Status = 0,
+                            Title = "Filtro de historias por responsable y prioridad"
+                        },
+                        new
+                        {
+                            Id = 9,
+                            AssigneeId = 4,
+                            Code = "STORY-2N7K4V9M",
+                            CriteriaDone = 2,
+                            CriteriaTotal = 2,
+                            EpicId = 8,
+                            Points = 2,
+                            Priority = 0,
+                            Status = 2,
+                            Title = "Persistencia de preferencia de tema claro/oscuro"
+                        });
+                });
+
             modelBuilder.Entity("Domain.Entities.User", b =>
                 {
                     b.Property<int>("Id")
@@ -291,6 +462,24 @@ namespace Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("Owner");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Story", b =>
+                {
+                    b.HasOne("Domain.Entities.User", "Assignee")
+                        .WithMany()
+                        .HasForeignKey("AssigneeId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("Domain.Entities.Epic", "Epic")
+                        .WithMany()
+                        .HasForeignKey("EpicId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Assignee");
+
+                    b.Navigation("Epic");
                 });
 #pragma warning restore 612, 618
         }

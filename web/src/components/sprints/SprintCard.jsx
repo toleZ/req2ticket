@@ -6,7 +6,8 @@ import { DeleteSprintModal } from '@/components/sprints/DeleteSprintModal'
 import { Badge } from '@/components/ui/Badge'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { daysRemaining, formatDateRange } from '@/lib/dates'
-import { findOption, STATUS_OPTIONS } from '@/lib/sprintOptions'
+import { findOption } from '@/lib/epicOptions'
+import { SPRINT_STATUS_OPTIONS } from '@/lib/sprintOptions'
 
 const COMPLETE_BUTTON = `inline-flex shrink-0 items-center gap-1.5 rounded-control bg-fill-tertiary
   px-3 py-1.5 text-footnote font-medium text-label transition-colors duration-fast
@@ -23,11 +24,12 @@ export function SprintCard({ sprint, onUpdateSprint, onDeleteSprint }) {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
   const [isCompleteOpen, setIsCompleteOpen] = useState(false)
 
-  const status = findOption(STATUS_OPTIONS, sprint.status)
+  const status = findOption(SPRINT_STATUS_OPTIONS, sprint.status)
   const daysLeft = daysRemaining(sprint.endDate)
 
-  // Story todavía no existe, así que un sprint nunca tiene tickets reales asignados: estos
-  // contadores quedan en 0 hasta que la relación Sprint-Story se conecte del otro lado.
+  // Story existe, pero no tiene SprintId: no hay relación Sprint-Story en ninguna de las
+  // dos direcciones, así que un sprint todavía no puede tener tickets asignados y estos
+  // contadores quedan en 0 hasta que esa relación se agregue.
   const ticketsTotal = 0
   const ticketsCompleted = 0
   const pointsCompleted = 0

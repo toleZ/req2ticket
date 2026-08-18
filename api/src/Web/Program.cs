@@ -30,8 +30,10 @@ builder.Services.AddControllers()
 // One line per entity, interface -> implementation:
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IEpicRepository, EpicRepository>();
+builder.Services.AddScoped<IStoryRepository, StoryRepository>();
 builder.Services.AddScoped<ISprintRepository, SprintRepository>();
 builder.Services.AddScoped<EpicService>();
+builder.Services.AddScoped<StoryService>();
 builder.Services.AddScoped<SprintService>();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<AuthService>();
@@ -108,6 +110,10 @@ builder.Services.AddAuthorization(authorizationOptions =>
     // read-only stays the deliberate exception.
     authorizationOptions.AddPolicy(
         "CanEditEpics",
+        policy => policy.RequireRole(RoleNames.AllExcept(UserRole.Viewer)));
+
+    authorizationOptions.AddPolicy(
+        "CanEditStories",
         policy => policy.RequireRole(RoleNames.AllExcept(UserRole.Viewer)));
 
     authorizationOptions.AddPolicy(
