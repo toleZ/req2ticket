@@ -31,8 +31,10 @@ builder.Services.AddControllers()
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IEpicRepository, EpicRepository>();
 builder.Services.AddScoped<IStoryRepository, StoryRepository>();
+builder.Services.AddScoped<ISprintRepository, SprintRepository>();
 builder.Services.AddScoped<EpicService>();
 builder.Services.AddScoped<StoryService>();
+builder.Services.AddScoped<SprintService>();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<AuthService>();
 
@@ -112,6 +114,10 @@ builder.Services.AddAuthorization(authorizationOptions =>
 
     authorizationOptions.AddPolicy(
         "CanEditStories",
+        policy => policy.RequireRole(RoleNames.AllExcept(UserRole.Viewer)));
+
+    authorizationOptions.AddPolicy(
+        "CanEditSprints",
         policy => policy.RequireRole(RoleNames.AllExcept(UserRole.Viewer)));
 });
 

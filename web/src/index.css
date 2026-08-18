@@ -60,6 +60,14 @@
     color: inherit;
   }
 
+  /* El menú nativo de <select> es una ventana del SO, no del DOM: si el <option> no
+     lleva su propio fondo, cae al blanco por defecto del navegador y el texto claro
+     del modo oscuro queda ilegible sobre él. */
+  option {
+    background-color: var(--bg-elevated);
+    color: var(--label);
+  }
+
   button {
     cursor: pointer;
   }
