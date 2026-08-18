@@ -9,6 +9,8 @@ public class Req2TicketContext : DbContext
 
     public DbSet<Epic> Epics { get; set; }
 
+    public DbSet<Story> Stories { get; set; }
+
     public Req2TicketContext(DbContextOptions<Req2TicketContext> options) : base(options)
     {
     }
@@ -26,6 +28,25 @@ public class Req2TicketContext : DbContext
 
         modelBuilder.Entity<Epic>()
             .HasIndex(e => e.Code)
+            .IsUnique();
+
+        // A story cannot outlive its epic: deleting the epic deletes its stories.
+        modelBuilder.Entity<Story>()
+            .HasOne(s => s.Epic)
+            .WithMany()
+            .HasForeignKey(s => s.EpicId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Deleting a user does not delete the stories assigned to them: they are left
+        // without an assignee, same rule as Epic.OwnerId.
+        modelBuilder.Entity<Story>()
+            .HasOne(s => s.Assignee)
+            .WithMany()
+            .HasForeignKey(s => s.AssigneeId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<Story>()
+            .HasIndex(s => s.Code)
             .IsUnique();
 
         // NOCASE so logging in does not depend on how the email was typed. SQLite compares
@@ -173,6 +194,128 @@ public class Req2TicketContext : DbContext
                 Priority = EpicPriority.Low,
                 Status = EpicStatus.Closed,
                 OwnerId = 4
+            }
+        );
+
+        // Same reasoning as the epic codes above: hardcoded so HasData never produces a
+        // spurious diff against the model snapshot.
+        modelBuilder.Entity<Story>().HasData(
+            new Story
+            {
+                Id = 1,
+                Code = "STORY-2F8K3M9Q",
+                Title = "Inicio de sesión con email y contraseña",
+                EpicId = 1,
+                Priority = StoryPriority.High,
+                Status = StoryStatus.Done,
+                Points = 5,
+                AssigneeId = 1,
+                CriteriaTotal = 3,
+                CriteriaDone = 3
+            },
+            new Story
+            {
+                Id = 2,
+                Code = "STORY-7H4N2P6R",
+                Title = "Recuperación de contraseña por email",
+                EpicId = 1,
+                Priority = StoryPriority.Medium,
+                Status = StoryStatus.InProgress,
+                Points = 3,
+                AssigneeId = 4,
+                CriteriaTotal = 3,
+                CriteriaDone = 1
+            },
+            new Story
+            {
+                Id = 3,
+                Code = "STORY-9D5Q8T3W",
+                Title = "Columnas configurables en el tablero",
+                EpicId = 2,
+                Priority = StoryPriority.Medium,
+                Status = StoryStatus.Todo,
+                Points = 8,
+                AssigneeId = 2,
+                CriteriaTotal = 4,
+                CriteriaDone = 0
+            },
+            new Story
+            {
+                Id = 4,
+                Code = "STORY-3K7V2X5Z",
+                Title = "Arrastrar y soltar tarjetas entre columnas",
+                EpicId = 2,
+                Priority = StoryPriority.High,
+                Status = StoryStatus.Todo,
+                Points = 8,
+                AssigneeId = null,
+                CriteriaTotal = 2,
+                CriteriaDone = 0
+            },
+            new Story
+            {
+                Id = 5,
+                Code = "STORY-5M9R4H2N",
+                Title = "Planificación de sprint con capacidad del equipo",
+                EpicId = 3,
+                Priority = StoryPriority.High,
+                Status = StoryStatus.InProgress,
+                Points = 5,
+                AssigneeId = 3,
+                CriteriaTotal = 3,
+                CriteriaDone = 2
+            },
+            new Story
+            {
+                Id = 6,
+                Code = "STORY-8P2W6D4K",
+                Title = "Cierre de sprint con reporte de velocity",
+                EpicId = 3,
+                Priority = StoryPriority.Medium,
+                Status = StoryStatus.Todo,
+                Points = 5,
+                AssigneeId = 3,
+                CriteriaTotal = 2,
+                CriteriaDone = 0
+            },
+            new Story
+            {
+                Id = 7,
+                Code = "STORY-4T6Z9M3V",
+                Title = "Alta de historias con estimación en puntos",
+                EpicId = 4,
+                Priority = StoryPriority.Critical,
+                Status = StoryStatus.InProgress,
+                Points = 3,
+                AssigneeId = 4,
+                CriteriaTotal = 3,
+                CriteriaDone = 1
+            },
+            new Story
+            {
+                Id = 8,
+                Code = "STORY-6X3H8P5Q",
+                Title = "Filtro de historias por responsable y prioridad",
+                EpicId = 4,
+                Priority = StoryPriority.Medium,
+                Status = StoryStatus.Todo,
+                Points = 2,
+                AssigneeId = 2,
+                CriteriaTotal = 2,
+                CriteriaDone = 0
+            },
+            new Story
+            {
+                Id = 9,
+                Code = "STORY-2N7K4V9M",
+                Title = "Persistencia de preferencia de tema claro/oscuro",
+                EpicId = 8,
+                Priority = StoryPriority.Low,
+                Status = StoryStatus.Done,
+                Points = 2,
+                AssigneeId = 4,
+                CriteriaTotal = 2,
+                CriteriaDone = 2
             }
         );
     }
