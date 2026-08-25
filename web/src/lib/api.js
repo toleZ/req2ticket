@@ -78,6 +78,10 @@ export function login({ email, password }) {
   return post('/api/auth/login', { email: email.trim(), password })
 }
 
+export function register({ name, email, password }) {
+  return post('/api/auth/register', { name: name.trim(), email: email.trim(), password })
+}
+
 export function getUsers() {
   return request('/api/users')
 }

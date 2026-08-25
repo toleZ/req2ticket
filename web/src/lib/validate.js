@@ -1,6 +1,9 @@
 // Requires a "@" and a ".com" domain, per product rule — not a general RFC email check.
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.com$/i
-const MIN_PASSWORD_LENGTH = 6
+const MIN_LOGIN_PASSWORD_LENGTH = 6
+// La API exige mínimo 8 (ver RegisterRequest.cs): validar 6 acá dejaría pasar un form que
+// el backend rechaza igual.
+const MIN_REGISTER_PASSWORD_LENGTH = 8
 const UPPERCASE_RE = /[A-Z]/
 const NUMBER_RE = /[0-9]/
 const SPECIAL_CHAR_RE = /[^A-Za-z0-9]/
@@ -14,10 +17,10 @@ function emailError(email) {
   return undefined
 }
 
-function passwordError(password) {
+function passwordError(password, minLength) {
   if (!password) return 'Ingresá tu contraseña'
-  if (password.length < MIN_PASSWORD_LENGTH) {
-    return `La contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres`
+  if (password.length < minLength) {
+    return `La contraseña debe tener al menos ${minLength} caracteres`
   }
   if (!UPPERCASE_RE.test(password)) return 'La contraseña debe tener al menos una mayúscula'
   if (!NUMBER_RE.test(password)) return 'La contraseña debe tener al menos un número'
@@ -31,12 +34,19 @@ function passwordError(password) {
 export function validateRegisterForm(values) {
   const errors = {}
 
-  if (!values.fullName.trim()) {
-    errors.fullName = 'Ingresá tu nombre completo'
+  if (!values.name.trim()) {
+    errors.name = 'Ingresá tu nombre completo'
   }
 
   const email = emailError(values.email)
   if (email) errors.email = email
+
+  const password = passwordError(values.password, MIN_REGISTER_PASSWORD_LENGTH)
+  if (password) errors.password = password
+
+  if (!password && values.confirmPassword !== values.password) {
+    errors.confirmPassword = 'Las contraseñas no coinciden'
+  }
 
   return errors
 }
@@ -47,7 +57,7 @@ export function validateLoginForm(values) {
   const email = emailError(values.email)
   if (email) errors.email = email
 
-  const password = passwordError(values.password)
+  const password = passwordError(values.password, MIN_LOGIN_PASSWORD_LENGTH)
   if (password) errors.password = password
 
   return errors

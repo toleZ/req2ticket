@@ -9,8 +9,8 @@ const FOOTERS = {
   },
 }
 const DEFAULT_FOOTER = {
-  text: 'Req2Ticket está en beta cerrada.',
-  cta: 'Solicitar acceso',
+  text: '¿No tenés una cuenta?',
+  cta: 'Crear cuenta',
   to: '/register',
 }
 
