@@ -115,8 +115,10 @@
   letter-spacing: -0.03em;
 }
 
-/* Technical data: ids, counters, keyboard shortcuts. */
-@utility data {
+/* Technical data in monospace: ids, counters, keyboard shortcuts. Named `mono` and not
+   `data` so it cannot be confused with HTML's data-* attributes or Tailwind's data-[...]
+   variant. */
+@utility mono {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
   font-size: 0.6875rem;

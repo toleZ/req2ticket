@@ -1,10 +1,14 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState } from 'react'
 
 import { Modal } from '@/components/ui/Modal'
 import { getUsers } from '@/lib/api'
+import { errorMessage } from '@/lib/errors'
 import { STORY_PRIORITY_OPTIONS, STORY_STATUS_OPTIONS } from '@/lib/storyOptions'
 import { validateStoryForm } from '@/lib/validate'
 
+/* Every key here has to match the field's `name` in the form exactly: handleChange uses
+   `e.target.name` to know what to update. If they do not match, the field silently stops
+   accepting input and nothing raises an error. */
 const INITIAL_VALUES = {
   title: '',
   description: '',
@@ -17,11 +21,6 @@ const INITIAL_VALUES = {
   criteriaTotal: '',
 }
 
-const INPUT_CLASSES =
-  'w-full rounded-control border border-separator bg-fill-tertiary px-3 py-2 text-body text-label'
-
-const LABEL_CLASSES = 'mb-1 block text-subheadline font-medium text-label'
-
 export function CreateStoryModal({ isOpen, onClose, onCreate, epics, sprints }) {
   const [values, setValues] = useState(INITIAL_VALUES)
   const [errors, setErrors] = useState({})
@@ -29,8 +28,8 @@ export function CreateStoryModal({ isOpen, onClose, onCreate, epics, sprints }) 
   const [formError, setFormError] = useState('')
   const [users, setUsers] = useState([])
 
-  // Los responsables salen de la API. Si falla, el select queda vacío y la historia
-  // se puede crear igual sin asignar a nadie.
+  // The assignees come from the API. If it fails the select stays empty and the story can
+  // still be created without assigning anyone.
   useEffect(() => {
     if (!isOpen) return
 
@@ -39,20 +38,26 @@ export function CreateStoryModal({ isOpen, onClose, onCreate, epics, sprints }) 
       .catch(() => setUsers([]))
   }, [isOpen])
 
-  const set = (field) => (e) => {
-    const nextValues = { ...values, [field]: e.target.value }
+  function handleChange(e) {
+    const nextValues = { ...values, [e.target.name]: e.target.value }
     setValues(nextValues)
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: validateStoryForm(nextValues)[field] }))
+
+    // If the field already had an error, it is re-checked as you type so the message
+    // disappears as soon as you fix it. A field with no error yet is not validated until
+    // submit.
+    if (errors[e.target.name]) {
+      setErrors({ ...errors, [e.target.name]: validateStoryForm(nextValues)[e.target.name] })
     }
   }
 
-  const handleClose = useCallback(() => {
+  function handleClose() {
+    if (submitting) return
+
     setValues(INITIAL_VALUES)
     setErrors({})
     setFormError('')
     onClose()
-  }, [onClose])
+  }
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -68,11 +73,13 @@ export function CreateStoryModal({ isOpen, onClose, onCreate, epics, sprints }) 
         title: values.title.trim(),
         description: values.description.trim(),
       })
-      // El modal se cierra solo si la historia se creó: si el POST falla, lo cargado
-      // sigue en pantalla y el error se muestra arriba.
-      handleClose()
+      // The modal only closes once the story was created: if the POST fails, what was
+      // typed stays on screen and the error is shown above.
+      setValues(INITIAL_VALUES)
+      setErrors({})
+      onClose()
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'Algo salió mal. Probá de nuevo.')
+      setFormError(errorMessage(err))
     } finally {
       setSubmitting(false)
     }
@@ -82,25 +89,26 @@ export function CreateStoryModal({ isOpen, onClose, onCreate, epics, sprints }) 
     <Modal isOpen={isOpen} onClose={handleClose} title="Nueva historia">
       <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
         {formError && (
-          <p
-            className="rounded-control bg-fill-tertiary px-3 py-2 text-footnote text-red"
-            role="alert"
-          >
+          <p className="rounded-control bg-fill-tertiary px-3 py-2 text-footnote text-red" role="alert">
             {formError}
           </p>
         )}
 
+        {/* Each field is one <div>: the form is `flex flex-col gap-4`, so label + input +
+            error as loose siblings would pick up two extra gaps. */}
         <div>
-          <label htmlFor="story-title" className={LABEL_CLASSES}>
+          <label htmlFor="story-title" className="mb-1 block text-subheadline font-medium text-label">
             Título
           </label>
           <input
             id="story-title"
+            type="text"
+            name="title"
             value={values.title}
-            onChange={set('title')}
-            aria-invalid={Boolean(errors.title)}
+            onChange={handleChange}
+            aria-invalid={errors.title ? true : undefined}
             aria-describedby={errors.title ? 'story-title-error' : undefined}
-            className={INPUT_CLASSES}
+            className="w-full rounded-control border border-separator bg-fill-tertiary px-3 py-2 text-body text-label disabled:opacity-50"
           />
           {errors.title && (
             <p id="story-title-error" className="mt-1 text-footnote text-red">
@@ -110,31 +118,33 @@ export function CreateStoryModal({ isOpen, onClose, onCreate, epics, sprints }) 
         </div>
 
         <div>
-          <label htmlFor="story-description" className={LABEL_CLASSES}>
+          <label htmlFor="story-description" className="mb-1 block text-subheadline font-medium text-label">
             Descripción <span className="font-normal text-label-tertiary">(opcional)</span>
           </label>
           <textarea
             id="story-description"
             rows={2}
+            name="description"
             value={values.description}
-            onChange={set('description')}
-            className={`${INPUT_CLASSES} resize-none`}
+            onChange={handleChange}
+            className="w-full resize-none rounded-control border border-separator bg-fill-tertiary px-3 py-2 text-body text-label disabled:opacity-50"
           />
         </div>
 
         <div>
-          <label htmlFor="story-epic" className={LABEL_CLASSES}>
-            Funcionalidad
+          <label htmlFor="story-epic" className="mb-1 block text-subheadline font-medium text-label">
+            Épica
           </label>
           <select
             id="story-epic"
+            name="epicId"
             value={values.epicId}
-            onChange={set('epicId')}
-            aria-invalid={Boolean(errors.epicId)}
+            onChange={handleChange}
+            aria-invalid={errors.epicId ? true : undefined}
             aria-describedby={errors.epicId ? 'story-epic-error' : undefined}
-            className={INPUT_CLASSES}
+            className="w-full rounded-control border border-separator bg-fill-tertiary px-3 py-2 text-body text-label disabled:opacity-50"
           >
-            <option value="">Elegí una funcionalidad</option>
+            <option value="">Elegí una épica</option>
             {epics.map((epic) => (
               <option key={epic.id} value={epic.id}>
                 {epic.name}
@@ -150,14 +160,15 @@ export function CreateStoryModal({ isOpen, onClose, onCreate, epics, sprints }) 
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label htmlFor="story-priority" className={LABEL_CLASSES}>
+            <label htmlFor="story-priority" className="mb-1 block text-subheadline font-medium text-label">
               Prioridad
             </label>
             <select
               id="story-priority"
+              name="priority"
               value={values.priority}
-              onChange={set('priority')}
-              className={INPUT_CLASSES}
+              onChange={handleChange}
+              className="w-full rounded-control border border-separator bg-fill-tertiary px-3 py-2 text-body text-label disabled:opacity-50"
             >
               {STORY_PRIORITY_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -168,14 +179,15 @@ export function CreateStoryModal({ isOpen, onClose, onCreate, epics, sprints }) 
           </div>
 
           <div>
-            <label htmlFor="story-status" className={LABEL_CLASSES}>
+            <label htmlFor="story-status" className="mb-1 block text-subheadline font-medium text-label">
               Estado
             </label>
             <select
               id="story-status"
+              name="status"
               value={values.status}
-              onChange={set('status')}
-              className={INPUT_CLASSES}
+              onChange={handleChange}
+              className="w-full rounded-control border border-separator bg-fill-tertiary px-3 py-2 text-body text-label disabled:opacity-50"
             >
               {STORY_STATUS_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -188,43 +200,46 @@ export function CreateStoryModal({ isOpen, onClose, onCreate, epics, sprints }) 
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label htmlFor="story-points" className={LABEL_CLASSES}>
+            <label htmlFor="story-points" className="mb-1 block text-subheadline font-medium text-label">
               Puntos
             </label>
             <input
               id="story-points"
               type="number"
               min="0"
+              name="points"
               value={values.points}
-              onChange={set('points')}
-              className={INPUT_CLASSES}
+              onChange={handleChange}
+              className="w-full rounded-control border border-separator bg-fill-tertiary px-3 py-2 text-body text-label disabled:opacity-50"
             />
           </div>
 
           <div>
-            <label htmlFor="story-criteria" className={LABEL_CLASSES}>
+            <label htmlFor="story-criteria" className="mb-1 block text-subheadline font-medium text-label">
               Criterios de aceptación
             </label>
             <input
               id="story-criteria"
               type="number"
               min="0"
+              name="criteriaTotal"
               value={values.criteriaTotal}
-              onChange={set('criteriaTotal')}
-              className={INPUT_CLASSES}
+              onChange={handleChange}
+              className="w-full rounded-control border border-separator bg-fill-tertiary px-3 py-2 text-body text-label disabled:opacity-50"
             />
           </div>
         </div>
 
         <div>
-          <label htmlFor="story-assignee" className={LABEL_CLASSES}>
+          <label htmlFor="story-assignee" className="mb-1 block text-subheadline font-medium text-label">
             Responsable <span className="font-normal text-label-tertiary">(opcional)</span>
           </label>
           <select
             id="story-assignee"
+            name="assigneeId"
             value={values.assigneeId}
-            onChange={set('assigneeId')}
-            className={INPUT_CLASSES}
+            onChange={handleChange}
+            className="w-full rounded-control border border-separator bg-fill-tertiary px-3 py-2 text-body text-label disabled:opacity-50"
           >
             <option value="">Sin asignar</option>
             {users.map((user) => (
@@ -236,14 +251,15 @@ export function CreateStoryModal({ isOpen, onClose, onCreate, epics, sprints }) 
         </div>
 
         <div>
-          <label htmlFor="story-sprint" className={LABEL_CLASSES}>
+          <label htmlFor="story-sprint" className="mb-1 block text-subheadline font-medium text-label">
             Sprint <span className="font-normal text-label-tertiary">(opcional)</span>
           </label>
           <select
             id="story-sprint"
+            name="sprintId"
             value={values.sprintId}
-            onChange={set('sprintId')}
-            className={INPUT_CLASSES}
+            onChange={handleChange}
+            className="w-full rounded-control border border-separator bg-fill-tertiary px-3 py-2 text-body text-label disabled:opacity-50"
           >
             <option value="">Sin sprint (backlog)</option>
             {sprints.map((sprint) => (
@@ -255,18 +271,17 @@ export function CreateStoryModal({ isOpen, onClose, onCreate, epics, sprints }) 
         </div>
 
         <div className="mt-1 flex justify-end gap-2">
+          {/* type="button" is not optional: inside a <form> the browser default is
+              "submit", so without it Cancelar would create the record. */}
           <button
             type="button"
             onClick={handleClose}
-            className="rounded-control px-4 py-2 text-body font-medium text-label-secondary transition-colors duration-fast hover:bg-fill-tertiary"
+            disabled={submitting}
+            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-control px-4 py-2 text-body font-medium text-label-secondary transition-colors duration-fast hover:bg-fill-tertiary disabled:opacity-50"
           >
             Cancelar
           </button>
-          <button
-            type="submit"
-            disabled={submitting}
-            className="rounded-control bg-blue px-4 py-2 text-body font-medium text-white transition-[filter] duration-fast hover:brightness-110 disabled:opacity-50"
-          >
+          <button type="submit" disabled={submitting} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-control bg-blue px-4 py-2 text-body font-medium text-white transition-[filter] duration-fast hover:brightness-110 disabled:opacity-50">
             {submitting ? 'Creando…' : 'Crear historia'}
           </button>
         </div>

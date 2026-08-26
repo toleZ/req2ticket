@@ -5,8 +5,8 @@ import { RedirectIfAuth } from '@/components/auth/RedirectIfAuth'
 import { RequireAuth } from '@/components/auth/RequireAuth'
 import { AppShell } from '@/components/layout/AppShell'
 import { Board } from '@/pages/Board'
-import { Dashboard } from '@/pages/Dashboard'
-import { Features } from '@/pages/Features'
+import { Home } from '@/pages/Home'
+import { Epics } from '@/pages/Epics'
 import { Login } from '@/pages/Login'
 import { NotFound } from '@/pages/NotFound'
 import { Register } from '@/pages/Register'
@@ -28,14 +28,14 @@ export function App() {
 
       <Route element={<RequireAuth />}>
         <Route element={<AppShell />}>
-          <Route index element={<Dashboard />} />
-          <Route path="/resumen" element={<Summary />} />
-          <Route path="/tablero" element={<Board />} />
-          <Route path="/funcionalidades" element={<Features />} />
-          <Route path="/historias" element={<Stories />} />
+          <Route index element={<Home />} />
+          <Route path="/summary" element={<Summary />} />
+          <Route path="/board" element={<Board />} />
+          <Route path="/epics" element={<Epics />} />
+          <Route path="/stories" element={<Stories />} />
           <Route path="/sprints" element={<Sprints />} />
-          <Route path="/equipo" element={<Team />} />
-          <Route path="/ajustes" element={<Settings />} />
+          <Route path="/team" element={<Team />} />
+          <Route path="/settings" element={<Settings />} />
         </Route>
       </Route>
 

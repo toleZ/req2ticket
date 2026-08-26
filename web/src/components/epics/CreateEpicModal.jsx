@@ -1,27 +1,40 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { Modal } from '@/components/ui/Modal'
+import { getUsers } from '@/lib/api'
+import { cn } from '@/lib/cn'
+import { ACCENT_COLORS, EPIC_PRIORITY_OPTIONS, EPIC_STATUS_OPTIONS } from '@/lib/epicOptions'
 import { errorMessage } from '@/lib/errors'
-import { SPRINT_STATUS_OPTIONS } from '@/lib/sprintOptions'
-import { validateSprintForm } from '@/lib/validate'
+import { validateEpicForm } from '@/lib/validate'
 
 /* Every key here has to match the field's `name` in the form exactly: handleChange uses
    `e.target.name` to know what to update. If they do not match, the field silently stops
    accepting input and nothing raises an error. */
 const INITIAL_VALUES = {
   name: '',
-  goal: '',
-  startDate: '',
-  endDate: '',
-  capacity: '',
-  status: 'planned',
+  description: '',
+  accentColor: 'blue',
+  priority: 'medium',
+  status: 'backlog',
+  ownerId: '',
 }
 
-export function CreateSprintModal({ isOpen, onClose, onCreate }) {
+export function CreateEpicModal({ isOpen, onClose, onCreate }) {
   const [values, setValues] = useState(INITIAL_VALUES)
   const [errors, setErrors] = useState({})
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
+  const [users, setUsers] = useState([])
+
+  // The owners come from the API. If it fails the select stays empty and the epic can
+  // still be created without assigning anyone.
+  useEffect(() => {
+    if (!isOpen) return
+
+    getUsers()
+      .then(setUsers)
+      .catch(() => setUsers([]))
+  }, [isOpen])
 
   function handleChange(e) {
     const nextValues = { ...values, [e.target.name]: e.target.value }
@@ -31,7 +44,7 @@ export function CreateSprintModal({ isOpen, onClose, onCreate }) {
     // disappears as soon as you fix it. A field with no error yet is not validated until
     // submit.
     if (errors[e.target.name]) {
-      setErrors({ ...errors, [e.target.name]: validateSprintForm(nextValues)[e.target.name] })
+      setErrors({ ...errors, [e.target.name]: validateEpicForm(nextValues)[e.target.name] })
     }
   }
 
@@ -46,7 +59,7 @@ export function CreateSprintModal({ isOpen, onClose, onCreate }) {
 
   async function handleSubmit(e) {
     e.preventDefault()
-    const found = validateSprintForm(values)
+    const found = validateEpicForm(values)
     setErrors(found)
     if (Object.keys(found).length) return
 
@@ -56,9 +69,9 @@ export function CreateSprintModal({ isOpen, onClose, onCreate }) {
       await onCreate({
         ...values,
         name: values.name.trim(),
-        goal: values.goal.trim(),
+        description: values.description.trim(),
       })
-      // The modal only closes once the sprint was created: if the POST fails, what was
+      // The modal only closes once the epic was created: if the POST fails, what was
       // typed stays on screen and the error is shown above.
       setValues(INITIAL_VALUES)
       setErrors({})
@@ -71,7 +84,7 @@ export function CreateSprintModal({ isOpen, onClose, onCreate }) {
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="Nuevo sprint">
+    <Modal isOpen={isOpen} onClose={handleClose} title="Nueva épica">
       <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
         {formError && (
           <p className="rounded-control bg-fill-tertiary px-3 py-2 text-footnote text-red" role="alert">
@@ -82,35 +95,35 @@ export function CreateSprintModal({ isOpen, onClose, onCreate }) {
         {/* Each field is one <div>: the form is `flex flex-col gap-4`, so label + input +
             error as loose siblings would pick up two extra gaps. */}
         <div>
-          <label htmlFor="sprint-name" className="mb-1 block text-subheadline font-medium text-label">
+          <label htmlFor="epic-name" className="mb-1 block text-subheadline font-medium text-label">
             Nombre
           </label>
           <input
-            id="sprint-name"
+            id="epic-name"
             type="text"
             name="name"
             value={values.name}
             onChange={handleChange}
             aria-invalid={errors.name ? true : undefined}
-            aria-describedby={errors.name ? 'sprint-name-error' : undefined}
+            aria-describedby={errors.name ? 'epic-name-error' : undefined}
             className="w-full rounded-control border border-separator bg-fill-tertiary px-3 py-2 text-body text-label disabled:opacity-50"
           />
           {errors.name && (
-            <p id="sprint-name-error" className="mt-1 text-footnote text-red">
+            <p id="epic-name-error" className="mt-1 text-footnote text-red">
               {errors.name}
             </p>
           )}
         </div>
 
         <div>
-          <label htmlFor="sprint-goal" className="mb-1 block text-subheadline font-medium text-label">
-            Meta <span className="font-normal text-label-tertiary">(opcional)</span>
+          <label htmlFor="epic-description" className="mb-1 block text-subheadline font-medium text-label">
+            Descripción <span className="font-normal text-label-tertiary">(opcional)</span>
           </label>
           <textarea
-            id="sprint-goal"
+            id="epic-description"
             rows={2}
-            name="goal"
-            value={values.goal}
+            name="description"
+            value={values.description}
             onChange={handleChange}
             className="w-full resize-none rounded-control border border-separator bg-fill-tertiary px-3 py-2 text-body text-label disabled:opacity-50"
           />
@@ -118,88 +131,87 @@ export function CreateSprintModal({ isOpen, onClose, onCreate }) {
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label htmlFor="sprint-start" className="mb-1 block text-subheadline font-medium text-label">
-              Fecha de inicio
-            </label>
-            <input
-              id="sprint-start"
-              type="date"
-              name="startDate"
-              value={values.startDate}
-              onChange={handleChange}
-              aria-invalid={errors.startDate ? true : undefined}
-              aria-describedby={errors.startDate ? 'sprint-start-error' : undefined}
-              className="w-full rounded-control border border-separator bg-fill-tertiary px-3 py-2 text-body text-label disabled:opacity-50"
-            />
-            {errors.startDate && (
-              <p id="sprint-start-error" className="mt-1 text-footnote text-red">
-                {errors.startDate}
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label htmlFor="sprint-end" className="mb-1 block text-subheadline font-medium text-label">
-              Fecha de fin
-            </label>
-            <input
-              id="sprint-end"
-              type="date"
-              name="endDate"
-              value={values.endDate}
-              onChange={handleChange}
-              aria-invalid={errors.endDate ? true : undefined}
-              aria-describedby={errors.endDate ? 'sprint-end-error' : undefined}
-              className="w-full rounded-control border border-separator bg-fill-tertiary px-3 py-2 text-body text-label disabled:opacity-50"
-            />
-            {errors.endDate && (
-              <p id="sprint-end-error" className="mt-1 text-footnote text-red">
-                {errors.endDate}
-              </p>
-            )}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label htmlFor="sprint-capacity" className="mb-1 block text-subheadline font-medium text-label">
-              Capacidad <span className="font-normal text-label-tertiary">(puntos)</span>
-            </label>
-            <input
-              id="sprint-capacity"
-              type="number"
-              min="0"
-              name="capacity"
-              value={values.capacity}
-              onChange={handleChange}
-              aria-invalid={errors.capacity ? true : undefined}
-              aria-describedby={errors.capacity ? 'sprint-capacity-error' : undefined}
-              className="w-full rounded-control border border-separator bg-fill-tertiary px-3 py-2 text-body text-label disabled:opacity-50"
-            />
-            {errors.capacity && (
-              <p id="sprint-capacity-error" className="mt-1 text-footnote text-red">
-                {errors.capacity}
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label htmlFor="sprint-status" className="mb-1 block text-subheadline font-medium text-label">
-              Estado
+            <label htmlFor="epic-priority" className="mb-1 block text-subheadline font-medium text-label">
+              Prioridad
             </label>
             <select
-              id="sprint-status"
-              name="status"
-              value={values.status}
+              id="epic-priority"
+              name="priority"
+              value={values.priority}
               onChange={handleChange}
               className="w-full rounded-control border border-separator bg-fill-tertiary px-3 py-2 text-body text-label disabled:opacity-50"
             >
-              {SPRINT_STATUS_OPTIONS.map((option) => (
+              {EPIC_PRIORITY_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
               ))}
             </select>
+          </div>
+
+          <div>
+            <label htmlFor="epic-status" className="mb-1 block text-subheadline font-medium text-label">
+              Estado
+            </label>
+            <select
+              id="epic-status"
+              name="status"
+              value={values.status}
+              onChange={handleChange}
+              className="w-full rounded-control border border-separator bg-fill-tertiary px-3 py-2 text-body text-label disabled:opacity-50"
+            >
+              {EPIC_STATUS_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label htmlFor="epic-owner" className="mb-1 block text-subheadline font-medium text-label">
+            Responsable <span className="font-normal text-label-tertiary">(opcional)</span>
+          </label>
+          <select
+            id="epic-owner"
+            name="ownerId"
+            value={values.ownerId}
+            onChange={handleChange}
+            className="w-full rounded-control border border-separator bg-fill-tertiary px-3 py-2 text-body text-label disabled:opacity-50"
+          >
+            <option value="">Sin asignar</option>
+            {users.map((user) => (
+              <option key={user.id} value={user.id}>
+                {user.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Not a text field: these are buttons that paint a colour, so it neither uses
+            TextField nor goes through handleChange. */}
+        <div>
+          {/* A <p>, not a <label>: there is no single control to point at. The group's
+              accessible name comes from the radiogroup's aria-label below. */}
+          <p className="mb-1 block text-subheadline font-medium text-label">Color</p>
+          <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Color de acento">
+            {ACCENT_COLORS.map((color) => (
+              <button
+                key={color.value}
+                type="button"
+                role="radio"
+                aria-checked={values.accentColor === color.value}
+                aria-label={color.value}
+                onClick={() => setValues({ ...values, accentColor: color.value })}
+                className={cn(
+                  'size-7 shrink-0 rounded-full transition-transform duration-fast',
+                  color.dotClass,
+                  values.accentColor === color.value &&
+                    'scale-110 ring-2 ring-label ring-offset-2 ring-offset-elevated',
+                )}
+              />
+            ))}
           </div>
         </div>
 
@@ -215,7 +227,7 @@ export function CreateSprintModal({ isOpen, onClose, onCreate }) {
             Cancelar
           </button>
           <button type="submit" disabled={submitting} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-control bg-blue px-4 py-2 text-body font-medium text-white transition-[filter] duration-fast hover:brightness-110 disabled:opacity-50">
-            {submitting ? 'Creando…' : 'Crear sprint'}
+            {submitting ? 'Creando…' : 'Crear épica'}
           </button>
         </div>
       </form>
