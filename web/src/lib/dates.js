@@ -4,8 +4,8 @@ const SHORT_MONTHS = [
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000
 
-// Evita el desfasaje de un día que da `new Date('2026-08-05')`: ese constructor interpreta
-// la fecha en UTC, y acá siempre queremos la fecha tal cual la manda el backend.
+// Avoids the off-by-one day that `new Date('2026-08-05')` produces: that constructor
+// reads the date as UTC, and here we always want the date exactly as the backend sent it.
 function parseDateOnly(value) {
   const [year, month, day] = value.split('-').map(Number)
   return new Date(year, month - 1, day)
@@ -19,8 +19,8 @@ export function formatDateRange(startDate, endDate) {
   return `${formatShort(parseDateOnly(startDate))} — ${formatShort(parseDateOnly(endDate))}`
 }
 
-// Redondea hacia arriba para que "faltan 8 días" siga contando el día de hoy como uno
-// pendiente, no como medio día ya transcurrido.
+// Rounds up so that "8 days left" still counts today as a pending day rather than as
+// half a day already gone.
 export function daysRemaining(endDate) {
   const today = new Date()
   today.setHours(0, 0, 0, 0)

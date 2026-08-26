@@ -1,24 +1,19 @@
 import { LogOut, Menu, Moon, Sun } from 'lucide-react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 
-import { ALL_NAV_ITEMS } from '@/components/layout/navItems'
+import { ALL_NAV_ITEMS } from '@/lib/navItems'
 import { clearSession, readSession } from '@/lib/auth'
 
 const TOP_BAR =
   'material-regular hairline-b sticky top-0 z-30 flex h-14 shrink-0 items-center gap-2 px-4'
 
-const MENU_BUTTON = `grid size-8 shrink-0 place-items-center rounded-control
-  text-label-secondary transition-colors duration-fast ease-out-quad
-  hover:bg-fill-tertiary hover:text-label lg:hidden`
-
 const CRUMB_LIST = 'flex items-center gap-1.5 text-subheadline'
 const CRUMB_LINK = 'text-label-secondary transition-colors duration-fast ease-out-quad hover:text-label'
 const CRUMB_CURRENT = 'truncate font-medium text-label'
 
-/* Compartida por el botón de tema y el de cerrar sesión: son el mismo botón de ícono. */
-const ICON_BUTTON = `grid size-8 shrink-0 place-items-center rounded-control
-  text-label-secondary transition-colors duration-fast ease-out-quad
-  hover:bg-fill-tertiary hover:text-label`
+const ICON_BUTTON = `grid size-8 shrink-0 place-items-center rounded-control text-label-secondary
+  transition-colors duration-fast ease-out-quad hover:bg-fill-tertiary hover:text-label
+  disabled:opacity-50`
 
 export function TopBar({ onOpenDrawer, isDark, onToggleTheme }) {
   const { pathname } = useLocation()
@@ -26,15 +21,15 @@ export function TopBar({ onOpenDrawer, isDark, onToggleTheme }) {
   const isHome = pathname === '/'
   const current = ALL_NAV_ITEMS.find((item) => item.to === pathname)
 
-  /* Se lee en cada render en vez de guardarse en estado: la sesión cambia dos veces por
-     vida de la app, y las dos van seguidas de una navegación que vuelve a montar esto. */
+  /* Read on every render instead of being kept in state: the session changes twice per
+     lifetime of the app, and both times are followed by a navigation that remounts this. */
   const user = readSession()?.user
 
-  /* El logout es local: un JWT firmado sigue siendo válido hasta que expira, así que no hay
-     nada que avisarle al back. Lo que se corta es el acceso desde este navegador.
+  /* Logging out is local: a signed JWT stays valid until it expires, so there is nothing to
+     tell the backend. What gets cut is access from this browser.
 
-     `replace` para que el botón "atrás" no devuelva a la pantalla que se acaba de cerrar —
-     ahí RequireAuth expulsaría de nuevo y quedaría un ida y vuelta. */
+     `replace` so the back button does not return to the screen that was just closed — there
+     RequireAuth would kick the user out again and you would get a loop. */
   function handleLogout() {
     clearSession()
     navigate('/login', { replace: true })
@@ -42,11 +37,12 @@ export function TopBar({ onOpenDrawer, isDark, onToggleTheme }) {
 
   return (
     <header className={TOP_BAR}>
+      {/* Small screens only: from lg upwards the rail is visible and the drawer is redundant. */}
       <button
         type="button"
-        onClick={onOpenDrawer}
         aria-label="Abrir la navegación"
-        className={MENU_BUTTON}
+        onClick={onOpenDrawer}
+        className={`${ICON_BUTTON} lg:hidden`}
       >
         <Menu className="size-4.5" aria-hidden="true" />
       </button>
@@ -72,21 +68,22 @@ export function TopBar({ onOpenDrawer, isDark, onToggleTheme }) {
       </nav>
 
       <div className="ml-auto flex min-w-0 items-center gap-2">
-        {/* El nombre se esconde en pantallas chicas: ahí el espacio es para las migas. */}
+        {/* The name is hidden on small screens: there the space belongs to the breadcrumbs. */}
         {user && (
           <span className="hidden max-w-40 truncate text-subheadline text-label-secondary sm:block">
             {user.name}
           </span>
         )}
 
-        {/* Fuera del `user &&` a propósito: el tema es una preferencia de interfaz, no una
-            acción de la cuenta. Si la sesión viene sin el campo `user` igual tiene que estar.
-            La etiqueta describe la acción, no el estado: en oscuro el botón "activa el claro". */}
+        {/* Outside the `user &&` on purpose: the theme is an interface preference, not an
+            account action. If the session arrives without a `user` field it still has to be
+            there. The label describes the action, not the state: in dark mode the button
+            "switches to light". */}
         <button
           type="button"
-          onClick={onToggleTheme}
           aria-label={isDark ? 'Activar modo claro' : 'Activar modo oscuro'}
           title={isDark ? 'Activar modo claro' : 'Activar modo oscuro'}
+          onClick={onToggleTheme}
           className={ICON_BUTTON}
         >
           {isDark ? (
@@ -99,9 +96,9 @@ export function TopBar({ onOpenDrawer, isDark, onToggleTheme }) {
         {user && (
           <button
             type="button"
-            onClick={handleLogout}
             aria-label="Cerrar sesión"
             title="Cerrar sesión"
+            onClick={handleLogout}
             className={ICON_BUTTON}
           >
             <LogOut className="size-4.5" aria-hidden="true" />

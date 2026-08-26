@@ -1,6 +1,6 @@
 import { cn } from '@/lib/cn'
 
-/* Flat accent tokens only — see "Acentos" in styles/README.md. `neutral` covers
+/* Flat accent tokens only — see "Accents" in styles/README.md. `neutral` covers
    statuses/priorities that don't warrant an accent. */
 const TONE_CLASSES = {
   blue: 'bg-blue/12 text-blue',

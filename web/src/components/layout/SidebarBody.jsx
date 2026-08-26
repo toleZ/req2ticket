@@ -1,10 +1,10 @@
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
-import { PRIMARY_ITEMS, PROJECT_ITEMS, PROJECT_SECTION_LABEL } from '@/components/layout/navItems'
+import { PRIMARY_ITEMS, PROJECT_ITEMS, PROJECT_SECTION_LABEL } from '@/lib/navItems'
 import { SidebarNavItem } from '@/components/layout/SidebarNavItem'
 
-/* Every horizontal offset here is a constant — see "Offsets" in README.md. */
+/* Every horizontal offset here is a constant, so the rail and the drawer line up. */
 const BRAND_ROW = 'flex h-14 shrink-0 items-center pr-3.5 pl-5'
 const BRAND_LINK = 'flex items-center gap-2.5'
 const BRAND_TILE = `brand-tile grid size-7 shrink-0 place-items-center rounded-lg
@@ -20,8 +20,8 @@ const NAV_SECTION_HEADER = 'flex h-10 shrink-0 items-end px-3.75 pb-1'
 
 const COLLAPSE_ROW = 'flex shrink-0 items-center py-2 pl-4.5'
 const COLLAPSE_BUTTON = `grid size-8 shrink-0 place-items-center rounded-control
-  text-label-secondary transition-colors duration-fast ease-out-quad
-  hover:bg-fill-tertiary hover:text-label`
+  text-label-secondary transition-colors duration-fast ease-out-quad hover:bg-fill-tertiary
+  hover:text-label disabled:opacity-50`
 
 /**
  * The brand row and the navigation. Rendered both inside the desktop rail and inside
@@ -85,14 +85,14 @@ export function SidebarBody({ surface, isCollapsed = false, onToggleCollapse, on
         </ul>
       </nav>
 
-      {/* At the foot of the rail, not in the brand row — see "Offsets" in README.md. */}
+      {/* At the foot of the rail, not in the brand row: the brand row keeps its own offset. */}
       {onToggleCollapse && (
         <div className={COLLAPSE_ROW}>
           <button
             type="button"
-            onClick={onToggleCollapse}
             aria-label={collapseLabel}
             title={collapseLabel}
+            onClick={onToggleCollapse}
             aria-expanded={!isCollapsed}
             className={COLLAPSE_BUTTON}
           >

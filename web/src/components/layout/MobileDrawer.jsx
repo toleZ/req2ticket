@@ -11,7 +11,6 @@ const DRAWER_PANEL = `material-thick hairline-r fixed inset-y-0 left-0 z-50 flex
 
 const DESKTOP_QUERY = '(min-width: 64rem)'
 
-/** `onClose` must be referentially stable — see useFocusTrap. */
 export function MobileDrawer({ isOpen, onClose }) {
   const panelRef = useFocusTrap(isOpen, onClose)
 
@@ -21,12 +20,12 @@ export function MobileDrawer({ isOpen, onClose }) {
     if (!isOpen) return
 
     const media = window.matchMedia(DESKTOP_QUERY)
-    function handleChange(e) {
+    function handleBreakpointChange(e) {
       if (e.matches) onClose()
     }
 
-    media.addEventListener('change', handleChange)
-    return () => media.removeEventListener('change', handleChange)
+    media.addEventListener('change', handleBreakpointChange)
+    return () => media.removeEventListener('change', handleBreakpointChange)
   }, [isOpen, onClose])
 
   return (

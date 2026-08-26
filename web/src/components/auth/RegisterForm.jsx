@@ -1,15 +1,12 @@
 import { useState } from 'react'
+
+import { errorMessage } from '@/lib/errors'
 import { validateRegisterForm } from '@/lib/validate'
 
+/* Every key here has to match the field's `name` in the form exactly: handleChange uses
+   `e.target.name` to know what to update. If they do not match, the field silently stops
+   accepting input and nothing raises an error. */
 const INITIAL_VALUES = { fullName: '', email: '' }
-
-const FIELDS = [
-  { name: 'fullName', label: 'Nombre completo', type: 'text', autoComplete: 'name' },
-  { name: 'email', label: 'Correo electrónico', type: 'email', autoComplete: 'email' },
-]
-
-const INPUT_CLASSES =
-  'w-full rounded-control border border-separator bg-fill-tertiary px-3 py-2 text-body text-label'
 
 export function RegisterForm({ onSubmit }) {
   const [values, setValues] = useState(INITIAL_VALUES)
@@ -18,11 +15,15 @@ export function RegisterForm({ onSubmit }) {
   const [formError, setFormError] = useState('')
   const [submitted, setSubmitted] = useState(false)
 
-  const set = (field) => (e) => {
-    const nextValues = { ...values, [field]: e.target.value }
+  function handleChange(e) {
+    const nextValues = { ...values, [e.target.name]: e.target.value }
     setValues(nextValues)
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: validateRegisterForm(nextValues)[field] }))
+
+    // If the field already had an error, it is re-checked as you type so the message
+    // disappears as soon as you fix it. A field with no error yet is not validated until
+    // submit.
+    if (errors[e.target.name]) {
+      setErrors({ ...errors, [e.target.name]: validateRegisterForm(nextValues)[e.target.name] })
     }
   }
 
@@ -38,7 +39,7 @@ export function RegisterForm({ onSubmit }) {
       await onSubmit(values)
       setSubmitted(true)
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'Algo salió mal. Probá de nuevo.')
+      setFormError(errorMessage(err))
     } finally {
       setSubmitting(false)
     }
@@ -69,34 +70,62 @@ export function RegisterForm({ onSubmit }) {
         </p>
       )}
 
-      {FIELDS.map(({ name, label, type, autoComplete }) => (
-        <div key={name}>
-          <label htmlFor={name} className="mb-1 block text-subheadline font-medium text-label">
-            {label}
-          </label>
-          <input
-            id={name}
-            name={name}
-            type={type}
-            autoComplete={autoComplete}
-            value={values[name]}
-            onChange={set(name)}
-            aria-invalid={Boolean(errors[name])}
-            aria-describedby={errors[name] ? `${name}-error` : undefined}
-            className={INPUT_CLASSES}
-          />
-          {errors[name] && (
-            <p className="mt-1 text-footnote text-red" id={`${name}-error`}>
-              {errors[name]}
-            </p>
-          )}
-        </div>
-      ))}
+      {/* Each field is one <div>, and that matters: the form is `flex flex-col gap-4`, so
+          label + input + error as loose siblings would get two extra gaps between them. */}
+      <div>
+        <label
+          htmlFor="register-fullName"
+          className="mb-1 block text-subheadline font-medium text-label"
+        >
+          Nombre completo
+        </label>
+        <input
+          id="register-fullName"
+          type="text"
+          name="fullName"
+          autoComplete="name"
+          value={values.fullName}
+          onChange={handleChange}
+          aria-invalid={errors.fullName ? true : undefined}
+          aria-describedby={errors.fullName ? 'register-fullName-error' : undefined}
+          className="w-full rounded-control border border-separator bg-fill-tertiary px-3 py-2 text-body text-label disabled:opacity-50"
+        />
+        {errors.fullName && (
+          <p id="register-fullName-error" className="mt-1 text-footnote text-red">
+            {errors.fullName}
+          </p>
+        )}
+      </div>
+
+      <div>
+        <label
+          htmlFor="register-email"
+          className="mb-1 block text-subheadline font-medium text-label"
+        >
+          Correo electrónico
+        </label>
+        <input
+          id="register-email"
+          type="email"
+          name="email"
+          autoComplete="email"
+          value={values.email}
+          onChange={handleChange}
+          aria-invalid={errors.email ? true : undefined}
+          aria-describedby={errors.email ? 'register-email-error' : undefined}
+          className="w-full rounded-control border border-separator bg-fill-tertiary px-3 py-2 text-body text-label disabled:opacity-50"
+        />
+        {errors.email && (
+          <p id="register-email-error" className="mt-1 text-footnote text-red">
+            {errors.email}
+          </p>
+        )}
+      </div>
 
       <button
         type="submit"
         disabled={submitting}
-        className="rounded-control bg-blue px-4 py-2 text-body font-medium text-white disabled:opacity-50"
+        className="inline-flex shrink-0 items-center justify-center gap-2 rounded-control bg-blue px-4 py-2 text-body font-medium text-white transition-[filter] duration-fast hover:brightness-110 disabled:opacity-50"
       >
         {submitting ? 'Enviando solicitud…' : 'Solicitar acceso'}
       </button>

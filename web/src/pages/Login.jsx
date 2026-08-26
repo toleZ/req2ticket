@@ -8,10 +8,10 @@ export function Login() {
   const navigate = useNavigate()
 
   async function handleLogin(values) {
-    // Si las credenciales no coinciden, login() tira y LoginForm muestra el mensaje.
+    // If the credentials do not match, login() throws and LoginForm shows the message.
     const session = await login(values)
 
-    // La API devuelve { token, expiresAt, user }; el check decide dónde se guarda.
+    // The API returns { token, expiresAt, user }; the checkbox decides where it is stored.
     saveSession(session, values.remember)
 
     navigate('/')

@@ -1,28 +1,32 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Plus } from 'lucide-react'
 
-import { StoryList } from '@/components/features/StoryList'
+import { PageHeader } from '@/components/layout/PageHeader'
 import { CreateSprintModal } from '@/components/sprints/CreateSprintModal'
-import { SprintCard } from '@/components/sprints/SprintCard'
-import { Badge } from '@/components/ui/Badge'
+import { SprintBacklog } from '@/components/sprints/SprintBacklog'
+import { SprintList } from '@/components/sprints/SprintList'
+import { LoadState } from '@/components/ui/LoadState'
 import { createSprint, deleteSprint, getSprints, getStories, updateSprint } from '@/lib/api'
+import { SPRINT_ACTIVE } from '@/lib/sprintOptions'
 
-const CREATE_BUTTON = `inline-flex shrink-0 items-center gap-1.5 rounded-control bg-blue
-  px-3 py-2 text-subheadline font-medium text-white transition-[filter] duration-fast
-  hover:brightness-110`
+const NEW_BUTTON = `inline-flex shrink-0 items-center justify-center gap-1.5 rounded-control bg-blue px-3
+  py-2 text-subheadline font-medium text-white transition-[filter] duration-fast
+  hover:brightness-110 disabled:opacity-50`
 
 export function Sprints() {
   const [sprints, setSprints] = useState([])
   const [stories, setStories] = useState([])
   const [loadState, setLoadState] = useState('loading') // 'loading' | 'ready' | 'error'
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [reloadKey, setReloadKey] = useState(0)
 
-  const closeModal = useCallback(() => setIsModalOpen(false), [])
+  /* `reloadKey` is the "retry": bumping it by one makes React run the effect below again.
+     It is how you repeat a load without pulling the fetch out of the effect.
 
-  // No pone loadState en 'loading' acá: el estado inicial ya lo es, y hacerlo de forma
-  // síncrona dentro del efecto dispara un render en cascada. `handleRetry` sí lo hace,
-  // porque ahí es una respuesta a un click, no el cuerpo del efecto.
-  const fetchAll = useCallback(() => {
+     The effect does not set loadState to 'loading': the initial state already is, and doing
+     it here would trigger one extra render. `handleRetry` does, because there it is the
+     response to a click. */
+  useEffect(() => {
     Promise.all([getSprints(), getStories()])
       .then(([nextSprints, nextStories]) => {
         setSprints(nextSprints)
@@ -30,18 +34,14 @@ export function Sprints() {
         setLoadState('ready')
       })
       .catch(() => setLoadState('error'))
-  }, [])
-
-  useEffect(() => {
-    fetchAll()
-  }, [fetchAll])
+  }, [reloadKey])
 
   function handleRetry() {
     setLoadState('loading')
-    fetchAll()
+    setReloadKey(reloadKey + 1)
   }
 
-  // Suma lo que devuelve el POST, que ya viene con el id que asignó el backend.
+  // Appends what the POST returns, which already carries the id the backend assigned.
   async function handleCreate(values) {
     const created = await createSprint(values)
     setSprints((prev) => [...prev, created])
@@ -49,14 +49,14 @@ export function Sprints() {
 
   async function handleUpdateSprint(sprint, patch) {
     await updateSprint(sprint, patch)
-    setSprints((prev) => prev.map((s) => (s.id === sprint.id ? { ...s, ...patch } : s)))
+    setSprints((prev) => prev.map((current) => (current.id === sprint.id ? { ...current, ...patch } : current)))
   }
 
-  // El backend deja las historias del sprint borrado sin sprint (SetNull), así que acá
-  // hay que hacer lo mismo: vuelven al backlog en vez de desaparecer.
+  // The backend leaves the deleted sprint's stories without a sprint (SetNull), so the same
+  // has to happen here: they go back to the backlog instead of disappearing.
   async function handleDeleteSprint(sprint) {
     await deleteSprint(sprint.id)
-    setSprints((prev) => prev.filter((s) => s.id !== sprint.id))
+    setSprints((prev) => prev.filter((current) => current.id !== sprint.id))
     setStories((prev) =>
       prev.map((story) =>
         story.sprintId === sprint.id ? { ...story, sprintId: null, sprintName: null } : story,
@@ -64,84 +64,46 @@ export function Sprints() {
     )
   }
 
-  const activeSprint = sprints.find((sprint) => sprint.status === 'active')
+  const activeSprint = sprints.find((sprint) => sprint.status === SPRINT_ACTIVE)
   const backlogStories = stories.filter((story) => story.sprintId === null)
+
+  const activeText = activeSprint ? `${activeSprint.name} en curso · ` : ''
+  const countText =
+    sprints.length === 1 ? '1 sprint en total' : `${sprints.length} sprints en total`
+  const subtitle = loadState === 'ready' ? `${activeText}${countText}.` : null
 
   return (
     <section>
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-title1 text-label">Sprints</h1>
-          {loadState === 'ready' && (
-            <p className="mt-1 text-footnote text-label-secondary">
-              {activeSprint ? `${activeSprint.name} en curso · ` : ''}
-              {sprints.length} {sprints.length === 1 ? 'sprint en total' : 'sprints en total'}.
-            </p>
-          )}
-        </div>
-        <button type="button" onClick={() => setIsModalOpen(true)} className={CREATE_BUTTON}>
+      <PageHeader title="Sprints" subtitle={subtitle}>
+        <button type="button" onClick={() => setIsModalOpen(true)} className={NEW_BUTTON}>
           <Plus className="size-4" aria-hidden="true" />
           Nuevo sprint
         </button>
-      </div>
+      </PageHeader>
 
-      {loadState === 'loading' && (
-        <p className="mt-4 max-w-prose text-body text-label-secondary">Cargando sprints…</p>
-      )}
-
-      {loadState === 'error' && (
-        <div className="mt-4 flex items-center gap-3">
-          <p className="max-w-prose text-body text-label-secondary">No se pudieron cargar los sprints.</p>
-          <button
-            type="button"
-            onClick={handleRetry}
-            className="text-subheadline font-medium text-blue hover:underline"
-          >
-            Reintentar
-          </button>
-        </div>
-      )}
-
-      {loadState === 'ready' && sprints.length === 0 && (
-        <p className="mt-4 max-w-prose text-body text-label-secondary">
-          Todavía no hay sprints planificados.
-        </p>
-      )}
+      {/* mt-4 rather than the default mt-2: the card list below it needs more room to breathe. */}
+      <LoadState
+        state={loadState}
+        isEmpty={sprints.length === 0}
+        loadingText="Cargando sprints…"
+        errorText="No se pudieron cargar los sprints."
+        emptyText="Todavía no hay sprints planificados."
+        onRetry={handleRetry}
+        className="mt-4"
+      />
 
       {loadState === 'ready' && sprints.length > 0 && (
-        <ul className="mt-4 flex flex-col gap-4">
-          {sprints.map((sprint) => (
-            <SprintCard
-              key={sprint.id}
-              sprint={sprint}
-              stories={stories.filter((story) => story.sprintId === sprint.id)}
-              onUpdateSprint={handleUpdateSprint}
-              onDeleteSprint={handleDeleteSprint}
-            />
-          ))}
-        </ul>
+        <SprintList
+          sprints={sprints}
+          stories={stories}
+          onUpdateSprint={handleUpdateSprint}
+          onDeleteSprint={handleDeleteSprint}
+        />
       )}
 
-      {loadState === 'ready' && (
-        <div className="mt-6 border-t border-separator pt-4">
-          <div className="flex items-center gap-2">
-            <h2 className="text-headline text-label">Backlog</h2>
-            <Badge tone="neutral">{backlogStories.length}</Badge>
-          </div>
-          <p className="mt-1 max-w-prose text-footnote text-label-secondary">
-            Historias sin sprint asignado. Se asignan desde el panel de cada historia, en
-            Historias.
-          </p>
+      {loadState === 'ready' && <SprintBacklog stories={backlogStories} />}
 
-          {backlogStories.length > 0 && (
-            <div className="mt-3">
-              <StoryList stories={backlogStories} />
-            </div>
-          )}
-        </div>
-      )}
-
-      <CreateSprintModal isOpen={isModalOpen} onClose={closeModal} onCreate={handleCreate} />
+      <CreateSprintModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onCreate={handleCreate} />
     </section>
   )
 }

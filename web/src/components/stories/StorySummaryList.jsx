@@ -1,10 +1,9 @@
 import { Badge } from '@/components/ui/Badge'
-import { findOption } from '@/lib/epicOptions'
+import { findOption } from '@/lib/options'
 import { STORY_STATUS_OPTIONS } from '@/lib/storyOptions'
 
-/* Listado compacto y de solo lectura del contenido de un sprint o de una épica. La
-   edición sigue viviendo en StoryRow, dentro de la página de Historias. */
-export function StoryList({ stories }) {
+/* Compact, read-only listing of what a sprint or an epic contains. */
+export function StorySummaryList({ stories }) {
   return (
     <ul className="flex flex-col gap-1.5">
       {stories.map((story) => {

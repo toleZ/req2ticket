@@ -10,9 +10,9 @@ const SCRIM = 'fixed inset-0 z-40 bg-scrim'
 const PANEL = `fixed inset-4 z-50 m-auto h-fit w-full max-w-md rounded-sheet bg-elevated
   p-6 shadow-popover surface-highlight ring-[0.5px] ring-separator focus:outline-none`
 
-const CLOSE_BUTTON = `grid size-8 shrink-0 place-items-center rounded-control
-  text-label-secondary transition-colors duration-fast ease-out-quad
-  hover:bg-fill-tertiary hover:text-label`
+const CLOSE_BUTTON = `grid size-8 shrink-0 place-items-center rounded-control text-label-secondary
+  transition-colors duration-fast ease-out-quad hover:bg-fill-tertiary hover:text-label
+  disabled:opacity-50`
 
 export function Modal({ isOpen, onClose, title, children }) {
   const titleId = useId()
@@ -47,7 +47,12 @@ export function Modal({ isOpen, onClose, title, children }) {
                 <h2 id={titleId} className="text-title3 text-label">
                   {title}
                 </h2>
-                <button type="button" onClick={onClose} aria-label="Cerrar" className={CLOSE_BUTTON}>
+                <button
+                  type="button"
+                  aria-label="Cerrar"
+                  onClick={onClose}
+                  className={CLOSE_BUTTON}
+                >
                   <X className="size-4.5" aria-hidden="true" />
                 </button>
               </div>

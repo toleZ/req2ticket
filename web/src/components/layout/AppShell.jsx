@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Outlet } from 'react-router-dom'
 
 import { MobileDrawer } from '@/components/layout/MobileDrawer'
@@ -24,22 +24,29 @@ export function AppShell() {
   /* Never persisted — a drawer that is open on load is a bug, not a preference. */
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
 
-  /* Acá y en ningún otro lado: el hook es el único dueño de la clase `dark` de <html>. Las
-     pantallas de login quedan fuera de este árbol y las cubre el script de index.html. */
+  /* Here and nowhere else: the hook is the sole owner of the `dark` class on <html>. The
+     login screens sit outside this tree and are covered by the script in index.html. */
   const { isDark, toggleTheme } = useTheme()
 
-  /* useCallback keeps this the same function across renders. MobileDrawer passes it to
-     useFocusTrap as an effect dependency, and a new arrow each render would re-arm the
-     trap and yank focus back to the top of the panel. */
-  const closeDrawer = useCallback(() => setIsDrawerOpen(false), [])
+  function closeDrawer() {
+    setIsDrawerOpen(false)
+  }
 
   /* An open drawer would cover the page it just navigated to. Links inside it close it
      through onNavigate, so the only navigation left is the browser back/forward gesture
-     — and `popstate` is the browser event for exactly that. */
+     — and `popstate` is the browser event for exactly that.
+
+     The handler is declared in here on purpose: using `closeDrawer`, which is a new
+     function on every render, would mean listing it as a dependency, and the listener
+     would unsubscribe and resubscribe constantly. */
   useEffect(() => {
-    window.addEventListener('popstate', closeDrawer)
-    return () => window.removeEventListener('popstate', closeDrawer)
-  }, [closeDrawer])
+    function handlePopState() {
+      setIsDrawerOpen(false)
+    }
+
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [])
 
   function handleToggleCollapse() {
     const next = !isCollapsed
