@@ -2,23 +2,30 @@ import { useId, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { ChevronRight, Trash2 } from 'lucide-react'
 
-import { DeleteEpicModal } from '@/components/features/DeleteEpicModal'
-import { StoryList } from '@/components/features/StoryList'
+import { StorySummaryList } from '@/components/stories/StorySummaryList'
 import { Badge } from '@/components/ui/Badge'
+import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { cn } from '@/lib/cn'
-import { ACCENT_COLORS, findOption, PRIORITY_OPTIONS, STATUS_OPTIONS } from '@/lib/epicOptions'
+import { errorMessage } from '@/lib/errors'
+import { ACCENT_COLORS, EPIC_PRIORITY_OPTIONS, EPIC_STATUS_OPTIONS } from '@/lib/epicOptions'
+import { findOption } from '@/lib/options'
 import { springSoft } from '@/lib/motion'
 import { summarizeStories } from '@/lib/storyStats'
 
-const SELECT_CLASSES =
-  'rounded-control border border-separator bg-elevated px-2 py-1 text-footnote text-label disabled:opacity-50'
+/* The row's selects are smaller than a form field and sit on the expanded panel, which
+   is bg-elevated. Written out in full: there is no twMerge here to drop the classes this
+   overrides, so every class it replaces has to be absent rather than repeated. */
+const ROW_SELECT = `w-auto rounded-control border border-separator bg-elevated px-2 py-1 text-footnote
+  text-label disabled:opacity-50`
 
 const TOGGLE_BUTTON = `mt-0.5 grid size-6 shrink-0 place-items-center rounded-control
-  text-label-secondary transition-colors duration-fast hover:bg-fill-secondary hover:text-label`
+  text-label-secondary transition-colors duration-fast ease-out-quad hover:bg-fill-secondary
+  hover:text-label disabled:opacity-50`
 
 const DELETE_BUTTON = `grid size-8 shrink-0 place-items-center rounded-control text-label-tertiary
-  transition-colors duration-fast hover:bg-red/12 hover:text-red`
+  transition-colors duration-fast ease-out-quad hover:bg-red/12 hover:text-red
+  disabled:opacity-50`
 
 export function EpicRow({ epic, stories, onUpdateEpic, onDeleteEpic }) {
   const panelId = useId()
@@ -28,17 +35,17 @@ export function EpicRow({ epic, stories, onUpdateEpic, onDeleteEpic }) {
   const [saveError, setSaveError] = useState('')
 
   const accent = findOption(ACCENT_COLORS, epic.accentColor)
-  const status = findOption(STATUS_OPTIONS, epic.status)
-  const priority = findOption(PRIORITY_OPTIONS, epic.priority)
+  const status = findOption(EPIC_STATUS_OPTIONS, epic.status)
+  const priority = findOption(EPIC_PRIORITY_OPTIONS, epic.priority)
   const stats = summarizeStories(stories)
 
-  async function handleFieldChange(field, value) {
+  async function saveField(field, value) {
     setSaveError('')
     setSavingField(field)
     try {
       await onUpdateEpic(epic, { [field]: value })
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : 'Algo salió mal. Probá de nuevo.')
+      setSaveError(errorMessage(err))
     } finally {
       setSavingField(null)
     }
@@ -47,12 +54,14 @@ export function EpicRow({ epic, stories, onUpdateEpic, onDeleteEpic }) {
   return (
     <li className="rounded-control bg-fill-tertiary px-3 py-2.5">
       <div className="flex items-start gap-2">
+        {/* The row is already bg-fill-tertiary, so TOGGLE_BUTTON hovers to fill-secondary
+            instead: the usual fill-tertiary hover would be invisible here. */}
         <button
           type="button"
-          onClick={() => setIsEditing((value) => !value)}
+          aria-label={isEditing ? 'Cerrar edición' : 'Editar épica'}
+          onClick={() => setIsEditing(!isEditing)}
           aria-expanded={isEditing}
           aria-controls={panelId}
-          aria-label={isEditing ? 'Cerrar edición' : 'Editar épica'}
           className={TOGGLE_BUTTON}
         >
           <ChevronRight
@@ -91,8 +100,8 @@ export function EpicRow({ epic, stories, onUpdateEpic, onDeleteEpic }) {
 
         <button
           type="button"
-          onClick={() => setIsDeleteOpen(true)}
           aria-label="Eliminar épica"
+          onClick={() => setIsDeleteOpen(true)}
           className={DELETE_BUTTON}
         >
           <Trash2 className="size-4" aria-hidden="true" />
@@ -122,10 +131,10 @@ export function EpicRow({ epic, stories, onUpdateEpic, onDeleteEpic }) {
                   <select
                     value={epic.status}
                     disabled={savingField === 'status'}
-                    onChange={(e) => handleFieldChange('status', e.target.value)}
-                    className={SELECT_CLASSES}
+                    onChange={(e) => saveField('status', e.target.value)}
+                    className={ROW_SELECT}
                   >
-                    {STATUS_OPTIONS.map((option) => (
+                    {EPIC_STATUS_OPTIONS.map((option) => (
                       <option key={option.value} value={option.value}>
                         {option.label}
                       </option>
@@ -138,10 +147,10 @@ export function EpicRow({ epic, stories, onUpdateEpic, onDeleteEpic }) {
                   <select
                     value={epic.priority}
                     disabled={savingField === 'priority'}
-                    onChange={(e) => handleFieldChange('priority', e.target.value)}
-                    className={SELECT_CLASSES}
+                    onChange={(e) => saveField('priority', e.target.value)}
+                    className={ROW_SELECT}
                   >
-                    {PRIORITY_OPTIONS.map((option) => (
+                    {EPIC_PRIORITY_OPTIONS.map((option) => (
                       <option key={option.value} value={option.value}>
                         {option.label}
                       </option>
@@ -158,7 +167,7 @@ export function EpicRow({ epic, stories, onUpdateEpic, onDeleteEpic }) {
                   </p>
                 ) : (
                   <div className="mt-1.5">
-                    <StoryList stories={stories} />
+                    <StorySummaryList stories={stories} />
                   </div>
                 )}
               </div>
@@ -167,12 +176,17 @@ export function EpicRow({ epic, stories, onUpdateEpic, onDeleteEpic }) {
         )}
       </AnimatePresence>
 
-      <DeleteEpicModal
+      <ConfirmModal
         isOpen={isDeleteOpen}
-        epicName={epic.name}
+        title="Eliminar épica"
+        confirmLabel="Eliminar"
+        pendingLabel="Eliminando…"
         onClose={() => setIsDeleteOpen(false)}
         onConfirm={() => onDeleteEpic(epic)}
-      />
+      >
+        ¿Seguro que querés eliminar <span className="font-medium text-label">"{epic.name}"</span>?
+        Esta acción no se puede deshacer.
+      </ConfirmModal>
     </li>
   )
 }

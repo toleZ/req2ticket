@@ -6,28 +6,29 @@ const THEME_PREF = 'theme'
 const DARK_QUERY = '(prefers-color-scheme: dark)'
 
 /**
- * Dueño del modo claro/oscuro. Devuelve si estamos en oscuro y la función para cambiarlo.
+ * Owner of light/dark mode. Returns whether we are in dark and the function to switch it.
  *
- * El tema guardado tiene tres valores posibles:
- *   null              → seguir al sistema operativo (el arranque; nunca se guarda)
- *   'light' | 'dark'  → el usuario eligió a mano, y su elección gana sobre el sistema
+ * The stored theme has three possible values:
+ *   null              → follow the operating system (the starting point; never persisted)
+ *   'light' | 'dark'  → the user chose by hand, and their choice beats the system
  *
- * Lo único que hace es poner o sacar la clase `dark` de <html>. De ahí en adelante el CSS se
- * encarga solo: los tokens de theme.css cambian de valor y con eso cambia toda la app. No hace
- * falta escribir `dark:` en ningún componente — ver web/src/styles/README.md.
+ * All it does is add or remove the `dark` class on <html>. From there the CSS takes over:
+ * the tokens in theme.css change value and the whole app follows. You never need to write
+ * `dark:` in a component — see web/src/styles/README.md.
  *
- * Llamalo una sola vez, en AppShell. Dos llamadas serían dos estados separados que se pisarían.
+ * Call it once, in AppShell. Two calls would be two separate states fighting each other.
  */
 export function useTheme() {
-  /* La flecha corre readUiPref una sola vez, al montar, en vez de en cada render. */
+  /* The arrow runs readUiPref once, on mount, instead of on every render. */
   const [theme, setTheme] = useState(() => readUiPref(THEME_PREF, null))
   const [systemIsDark, setSystemIsDark] = useState(() => window.matchMedia(DARK_QUERY).matches)
 
   const isDark = theme === null ? systemIsDark : theme === 'dark'
 
-  /* El usuario puede cambiar la apariencia del SO con la app abierta. Escuchamos siempre, no
-     solo cuando theme es null: mientras haya una elección manual el valor queda ahí sin usarse,
-     y así no hay que rearmar el listener si algún día se vuelve a "seguir al sistema". */
+  /* The user can change the OS appearance while the app is open. We listen at all times, not
+     only while theme is null: as long as there is a manual choice the value just sits there
+     unused, and that way the listener never has to be re-armed if we go back to following
+     the system. */
   useEffect(() => {
     const query = window.matchMedia(DARK_QUERY)
     function handleChange(event) {
@@ -37,9 +38,9 @@ export function useTheme() {
     return () => query.removeEventListener('change', handleChange)
   }, [])
 
-  /* La clase va en <html> (document.documentElement), no en <body>: en theme.css los bloques
-     `:root` y `.dark` apuntan al mismo elemento y `.dark` gana por venir después en el archivo.
-     Colgada del <body> no pisaría nada. */
+  /* The class goes on <html> (document.documentElement), not on <body>: in theme.css the
+     `:root` and `.dark` blocks target the same element and `.dark` wins by coming later in
+     the file. Hung off <body> it would override nothing. */
   useEffect(() => {
     document.documentElement.classList.toggle('dark', isDark)
   }, [isDark])

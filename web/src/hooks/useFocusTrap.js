@@ -5,19 +5,28 @@ const FOCUSABLE =
   '[tabindex]:not([tabindex="-1"])'
 
 /**
- * Accessibility utility — you should not need to change this to add a page or a nav
- * item. It only has one caller: MobileDrawer.
+ * Accessibility utility — you should not need to change this to add a modal, a page or a
+ * nav item. Callers today: components/ui/Modal.jsx and components/layout/MobileDrawer.jsx.
  *
  * Attach the returned ref to a panel. While `isActive`, Tab cycles inside that panel
  * instead of escaping to the page behind it, Escape calls `onEscape`, and closing hands
  * focus back to whatever opened the panel.
  *
- * `onEscape` must keep the same identity across renders (wrap it in useCallback) — it is
- * an effect dependency, so a fresh arrow every render re-arms the trap and drags focus
- * back to the top of the panel.
+ * `onEscape` can be a plain arrow function — you do NOT need useCallback. It is kept in a
+ * ref instead of being an effect dependency, so the trap only re-arms when `isActive`
+ * flips. That matters: it used to re-arm on every render of the caller, which pulled
+ * focus out of the panel and back in each time a modal set its `submitting` state.
  */
 export function useFocusTrap(isActive, onEscape) {
   const containerRef = useRef(null)
+  const onEscapeRef = useRef(onEscape)
+
+  /* No dependency array: this runs after every render and leaves the latest `onEscape` in
+     the ref. The listener below only reads `onEscapeRef.current` when someone presses a
+     key, so it always gets the current function. */
+  useEffect(() => {
+    onEscapeRef.current = onEscape
+  })
 
   useEffect(() => {
     const container = containerRef.current
@@ -31,7 +40,7 @@ export function useFocusTrap(isActive, onEscape) {
 
     function handleKeyDown(e) {
       if (e.key === 'Escape') {
-        onEscape()
+        onEscapeRef.current()
         return
       }
       if (e.key !== 'Tab') return
@@ -56,7 +65,7 @@ export function useFocusTrap(isActive, onEscape) {
       document.removeEventListener('keydown', handleKeyDown)
       trigger?.focus?.()
     }
-  }, [isActive, onEscape])
+  }, [isActive])
 
   return containerRef
 }

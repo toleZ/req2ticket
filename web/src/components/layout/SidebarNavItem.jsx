@@ -2,10 +2,10 @@ import { Link, useMatch } from 'react-router-dom'
 
 import { NavIndicator } from '@/components/layout/NavIndicator'
 
-/* A CSS property may appear in the base OR in a state variant, never in both.
-   See "Convención de clases" in README.md. */
+/* A CSS property may appear in the base OR in a state variant, never in both. */
 
-/* px-3.75 is a constant in both states on purpose — see "Offsets" in README.md. */
+/* px-3.75 is a constant in both states on purpose: the label must not shift by a pixel
+   when the item becomes active. */
 const NAV_ITEM = `relative flex h-9 items-center gap-2.5 rounded-control px-3.75
   text-subheadline font-medium transition-colors duration-fast ease-out-quad`
 const NAV_ITEM_ACTIVE = 'text-label'
@@ -20,7 +20,7 @@ export function SidebarNavItem({ item, isCollapsed, indicatorId, onNavigate }) {
   const { to, label, icon: Icon, end } = item
 
   /* `end` decides whether child routes count as active. Without it on "/", Inicio would
-     stay active on /tablero and two items would claim the highlight at once. */
+     stay active on /board and two items would claim the highlight at once. */
   const isActive = Boolean(useMatch({ path: to, end: Boolean(end) }))
 
   return (

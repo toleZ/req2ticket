@@ -71,7 +71,7 @@ export function validateStoryForm(values) {
   }
 
   if (!values.epicId) {
-    errors.epicId = 'Elegí una funcionalidad'
+    errors.epicId = 'Elegí una épica'
   }
 
   return errors

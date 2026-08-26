@@ -1,25 +1,26 @@
 import { useState } from 'react'
 import { Calendar, CheckCheck, Flag, Trash2 } from 'lucide-react'
 
-import { StoryList } from '@/components/features/StoryList'
-import { CompleteSprintModal } from '@/components/sprints/CompleteSprintModal'
-import { DeleteSprintModal } from '@/components/sprints/DeleteSprintModal'
+import { StorySummaryList } from '@/components/stories/StorySummaryList'
 import { Badge } from '@/components/ui/Badge'
+import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { daysRemaining, formatDateRange } from '@/lib/dates'
-import { findOption } from '@/lib/epicOptions'
-import { SPRINT_STATUS_OPTIONS } from '@/lib/sprintOptions'
+import { findOption } from '@/lib/options'
+import { SPRINT_ACTIVE, SPRINT_COMPLETED, SPRINT_STATUS_OPTIONS } from '@/lib/sprintOptions'
 import { summarizeStories } from '@/lib/storyStats'
-
-const COMPLETE_BUTTON = `inline-flex shrink-0 items-center gap-1.5 rounded-control bg-fill-tertiary
-  px-3 py-1.5 text-footnote font-medium text-label transition-colors duration-fast
-  hover:bg-fill-secondary disabled:pointer-events-none disabled:opacity-0`
-
-const DELETE_BUTTON = `grid size-8 shrink-0 place-items-center rounded-control text-label-tertiary
-  transition-colors duration-fast hover:bg-red/12 hover:text-red`
 
 const TOGGLE_BUTTON = `mt-3 w-full border-t border-separator pt-3 text-left text-subheadline
   text-label-secondary transition-colors duration-fast hover:text-label`
+
+/* Smaller than the page-level buttons: this one sits in the card's header row. */
+const COMPLETE_BUTTON = `inline-flex shrink-0 items-center justify-center gap-1.5 rounded-control
+  bg-fill-tertiary px-3 py-1.5 text-footnote font-medium text-label transition-colors
+  duration-fast hover:bg-fill-secondary disabled:opacity-50`
+
+const DELETE_BUTTON = `grid size-8 shrink-0 place-items-center rounded-control text-label-tertiary
+  transition-colors duration-fast ease-out-quad hover:bg-red/12 hover:text-red
+  disabled:opacity-50`
 
 export function SprintCard({ sprint, stories, onUpdateSprint, onDeleteSprint }) {
   const [isExpanded, setIsExpanded] = useState(false)
@@ -29,14 +30,10 @@ export function SprintCard({ sprint, stories, onUpdateSprint, onDeleteSprint }) 
   const status = findOption(SPRINT_STATUS_OPTIONS, sprint.status)
   const daysLeft = daysRemaining(sprint.endDate)
 
-  // `stories` son las historias que tienen este sprint asignado, ya filtradas por la
-  // página: la card no vuelve a pedirlas a la API.
+  // `stories` are the stories assigned to this sprint, already filtered by the page: the
+  // card never asks the API for them again.
   const stats = summarizeStories(stories)
-  const ticketsTotal = stats.total
-  const ticketsCompleted = stats.completed
-  const pointsCompleted = stats.pointsCompleted
-  const pointsAssigned = stats.points
-  const progressPct = ticketsTotal > 0 ? Math.round((ticketsCompleted / ticketsTotal) * 100) : 0
+  const progressPct = stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0
 
   return (
     <li className="rounded-card bg-elevated p-5 shadow-card ring-[0.5px] ring-separator">
@@ -45,7 +42,7 @@ export function SprintCard({ sprint, stories, onUpdateSprint, onDeleteSprint }) 
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="text-title3 text-label">{sprint.name}</h3>
             {status && <Badge tone={status.tone}>{status.label}</Badge>}
-            {sprint.status === 'active' && daysLeft >= 0 && (
+            {sprint.status === SPRINT_ACTIVE && daysLeft >= 0 && (
               <Badge tone="neutral">Quedan {daysLeft} días</Badge>
             )}
           </div>
@@ -67,7 +64,7 @@ export function SprintCard({ sprint, stories, onUpdateSprint, onDeleteSprint }) 
           <button
             type="button"
             onClick={() => setIsCompleteOpen(true)}
-            disabled={sprint.status === 'completed'}
+            disabled={sprint.status === SPRINT_COMPLETED}
             className={COMPLETE_BUTTON}
           >
             <CheckCheck className="size-4" aria-hidden="true" />
@@ -75,8 +72,8 @@ export function SprintCard({ sprint, stories, onUpdateSprint, onDeleteSprint }) 
           </button>
           <button
             type="button"
-            onClick={() => setIsDeleteOpen(true)}
             aria-label="Eliminar sprint"
+            onClick={() => setIsDeleteOpen(true)}
             className={DELETE_BUTTON}
           >
             <Trash2 className="size-4" aria-hidden="true" />
@@ -88,11 +85,11 @@ export function SprintCard({ sprint, stories, onUpdateSprint, onDeleteSprint }) 
         <div className="min-w-48 flex-1">
           <div className="flex items-center justify-between text-footnote text-label-secondary">
             <span>
-              {ticketsCompleted} de {ticketsTotal} historias completadas
+              {stats.completed} de {stats.total} historias completadas
             </span>
             <span>{progressPct}%</span>
           </div>
-          <ProgressBar value={ticketsCompleted} max={ticketsTotal} className="mt-1.5" />
+          <ProgressBar value={stats.completed} max={stats.total} className="mt-1.5" />
         </div>
 
         <div className="flex shrink-0 gap-6">
@@ -101,7 +98,7 @@ export function SprintCard({ sprint, stories, onUpdateSprint, onDeleteSprint }) 
               Puntos
             </p>
             <p className="text-body font-semibold text-label">
-              {pointsCompleted}/{pointsAssigned}
+              {stats.pointsCompleted}/{stats.points}
             </p>
           </div>
           <div className="text-right">
@@ -109,7 +106,7 @@ export function SprintCard({ sprint, stories, onUpdateSprint, onDeleteSprint }) 
               Capacidad
             </p>
             <p className="text-body font-semibold text-label">
-              {pointsAssigned}/{sprint.capacity}
+              {stats.points}/{sprint.capacity}
             </p>
           </div>
         </div>
@@ -117,39 +114,50 @@ export function SprintCard({ sprint, stories, onUpdateSprint, onDeleteSprint }) 
 
       <button
         type="button"
-        onClick={() => setIsExpanded((value) => !value)}
+        onClick={() => setIsExpanded(!isExpanded)}
         aria-expanded={isExpanded}
         className={TOGGLE_BUTTON}
       >
         {isExpanded
           ? 'Ocultar historias'
-          : `Ver ${ticketsTotal} ${ticketsTotal === 1 ? 'historia' : 'historias'}`}
+          : `Ver ${stats.total} ${stats.total === 1 ? 'historia' : 'historias'}`}
       </button>
 
       {isExpanded &&
-        (ticketsTotal === 0 ? (
+        (stats.total === 0 ? (
           <p className="px-0.5 pb-0.5 text-footnote text-label-tertiary">
             Todavía no hay historias asignadas a este sprint.
           </p>
         ) : (
           <div className="px-0.5 pb-0.5">
-            <StoryList stories={stories} />
+            <StorySummaryList stories={stories} />
           </div>
         ))}
 
-      <CompleteSprintModal
+      <ConfirmModal
         isOpen={isCompleteOpen}
-        sprintName={sprint.name}
+        title="Completar sprint"
+        confirmLabel="Completar"
+        pendingLabel="Completando…"
+        confirmVariant="success"
         onClose={() => setIsCompleteOpen(false)}
         onConfirm={() => onUpdateSprint(sprint, { status: 'completed' })}
-      />
+      >
+        ¿Marcar <span className="font-medium text-label">"{sprint.name}"</span> como completado?
+        Una vez completado no se puede volver a un estado anterior desde acá.
+      </ConfirmModal>
 
-      <DeleteSprintModal
+      <ConfirmModal
         isOpen={isDeleteOpen}
-        sprintName={sprint.name}
+        title="Eliminar sprint"
+        confirmLabel="Eliminar"
+        pendingLabel="Eliminando…"
         onClose={() => setIsDeleteOpen(false)}
         onConfirm={() => onDeleteSprint(sprint)}
-      />
+      >
+        ¿Seguro que querés eliminar <span className="font-medium text-label">"{sprint.name}"</span>?
+        Esta acción no se puede deshacer.
+      </ConfirmModal>
     </li>
   )
 }

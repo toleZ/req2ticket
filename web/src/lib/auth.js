@@ -1,10 +1,11 @@
-/* Único lugar que sabe dónde vive la sesión. El check "Mantener sesión" del login elige
-   entre los dos storages, y esa elección es la que decide cuánto dura:
+/* The only place that knows where the session lives. The login's "Mantener sesión"
+   checkbox picks between the two storages, and that choice is what decides how long it
+   lasts:
 
-     localStorage   -> sobrevive cerrar el navegador
-     sessionStorage -> muere al cerrar la pestaña
+     localStorage   -> survives closing the browser
+     sessionStorage -> dies when the tab closes
 
-   Los dos tienen la misma interfaz, así que acá abajo es solo elegir el objeto. */
+   Both expose the same interface, so everything below is just picking the object. */
 const STORAGE_KEY = 'app:session'
 
 const STORAGES = () => [window.localStorage, window.sessionStorage]
@@ -14,8 +15,8 @@ function readFrom(storage) {
     const raw = storage.getItem(STORAGE_KEY)
     return raw ? JSON.parse(raw) : null
   } catch {
-    // Modo privado, cuota llena, o un blob corrupto. Quedarse sin sesión manda al login,
-    // que es mejor que romper el render.
+    // Private mode, a full quota, or a corrupt blob. Ending up with no session sends the
+    // user to the login screen, which beats breaking the render.
     return null
   }
 }
@@ -29,8 +30,8 @@ export function readSession() {
   return null
 }
 
-/* Limpia los dos storages antes de escribir: si no, cambiar el check de una vez a la otra
-   dejaría dos sesiones guardadas y readSession devolvería la vieja. */
+/* Clears both storages before writing: otherwise toggling the checkbox between one visit
+   and the next would leave two saved sessions, and readSession would return the stale one. */
 export function saveSession(session, remember) {
   clearSession()
 
@@ -38,7 +39,7 @@ export function saveSession(session, remember) {
     const target = remember ? window.localStorage : window.sessionStorage
     target.setItem(STORAGE_KEY, JSON.stringify(session))
   } catch {
-    // La sesión queda solo en memoria: funciona hasta que se recargue la página.
+    // The session only lives in memory now: it works until the page is reloaded.
   }
 }
 
@@ -47,13 +48,15 @@ export function clearSession() {
     try {
       storage.removeItem(STORAGE_KEY)
     } catch {
-      // Si no se puede borrar tampoco se pudo escribir, así que no hay nada que limpiar.
+      // If it cannot be removed then it could not be written either, so there is nothing
+      // to clean up.
     }
   }
 }
 
-/* Devuelve null si no hay sesión o si el token ya venció. Mirar expiresAt acá evita mandar
-   un token que ya sabemos muerto, y hace que vencerse se sienta igual que desloguearse. */
+/* Returns null when there is no session or the token has already expired. Checking
+   expiresAt here avoids sending a token we already know is dead, and makes expiring feel
+   exactly like logging out. */
 export function getToken() {
   const session = readSession()
 
