@@ -3,6 +3,7 @@ using System;
 using Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Infrastructure.Migrations
 {
     [DbContext(typeof(Req2TicketContext))]
-    partial class Req2TicketContextModelSnapshot : ModelSnapshot
+    [Migration("20260828153627_AddSuperAdminUser")]
+    partial class AddSuperAdminUser
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.11");
@@ -56,7 +59,7 @@ namespace Infrastructure.Migrations
 
                     b.HasIndex("OwnerId");
 
-                    b.ToTable("Epics", (string)null);
+                    b.ToTable("Epics");
 
                     b.HasData(
                         new
@@ -178,7 +181,7 @@ namespace Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Sprints", (string)null);
+                    b.ToTable("Sprints");
 
                     b.HasData(
                         new
@@ -284,7 +287,7 @@ namespace Infrastructure.Migrations
 
                     b.HasIndex("SprintId");
 
-                    b.ToTable("Tickets", (string)null);
+                    b.ToTable("Tickets");
 
                     b.HasData(
                         new
@@ -492,7 +495,7 @@ namespace Infrastructure.Migrations
                     b.HasIndex("Email")
                         .IsUnique();
 
-                    b.ToTable("Users", (string)null);
+                    b.ToTable("Users");
 
                     b.HasData(
                         new

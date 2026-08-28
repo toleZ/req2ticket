@@ -28,4 +28,8 @@ public class UserRepository : BaseRepository<User>, IUserRepository
     // "juan@..." already exists is caught here and not by the unique index.
     public async Task<bool> ExistsByEmailAsync(string email) =>
         await _dbSet.AnyAsync(u => u.Email == email);
+
+    // CountAsync and not GetAll().Count(), so the rows never travel.
+    public async Task<int> CountByRoleAsync(UserRole role) =>
+        await _dbSet.CountAsync(u => u.Role == role);
 }

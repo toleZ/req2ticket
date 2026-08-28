@@ -26,8 +26,12 @@ internal static class SeedData
     // BCrypt salts randomly, so the hashes are literals like everything else here.
     //
     // The passwords behind them are the ones documented in api/postman and Web.http:
-    // Passw0rd! · Camila#25 · Martin$77 · Sofia*9x1 — seed data for a local database,
-    // not credentials for anything that matters.
+    // Passw0rd! · Camila#25 · Martin$77 · Sofia*9x1 · Sup3rAdm!n — seed data for a local
+    // database, not credentials for anything that matters.
+    //
+    // Seeding id 5 is the only way to get a superAdmin: RegisterAsync always creates a viewer,
+    // and only a superAdmin may hand the role out. Drop this row and the top of the hierarchy
+    // is unreachable without editing the database by hand.
     private static void SeedUsers(ModelBuilder modelBuilder) =>
         modelBuilder.Entity<User>().HasData(
             new User
@@ -61,6 +65,14 @@ internal static class SeedData
                 Email = "sofia@req2ticket.com",
                 PasswordHash = "$2a$11$LtN.MT4Q48L1DP4qVhzCK.FpO09sg2QRWHfkiFpJxBHqQM21ftqGS",
                 Role = UserRole.Developer
+            },
+            new User
+            {
+                Id = 5,
+                Name = "Super Admin",
+                Email = "super@req2ticket.com",
+                PasswordHash = "$2a$11$fkAugXmXGHzCughLu.qRbOdUqu2RwMo53qyrsSgYum/LE1lDIaECq",
+                Role = UserRole.SuperAdmin
             }
         );
 

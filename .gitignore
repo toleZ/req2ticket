@@ -3,6 +3,7 @@ CLAUDE.md
 CLAUDE.local.md
 .claude/
 docs/
+skills-lock.json
 
 # macOS
 .DS_Store
