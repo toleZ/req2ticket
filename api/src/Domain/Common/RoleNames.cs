@@ -1,7 +1,7 @@
 using System.Text.Json;
 using Domain.Entities;
 
-namespace Domain;
+namespace Domain.Common;
 
 // The API speaks roles as strings ("productOwner"). The JWT claim and the authorization
 // policies both need those exact spellings, and deriving them from the enum's own converter

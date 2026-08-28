@@ -73,7 +73,7 @@ export function LoginForm({ onSubmit }) {
       <div className="mb-6 text-center">
         <h1 className="text-title2 text-label">Bienvenido de nuevo</h1>
         <p className="mt-1 text-footnote text-label-secondary">
-          Accede para gestionar tus requisitos e historias
+          Accede para gestionar tus requisitos y tickets
         </p>
       </div>
 

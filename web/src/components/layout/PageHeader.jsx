@@ -3,7 +3,7 @@
  * and the page's action buttons on the right.
  *
  * The buttons go in as children rather than as props, because they are not all the same
- * shape: Historias has two of them and one is a toggle carrying `aria-pressed`. Passing
+ * shape: Tickets has two of them and one is a toggle carrying `aria-pressed`. Passing
  * them in means each page writes its own buttons, with its own labels and handlers, and
  * this file never has to know about them.
  *

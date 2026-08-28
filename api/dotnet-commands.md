@@ -69,6 +69,11 @@ dotnet ef database update NombreMigracionAnterior --project src/Infrastructure -
 # Borrar la base
 dotnet ef database drop --project src/Infrastructure --startup-project src/Web
 
+# Después de traerse la rama refactor/story-to-ticket: la base vieja tiene la tabla Stories,
+# así que hay que rehacerla. El seed la deja igual que antes.
+dotnet ef database drop --force --project src/Infrastructure --startup-project src/Web
+dotnet ef database update --project src/Infrastructure --startup-project src/Web
+
 # Ver el SQL sin aplicarlo
 dotnet ef migrations script --project src/Infrastructure --startup-project src/Web
 ```

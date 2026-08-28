@@ -12,7 +12,7 @@ import { NotFound } from '@/pages/NotFound'
 import { Register } from '@/pages/Register'
 import { Settings } from '@/pages/Settings'
 import { Sprints } from '@/pages/Sprints'
-import { Stories } from '@/pages/Stories'
+import { Tickets } from '@/pages/Tickets'
 import { Summary } from '@/pages/Summary'
 import { Team } from '@/pages/Team'
 
@@ -32,7 +32,7 @@ export function App() {
           <Route path="/summary" element={<Summary />} />
           <Route path="/board" element={<Board />} />
           <Route path="/epics" element={<Epics />} />
-          <Route path="/stories" element={<Stories />} />
+          <Route path="/tickets" element={<Tickets />} />
           <Route path="/sprints" element={<Sprints />} />
           <Route path="/team" element={<Team />} />
           <Route path="/settings" element={<Settings />} />

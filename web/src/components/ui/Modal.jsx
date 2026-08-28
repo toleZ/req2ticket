@@ -7,8 +7,13 @@ import { EASE_IOS, springSoft } from '@/lib/motion'
 
 const SCRIM = 'fixed inset-0 z-40 bg-scrim'
 
-const PANEL = `fixed inset-4 z-50 m-auto h-fit w-full max-w-md rounded-sheet bg-elevated
-  p-6 shadow-popover surface-highlight ring-[0.5px] ring-separator focus:outline-none`
+/* `h-fit` keeps a short modal short, and `max-h` + `overflow-y-auto` keep a tall one from
+   growing past the screen: the new-ticket form is fourteen fields for a bug, and without
+   this the Crear button ends up below the fold with no way to scroll to it. `inset-4` is
+   the margin, so the maximum is the viewport minus those two. */
+const PANEL = `fixed inset-4 z-50 m-auto h-fit max-h-[calc(100dvh-2rem)] w-full max-w-md
+  overflow-y-auto rounded-sheet bg-elevated p-6 shadow-popover surface-highlight
+  ring-[0.5px] ring-separator focus:outline-none`
 
 const CLOSE_BUTTON = `grid size-8 shrink-0 place-items-center rounded-control text-label-secondary
   transition-colors duration-fast ease-out-quad hover:bg-fill-tertiary hover:text-label

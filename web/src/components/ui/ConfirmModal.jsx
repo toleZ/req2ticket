@@ -15,7 +15,7 @@ const CONFIRM_BUTTON = `inline-flex shrink-0 items-center justify-center gap-2 r
   disabled:opacity-50`
 
 /**
- * The "are you sure?" modal for an action that cannot be undone. Deleting epics, stories
+ * The "are you sure?" modal for an action that cannot be undone. Deleting epics, tickets
  * and sprints uses it, and so does completing a sprint.
  *
  * It handles all the boring parts by itself: it disables the buttons while the request is

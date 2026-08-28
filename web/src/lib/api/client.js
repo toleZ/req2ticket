@@ -11,7 +11,7 @@ import { FALLBACK_ERROR } from '@/lib/errors'
 const API_URL = 'http://localhost:5080'
 
 /* The four verbs, and the whole point of this file: every function in epics.js,
-   stories.js and the rest is one of these plus a path. */
+   tickets.js and the rest is one of these plus a path. */
 
 export function get(path) {
   return send('GET', path)

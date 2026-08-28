@@ -1,9 +1,9 @@
-using System.Globalization;
-using System.Text;
-using Domain;
+using Domain.Common;
 using Domain.Entities;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
+using System.Globalization;
+using System.Text;
 
 namespace Application.Services;
 

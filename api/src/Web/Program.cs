@@ -1,16 +1,16 @@
-using System.Text;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using Application.Services;
-using Domain;
+using Domain.Common;
 using Domain.Entities;
 using Domain.Interfaces;
-using Infrastructure;
 using Infrastructure.Repositories;
+using Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using System.Text.Json.Serialization;
+using System.Text.Json;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,10 +30,10 @@ builder.Services.AddControllers()
 // One line per entity, interface -> implementation:
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IEpicRepository, EpicRepository>();
-builder.Services.AddScoped<IStoryRepository, StoryRepository>();
+builder.Services.AddScoped<ITicketRepository, TicketRepository>();
 builder.Services.AddScoped<ISprintRepository, SprintRepository>();
 builder.Services.AddScoped<EpicService>();
-builder.Services.AddScoped<StoryService>();
+builder.Services.AddScoped<TicketService>();
 builder.Services.AddScoped<SprintService>();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<AuthService>();
@@ -113,7 +113,7 @@ builder.Services.AddAuthorization(authorizationOptions =>
         policy => policy.RequireRole(RoleNames.AllExcept(UserRole.Viewer)));
 
     authorizationOptions.AddPolicy(
-        "CanEditStories",
+        "CanEditTickets",
         policy => policy.RequireRole(RoleNames.AllExcept(UserRole.Viewer)));
 
     authorizationOptions.AddPolicy(

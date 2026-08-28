@@ -5,7 +5,7 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { CreateEpicModal } from '@/components/epics/CreateEpicModal'
 import { EpicList } from '@/components/epics/EpicList'
 import { LoadState } from '@/components/ui/LoadState'
-import { createEpic, deleteEpic, getEpics, getStories, updateEpic } from '@/lib/api'
+import { createEpic, deleteEpic, getEpics, getTickets, updateEpic } from '@/lib/api'
 
 const NEW_BUTTON = `inline-flex shrink-0 items-center justify-center gap-1.5 rounded-control bg-blue px-3
   py-2 text-subheadline font-medium text-white transition-[filter] duration-fast
@@ -13,9 +13,9 @@ const NEW_BUTTON = `inline-flex shrink-0 items-center justify-center gap-1.5 rou
 
 export function Epics() {
   const [epics, setEpics] = useState([])
-  // The stories are fetched once and each row receives its own already filtered, instead
-  // of every row asking /api/epics/{id}/stories for itself.
-  const [stories, setStories] = useState([])
+  // The tickets are fetched once and each row receives its own already filtered, instead
+  // of every row asking /api/epics/{id}/tickets for itself.
+  const [tickets, setTickets] = useState([])
   const [loadState, setLoadState] = useState('loading') // 'loading' | 'ready' | 'error'
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [reloadKey, setReloadKey] = useState(0)
@@ -27,10 +27,10 @@ export function Epics() {
      it here would trigger one extra render. `handleRetry` does, because there it is the
      response to a click. */
   useEffect(() => {
-    Promise.all([getEpics(), getStories()])
-      .then(([nextEpics, nextStories]) => {
+    Promise.all([getEpics(), getTickets()])
+      .then(([nextEpics, nextTickets]) => {
         setEpics(nextEpics)
-        setStories(nextStories)
+        setTickets(nextTickets)
         setLoadState('ready')
       })
       .catch(() => setLoadState('error'))
@@ -52,12 +52,12 @@ export function Epics() {
     setEpics((prev) => prev.map((current) => (current.id === epic.id ? { ...current, ...patch } : current)))
   }
 
-  // The backend cascade-deletes the epic's stories, so they are removed here too:
+  // The backend cascade-deletes the epic's tickets, so they are removed here too:
   // otherwise they would still be counted against an epic that no longer exists.
   async function handleDeleteEpic(epic) {
     await deleteEpic(epic.id)
     setEpics((prev) => prev.filter((current) => current.id !== epic.id))
-    setStories((prev) => prev.filter((story) => story.epicId !== epic.id))
+    setTickets((prev) => prev.filter((ticket) => ticket.epicId !== epic.id))
   }
 
   return (
@@ -81,7 +81,7 @@ export function Epics() {
       {loadState === 'ready' && epics.length > 0 && (
         <EpicList
           epics={epics}
-          stories={stories}
+          tickets={tickets}
           onUpdateEpic={handleUpdateEpic}
           onDeleteEpic={handleDeleteEpic}
         />
