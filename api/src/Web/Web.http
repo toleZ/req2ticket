@@ -11,10 +11,17 @@
 #   camila@req2ticket.com / Camila#25   -> productOwner
 #   martin@req2ticket.com / Martin$77   -> scrumMaster
 #   sofia@req2ticket.com  / Sofia*9x1   -> developer
+#   super@req2ticket.com  / Sup3rAdm!n  -> superAdmin
 #
 # Roles, de menor a mayor privilegio:
 #   viewer | qa | developer | scrumMaster | productOwner | admin | superAdmin
 # Escribir épicas, tickets y sprints (POST, PUT, DELETE) exige cualquier rol menos viewer.
+#
+# Crear, editar y borrar usuarios exige admin o superAdmin (policy CanManageUsers), y además
+# solo se puede operar sobre roles por debajo del propio — con una excepción: el superAdmin,
+# que al no tener a nadie encima también alcanza a sus pares. Por eso un admin NO puede crear
+# otro admin, y sí puede crear un developer. Los dos casos vuelven 403, pero por motivos
+# distintos: la policy corta sin cuerpo, la regla contesta con { "message": ... }.
 #
 # Valores válidos de épica (deben coincidir con web/src/lib/epicOptions.js):
 #   priority    -> low | medium | high | urgent
@@ -134,6 +141,16 @@ Content-Type: application/json
   "password": "BetaPass123"
 }
 
+### Login como superAdmin -> 200. Hace falta para todo lo que un admin no alcanza.
+# @name loginSuper
+POST {{Web_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "super@req2ticket.com",
+  "password": "Sup3rAdm!n"
+}
+
 ### Sin token -> 401. La fallback policy cubre todo lo que no sea AllowAnonymous.
 GET {{Web_HostAddress}}/api/epics
 Accept: application/json
@@ -152,6 +169,155 @@ Authorization: Bearer {{login.response.body.token}}
 GET {{Web_HostAddress}}/api/users/1
 Accept: application/json
 Authorization: Bearer {{login.response.body.token}}
+
+### Crear un usuario por debajo del propio rol -> 201. juan es admin, developer está por debajo.
+# @name crearUsuario
+POST {{Web_HostAddress}}/api/users
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.token}}
+
+{
+  "name": "Nico Prueba",
+  "email": "nico@req2ticket.com",
+  "password": "NicoPass123",
+  "role": "developer"
+}
+
+### Un viewer no puede crear usuarios -> 403 SIN cuerpo: lo corta la policy, no llega al servicio.
+POST {{Web_HostAddress}}/api/users
+Content-Type: application/json
+Authorization: Bearer {{registro.response.body.token}}
+
+{
+  "name": "No deberia entrar",
+  "email": "nope@req2ticket.com",
+  "password": "NopePass123",
+  "role": "viewer"
+}
+
+### Un admin no puede crear otro admin -> 403 CON cuerpo: pasó la policy, lo frena la regla.
+POST {{Web_HostAddress}}/api/users
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.token}}
+
+{
+  "name": "Admin Paralelo",
+  "email": "paralelo@req2ticket.com",
+  "password": "ParalPass123",
+  "role": "admin"
+}
+
+### Un admin tampoco puede tocar al superAdmin -> 403
+PUT {{Web_HostAddress}}/api/users/5
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.token}}
+
+{
+  "name": "Intento",
+  "email": "super@req2ticket.com",
+  "role": "viewer"
+}
+
+### Ni borrarlo -> 403
+DELETE {{Web_HostAddress}}/api/users/5
+Authorization: Bearer {{login.response.body.token}}
+
+### El superAdmin sí puede crear un admin -> 201. Esta es LA diferencia entre los dos roles.
+# @name crearAdmin
+POST {{Web_HostAddress}}/api/users
+Content-Type: application/json
+Authorization: Bearer {{loginSuper.response.body.token}}
+
+{
+  "name": "Admin Nuevo",
+  "email": "adminnuevo@req2ticket.com",
+  "password": "AdminPass123",
+  "role": "admin"
+}
+
+### Editar un usuario -> 204. PUT es reemplazo completo; sin "password" la contraseña queda igual.
+PUT {{Web_HostAddress}}/api/users/{{crearUsuario.response.body.id}}
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.token}}
+
+{
+  "name": "Nico Prueba (QA)",
+  "email": "nico@req2ticket.com",
+  "role": "qa"
+}
+
+### Un admin no puede ascender a nadie hasta su propia altura -> 403
+PUT {{Web_HostAddress}}/api/users/{{crearUsuario.response.body.id}}
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.token}}
+
+{
+  "name": "Nico Prueba",
+  "email": "nico@req2ticket.com",
+  "role": "admin"
+}
+
+### Nadie cambia su propio rol -> 403. Hacia abajo es el error del que no se vuelve.
+PUT {{Web_HostAddress}}/api/users/5
+Content-Type: application/json
+Authorization: Bearer {{loginSuper.response.body.token}}
+
+{
+  "name": "Super Admin",
+  "email": "super@req2ticket.com",
+  "role": "admin"
+}
+
+### Nadie se borra a sí mismo -> 403
+DELETE {{Web_HostAddress}}/api/users/5
+Authorization: Bearer {{loginSuper.response.body.token}}
+
+### Email repetido -> 400 (NOCASE: la capitalización no lo salva)
+POST {{Web_HostAddress}}/api/users
+Content-Type: application/json
+Authorization: Bearer {{loginSuper.response.body.token}}
+
+{
+  "name": "Duplicado",
+  "email": "JUAN@req2ticket.com",
+  "password": "DupliPass123",
+  "role": "viewer"
+}
+
+### El rol como entero -> 400. StringOnlyEnumConverter rechaza 6 aunque superAdmin sea 6.
+POST {{Web_HostAddress}}/api/users
+Content-Type: application/json
+Authorization: Bearer {{loginSuper.response.body.token}}
+
+{
+  "name": "Entero",
+  "email": "entero@req2ticket.com",
+  "password": "EnteroPass123",
+  "role": 6
+}
+
+### Sin rol -> 400. Es obligatorio a propósito: sin él, un enum no anulable caería en viewer.
+POST {{Web_HostAddress}}/api/users
+Content-Type: application/json
+Authorization: Bearer {{loginSuper.response.body.token}}
+
+{
+  "name": "Sin Rol",
+  "email": "sinrol@req2ticket.com",
+  "password": "SinRolPass123"
+}
+
+### Borrar los dos usuarios creados -> 204 (dejar la base como estaba)
+DELETE {{Web_HostAddress}}/api/users/{{crearUsuario.response.body.id}}
+Authorization: Bearer {{loginSuper.response.body.token}}
+
+###
+DELETE {{Web_HostAddress}}/api/users/{{crearAdmin.response.body.id}}
+Authorization: Bearer {{loginSuper.response.body.token}}
+
+### Borrar un usuario que no existe -> 404
+DELETE {{Web_HostAddress}}/api/users/99999
+Authorization: Bearer {{loginSuper.response.body.token}}
 
 ### Listar todas las épicas
 GET {{Web_HostAddress}}/api/epics

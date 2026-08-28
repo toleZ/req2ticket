@@ -102,8 +102,10 @@ builder.Services.AddAuthorization(authorizationOptions =>
         .RequireAuthenticatedUser()
         .Build();
 
+    // Opens the door of /api/users to both administrative roles. Which of the two may do what
+    // to a given user is UserService's call: a policy only knows the role of the caller.
     authorizationOptions.AddPolicy(
-        "Admin",
+        "CanManageUsers",
         policy => policy.RequireRole(RoleNames.Of(UserRole.SuperAdmin), RoleNames.Of(UserRole.Admin)));
 
     // Everyone except Viewer, listed by exclusion so a new role can edit by default and

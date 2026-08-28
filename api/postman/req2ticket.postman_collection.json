@@ -85,6 +85,26 @@
       "value": "1",
       "type": "string",
       "description": "Lo sobrescribe 'Crear historia (sin sprint, va al backlog)'."
+    },
+    {
+      "key": "superToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "newUserId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "newUserEmail",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "newAdminId",
+      "value": "",
+      "type": "string"
     }
   ],
   "item": [
@@ -367,6 +387,65 @@
                 "login"
               ]
             },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login como superAdmin -> 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test('es superAdmin', function () {",
+                  "  pm.expect(body.user.role).to.eql('superAdmin');",
+                  "});",
+                  "",
+                  "// Lo consumen las requests de Users que exigen estar por encima de un admin.",
+                  "pm.collectionVariables.set('superToken', body.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"super@req2ticket.com\",\n  \"password\": \"Sup3rAdm!n\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "El único superAdmin del seed (id 5). Guarda superToken, que es lo que usan las requests que un admin no puede hacer.",
             "auth": {
               "type": "noauth"
             }
@@ -696,6 +775,793 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "Crear usuario por debajo del rol propio -> 201",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "const user = pm.response.json();",
+                  "",
+                  "pm.test('vuelve con el rol pedido', function () {",
+                  "  pm.expect(user.role).to.eql('developer');",
+                  "});",
+                  "",
+                  "pm.test('nunca expone la contraseña', function () {",
+                  "  pm.expect(user).to.not.have.property('password');",
+                  "  pm.expect(user).to.not.have.property('passwordHash');",
+                  "});",
+                  "",
+                  "pm.collectionVariables.set('newUserId', user.id);",
+                  "pm.collectionVariables.set('newUserEmail', user.email);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Nico Prueba\",\n  \"email\": \"nico+{{$timestamp}}@req2ticket.com\",\n  \"password\": \"NicoPass123\",\n  \"role\": \"developer\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "juan es admin y developer está por debajo, así que la regla lo deja pasar. El email lleva {{$timestamp}} para poder correr la colección muchas veces."
+          },
+          "response": []
+        },
+        {
+          "name": "Editar el usuario creado -> 204",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 204', function () {",
+                  "  pm.response.to.have.status(204);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/{{newUserId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "{{newUserId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Nico Prueba (QA)\",\n  \"email\": \"{{newUserEmail}}\",\n  \"role\": \"qa\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "PUT es reemplazo completo. Sin \"password\" la contraseña queda como estaba: es el único campo que no se reemplaza, porque el cliente nunca lo recibe."
+          },
+          "response": []
+        },
+        {
+          "name": "El superAdmin crea un admin -> 201",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "const user = pm.response.json();",
+                  "",
+                  "pm.test('el rol admin quedó asignado', function () {",
+                  "  pm.expect(user.role).to.eql('admin');",
+                  "});",
+                  "",
+                  "pm.collectionVariables.set('newAdminId', user.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{superToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Admin Nuevo\",\n  \"email\": \"adminnuevo+{{$timestamp}}@req2ticket.com\",\n  \"password\": \"AdminPass123\",\n  \"role\": \"admin\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "LA diferencia entre los dos roles: el mismo body con el token de juan (admin) devuelve 403. Ver Validaciones."
+          },
+          "response": []
+        },
+        {
+          "name": "Borrar el usuario creado -> 204",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 204', function () {",
+                  "  pm.response.to.have.status(204);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{superToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/{{newUserId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "{{newUserId}}"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Borrar el admin creado -> 204",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 204', function () {",
+                  "  pm.response.to.have.status(204);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{superToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/{{newAdminId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "{{newAdminId}}"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Con superToken y no con {{token}}: juan es admin y un admin no puede borrar a otro admin. Deja la base como estaba."
+          },
+          "response": []
+        },
+        {
+          "name": "Validaciones",
+          "item": [
+            {
+              "name": "Viewer no puede crear usuarios -> 403",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 403', function () {",
+                      "  pm.response.to.have.status(403);",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{viewerToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/users",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users"
+                  ]
+                },
+                "auth": {
+                  "type": "noauth"
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"No deberia entrar\",\n  \"email\": \"nope@req2ticket.com\",\n  \"password\": \"NopePass123\",\n  \"role\": \"viewer\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "description": "Lo corta la policy CanManageUsers antes de llegar al servicio, así que el 403 viene sin cuerpo. Compará con el de abajo."
+              },
+              "response": []
+            },
+            {
+              "name": "Un admin no puede crear otro admin -> 403",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 403', function () {",
+                      "  pm.response.to.have.status(403);",
+                      "});",
+                      "",
+                      "pm.test('explica por qué', function () {",
+                      "  pm.expect(pm.response.json().message).to.be.a('string');",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/users",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users"
+                  ]
+                },
+                "auth": {
+                  "type": "noauth"
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Admin Paralelo\",\n  \"email\": \"paralelo@req2ticket.com\",\n  \"password\": \"ParalPass123\",\n  \"role\": \"admin\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "description": "Este 403 sí trae cuerpo: pasó la policy y lo frenó la regla del servicio, que compara el rol de quien pide contra el rol que se quiere repartir."
+              },
+              "response": []
+            },
+            {
+              "name": "Un admin no puede crear un superAdmin -> 403",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 403', function () {",
+                      "  pm.response.to.have.status(403);",
+                      "});",
+                      "",
+                      "pm.test('explica por qué', function () {",
+                      "  pm.expect(pm.response.json().message).to.be.a('string');",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/users",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users"
+                  ]
+                },
+                "auth": {
+                  "type": "noauth"
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Otro Super\",\n  \"email\": \"otrosuper@req2ticket.com\",\n  \"password\": \"OtroPass123\",\n  \"role\": \"superAdmin\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Un admin no puede editar al superAdmin -> 403",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 403', function () {",
+                      "  pm.response.to.have.status(403);",
+                      "});",
+                      "",
+                      "pm.test('explica por qué', function () {",
+                      "  pm.expect(pm.response.json().message).to.be.a('string');",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/users/5",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users",
+                    "5"
+                  ]
+                },
+                "auth": {
+                  "type": "noauth"
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Intento\",\n  \"email\": \"super@req2ticket.com\",\n  \"role\": \"viewer\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "description": "El id 5 es el superAdmin del seed."
+              },
+              "response": []
+            },
+            {
+              "name": "Un admin no puede borrar al superAdmin -> 403",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 403', function () {",
+                      "  pm.response.to.have.status(403);",
+                      "});",
+                      "",
+                      "pm.test('explica por qué', function () {",
+                      "  pm.expect(pm.response.json().message).to.be.a('string');",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/users/5",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users",
+                    "5"
+                  ]
+                },
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Nadie cambia su propio rol -> 403",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 403', function () {",
+                      "  pm.response.to.have.status(403);",
+                      "});",
+                      "",
+                      "pm.test('explica por qué', function () {",
+                      "  pm.expect(pm.response.json().message).to.be.a('string');",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{superToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/users/5",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users",
+                    "5"
+                  ]
+                },
+                "auth": {
+                  "type": "noauth"
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Super Admin\",\n  \"email\": \"super@req2ticket.com\",\n  \"role\": \"admin\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "description": "Ni siquiera el superAdmin. Hacia arriba sería ascenderse; hacia abajo es el error del que no se vuelve, porque para recuperarlo hace falta el rol que se acaba de perder."
+              },
+              "response": []
+            },
+            {
+              "name": "Nadie se borra a sí mismo -> 403",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 403', function () {",
+                      "  pm.response.to.have.status(403);",
+                      "});",
+                      "",
+                      "pm.test('explica por qué', function () {",
+                      "  pm.expect(pm.response.json().message).to.be.a('string');",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{superToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/users/5",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users",
+                    "5"
+                  ]
+                },
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Email repetido -> 400",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 400', function () {",
+                      "  pm.response.to.have.status(400);",
+                      "});",
+                      "",
+                      "pm.test('nombra el email', function () {",
+                      "  pm.expect(pm.response.json().message).to.include('@req2ticket.com');",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{superToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/users",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users"
+                  ]
+                },
+                "auth": {
+                  "type": "noauth"
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Duplicado\",\n  \"email\": \"JUAN@req2ticket.com\",\n  \"password\": \"DupliPass123\",\n  \"role\": \"viewer\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "description": "La columna Email usa la collation NOCASE, así que la capitalización no lo salva."
+              },
+              "response": []
+            },
+            {
+              "name": "El rol como entero -> 400",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 400', function () {",
+                      "  pm.response.to.have.status(400);",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{superToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/users",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users"
+                  ]
+                },
+                "auth": {
+                  "type": "noauth"
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Entero\",\n  \"email\": \"entero@req2ticket.com\",\n  \"password\": \"EnteroPass123\",\n  \"role\": 6\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "description": "StringOnlyEnumConverter rechaza el 6 aunque superAdmin sea justamente el 6: los enums viajan como string en las dos direcciones."
+              },
+              "response": []
+            },
+            {
+              "name": "Sin rol -> 400",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 400', function () {",
+                      "  pm.response.to.have.status(400);",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{superToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/users",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users"
+                  ]
+                },
+                "auth": {
+                  "type": "noauth"
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Sin Rol\",\n  \"email\": \"sinrol@req2ticket.com\",\n  \"password\": \"SinRolPass123\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "description": "El rol es obligatorio a propósito: sin él un UserRole no anulable bindearía a 0 (viewer) en silencio."
+              },
+              "response": []
+            }
+          ]
         }
       ]
     },
