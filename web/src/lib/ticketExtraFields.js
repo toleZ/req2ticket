@@ -10,19 +10,37 @@
               coincide, el back responde 400 nombrando la clave: no falla en silencio.
      kind     cómo se dibuja: 'text' | 'textarea' | 'select' | 'checklist'
      label    lo que ve el usuario, en español
-     options  solo para kind 'select': [{ value, label }] */
+     options  solo para kind 'select': [{ value, label }]
+     addLabel solo para kind 'checklist': el texto de la fila para agregar un ítem. Va acá y
+              no armado con el label ('Añadir ' + label) porque el label está en plural
+              ("Criterios de aceptación") y la fila habla de uno solo. */
 
 export const EXTRA_FIELDS = {
   /* La narrativa "Como <rol> quiero <acción> para <beneficio>" no está acá a propósito: va en
      la descripción, como texto libre. Lo que queda son los tres checklists que deciden cuándo
      se puede empezar la historia y cuándo está terminada. */
   userStory: [
-    { name: 'acceptanceCriteria', kind: 'checklist', label: 'Criterios de aceptación' },
-    { name: 'definitionOfReady', kind: 'checklist', label: 'Definition of Ready' },
-    { name: 'definitionOfDone', kind: 'checklist', label: 'Definition of Done' },
+    {
+      name: 'acceptanceCriteria',
+      kind: 'checklist',
+      label: 'Criterios de aceptación',
+      addLabel: 'Añadir criterio de aceptación',
+    },
+    {
+      name: 'definitionOfReady',
+      kind: 'checklist',
+      label: 'Definition of Ready',
+      addLabel: 'Añadir condición para empezar',
+    },
+    {
+      name: 'definitionOfDone',
+      kind: 'checklist',
+      label: 'Definition of Done',
+      addLabel: 'Añadir condición para terminar',
+    },
   ],
 
-  task: [{ name: 'checklist', kind: 'checklist', label: 'Checklist' }],
+  task: [{ name: 'checklist', kind: 'checklist', label: 'Checklist', addLabel: 'Añadir ítem' }],
 
   bug: [
     {
@@ -45,7 +63,12 @@ export const EXTRA_FIELDS = {
   fix: [
     { name: 'rootCause', kind: 'textarea', label: 'Causa raíz' },
     { name: 'solution', kind: 'textarea', label: 'Solución aplicada' },
-    { name: 'verificationSteps', kind: 'checklist', label: 'Pasos de verificación' },
+    {
+      name: 'verificationSteps',
+      kind: 'checklist',
+      label: 'Pasos de verificación',
+      addLabel: 'Añadir paso de verificación',
+    },
     {
       name: 'regressionRisk',
       kind: 'select',

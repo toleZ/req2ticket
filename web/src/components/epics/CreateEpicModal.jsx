@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Layers } from 'lucide-react'
 
 import { Modal } from '@/components/ui/Modal'
 import { getUsers } from '@/lib/api'
@@ -18,6 +19,37 @@ const INITIAL_VALUES = {
   status: 'backlog',
   ownerId: '',
 }
+
+const FORM_ERROR = 'rounded-control bg-red/12 px-3 py-2 text-footnote text-red'
+
+const SWATCH = 'size-7 shrink-0 rounded-full transition-transform duration-fast'
+
+const LABEL = 'mb-1 block text-subheadline font-medium text-label'
+
+const OPTIONAL = 'font-normal text-label-tertiary'
+
+const FIELD_ERROR = 'mt-1 text-footnote text-red'
+
+const CONTROL = `w-full rounded-control border border-separator bg-fill-tertiary px-3 py-2
+  text-body text-label transition-colors duration-fast placeholder:text-label-tertiary
+  hover:border-separator-opaque disabled:opacity-50`
+
+const ICON_WRAP = 'pointer-events-none absolute inset-y-0 left-3 flex items-center text-label-tertiary'
+
+/* El icono va adentro del input; `pl-9` le hace lugar. */
+const CONTROL_ICON = `${CONTROL} pl-9`
+
+const CONTROL_TEXTAREA = `${CONTROL} resize-none`
+
+/* `type="button"` en Cancelar no es opcional: el default adentro de un <form> es
+   "submit", y sin él el botón crea la épica en vez de cerrar. */
+const CANCEL_BUTTON = `inline-flex shrink-0 items-center justify-center gap-1.5 rounded-control
+  px-4 py-2 text-body font-medium text-label-secondary transition-colors duration-fast
+  ease-out-quad hover:bg-fill-tertiary hover:text-label disabled:opacity-50`
+
+const SUBMIT_BUTTON = `inline-flex shrink-0 items-center justify-center gap-1.5 rounded-control
+  bg-blue px-4 py-2 text-body font-medium text-white transition-[filter] duration-fast
+  hover:brightness-110 disabled:opacity-50`
 
 export function CreateEpicModal({ isOpen, onClose, onCreate }) {
   const [values, setValues] = useState(INITIAL_VALUES)
@@ -71,8 +103,8 @@ export function CreateEpicModal({ isOpen, onClose, onCreate }) {
         name: values.name.trim(),
         description: values.description.trim(),
       })
-      // The modal only closes once the epic was created: if the POST fails, what was
-      // typed stays on screen and the error is shown above.
+      // The modal only closes once the epic was created: if the POST fails, what was typed
+      // stays on screen and the error is shown above.
       setValues(INITIAL_VALUES)
       setErrors({})
       onClose()
@@ -87,59 +119,67 @@ export function CreateEpicModal({ isOpen, onClose, onCreate }) {
     <Modal isOpen={isOpen} onClose={handleClose} title="Nueva épica">
       <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
         {formError && (
-          <p className="rounded-control bg-fill-tertiary px-3 py-2 text-footnote text-red" role="alert">
+          <p className={FORM_ERROR} role="alert">
             {formError}
           </p>
         )}
 
-        {/* Each field is one <div>: the form is `flex flex-col gap-4`, so label + input +
-            error as loose siblings would pick up two extra gaps. */}
+        {/* Los aria del control tienen que apuntar al id EXACTO del <p> del error: si no
+            coinciden, el lector de pantalla no lo lee y nada falla a la vista. */}
         <div>
-          <label htmlFor="epic-name" className="mb-1 block text-subheadline font-medium text-label">
+          <label htmlFor="epic-name" className={LABEL}>
             Nombre
           </label>
-          <input
-            id="epic-name"
-            type="text"
-            name="name"
-            value={values.name}
-            onChange={handleChange}
-            aria-invalid={errors.name ? true : undefined}
-            aria-describedby={errors.name ? 'epic-name-error' : undefined}
-            className="w-full rounded-control border border-separator bg-fill-tertiary px-3 py-2 text-body text-label disabled:opacity-50"
-          />
+          <div className="relative">
+            <span className={ICON_WRAP} aria-hidden="true">
+              <Layers className="size-4" />
+            </span>
+            <input
+              id="epic-name"
+              name="name"
+              placeholder="Autenticación y acceso"
+              value={values.name}
+              disabled={submitting}
+              onChange={handleChange}
+              aria-invalid={errors.name ? true : undefined}
+              aria-describedby={errors.name ? 'epic-name-error' : undefined}
+              className={CONTROL_ICON}
+            />
+          </div>
           {errors.name && (
-            <p id="epic-name-error" className="mt-1 text-footnote text-red">
+            <p id="epic-name-error" className={FIELD_ERROR}>
               {errors.name}
             </p>
           )}
         </div>
 
         <div>
-          <label htmlFor="epic-description" className="mb-1 block text-subheadline font-medium text-label">
-            Descripción <span className="font-normal text-label-tertiary">(opcional)</span>
+          <label htmlFor="epic-description" className={LABEL}>
+            Descripción <span className={OPTIONAL}>(opcional)</span>
           </label>
           <textarea
             id="epic-description"
-            rows={2}
             name="description"
+            rows={2}
             value={values.description}
+            disabled={submitting}
             onChange={handleChange}
-            className="w-full resize-none rounded-control border border-separator bg-fill-tertiary px-3 py-2 text-body text-label disabled:opacity-50"
+            className={CONTROL_TEXTAREA}
           />
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label htmlFor="epic-priority" className="mb-1 block text-subheadline font-medium text-label">
+            <label htmlFor="epic-priority" className={LABEL}>
               Prioridad
             </label>
             <select
               id="epic-priority"
               name="priority"
               value={values.priority}
+              disabled={submitting}
               onChange={handleChange}
-              className="w-full rounded-control border border-separator bg-fill-tertiary px-3 py-2 text-body text-label disabled:opacity-50"
+              className={CONTROL}
             >
               {EPIC_PRIORITY_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -150,15 +190,16 @@ export function CreateEpicModal({ isOpen, onClose, onCreate }) {
           </div>
 
           <div>
-            <label htmlFor="epic-status" className="mb-1 block text-subheadline font-medium text-label">
+            <label htmlFor="epic-status" className={LABEL}>
               Estado
             </label>
             <select
               id="epic-status"
               name="status"
               value={values.status}
+              disabled={submitting}
               onChange={handleChange}
-              className="w-full rounded-control border border-separator bg-fill-tertiary px-3 py-2 text-body text-label disabled:opacity-50"
+              className={CONTROL}
             >
               {EPIC_STATUS_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -170,15 +211,16 @@ export function CreateEpicModal({ isOpen, onClose, onCreate }) {
         </div>
 
         <div>
-          <label htmlFor="epic-owner" className="mb-1 block text-subheadline font-medium text-label">
-            Responsable <span className="font-normal text-label-tertiary">(opcional)</span>
+          <label htmlFor="epic-owner" className={LABEL}>
+            Responsable <span className={OPTIONAL}>(opcional)</span>
           </label>
           <select
             id="epic-owner"
             name="ownerId"
             value={values.ownerId}
+            disabled={submitting}
             onChange={handleChange}
-            className="w-full rounded-control border border-separator bg-fill-tertiary px-3 py-2 text-body text-label disabled:opacity-50"
+            className={CONTROL}
           >
             <option value="">Sin asignar</option>
             {users.map((user) => (
@@ -189,12 +231,11 @@ export function CreateEpicModal({ isOpen, onClose, onCreate }) {
           </select>
         </div>
 
-        {/* Not a text field: these are buttons that paint a colour, so it neither uses
-            TextField nor goes through handleChange. */}
+        {/* No es un campo de texto: son botones que pintan un color, así que no hay <input>
+            ni pasa por handleChange. Un <p> y no un <label> porque no hay un único control al
+            que apuntar — el nombre del grupo lo pone el aria-label. */}
         <div>
-          {/* A <p>, not a <label>: there is no single control to point at. The group's
-              accessible name comes from the radiogroup's aria-label below. */}
-          <p className="mb-1 block text-subheadline font-medium text-label">Color</p>
+          <p className={LABEL}>Color</p>
           <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Color de acento">
             {ACCENT_COLORS.map((color) => (
               <button
@@ -203,9 +244,10 @@ export function CreateEpicModal({ isOpen, onClose, onCreate }) {
                 role="radio"
                 aria-checked={values.accentColor === color.value}
                 aria-label={color.value}
+                disabled={submitting}
                 onClick={() => setValues({ ...values, accentColor: color.value })}
                 className={cn(
-                  'size-7 shrink-0 rounded-full transition-transform duration-fast',
+                  SWATCH,
                   color.dotClass,
                   values.accentColor === color.value &&
                     'scale-110 ring-2 ring-label ring-offset-2 ring-offset-elevated',
@@ -216,17 +258,16 @@ export function CreateEpicModal({ isOpen, onClose, onCreate }) {
         </div>
 
         <div className="mt-1 flex justify-end gap-2">
-          {/* type="button" is not optional: inside a <form> the browser default is
-              "submit", so without it Cancelar would create the record. */}
           <button
             type="button"
             onClick={handleClose}
             disabled={submitting}
-            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-control px-4 py-2 text-body font-medium text-label-secondary transition-colors duration-fast hover:bg-fill-tertiary disabled:opacity-50"
+            className={CANCEL_BUTTON}
           >
             Cancelar
           </button>
-          <button type="submit" disabled={submitting} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-control bg-blue px-4 py-2 text-body font-medium text-white transition-[filter] duration-fast hover:brightness-110 disabled:opacity-50">
+          <button type="submit" disabled={submitting} className={SUBMIT_BUTTON}>
+            <Layers className="size-4" aria-hidden="true" />
             {submitting ? 'Creando…' : 'Crear épica'}
           </button>
         </div>

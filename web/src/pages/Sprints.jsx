@@ -5,20 +5,41 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { CreateSprintModal } from '@/components/sprints/CreateSprintModal'
 import { SprintBacklog } from '@/components/sprints/SprintBacklog'
 import { SprintList } from '@/components/sprints/SprintList'
+import { TicketDetailModal } from '@/components/tickets/TicketDetailModal'
 import { LoadState } from '@/components/ui/LoadState'
-import { createSprint, deleteSprint, getSprints, getTickets, updateSprint } from '@/lib/api'
+import {
+  createSprint,
+  deleteSprint,
+  deleteTicket,
+  getEpics,
+  getSprints,
+  getTickets,
+  getUsers,
+  updateSprint,
+  updateTicket,
+} from '@/lib/api'
 import { SPRINT_ACTIVE } from '@/lib/sprintOptions'
 
-const NEW_BUTTON = `inline-flex shrink-0 items-center justify-center gap-1.5 rounded-control bg-blue px-3
-  py-2 text-subheadline font-medium text-white transition-[filter] duration-fast
+const PRIMARY_BUTTON = `inline-flex shrink-0 items-center justify-center gap-1.5 rounded-control
+  bg-blue px-3 py-1.5 text-subheadline font-medium text-white transition-[filter] duration-fast
   hover:brightness-110 disabled:opacity-50`
 
 export function Sprints() {
   const [sprints, setSprints] = useState([])
   const [tickets, setTickets] = useState([])
+  /* Las épicas y los usuarios no se dibujan en esta página: son para los desplegables del
+     modal de detalle de un ticket, que se abre desde la tarjeta de un sprint y desde el
+     bloque Backlog. */
+  const [epics, setEpics] = useState([])
+  const [users, setUsers] = useState([])
   const [loadState, setLoadState] = useState('loading') // 'loading' | 'ready' | 'error'
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [reloadKey, setReloadKey] = useState(0)
+
+  /* Guardado por id y no como objeto: el ticket se busca en `tickets` en cada render, así que
+     después de guardar el modal ve lo que devolvió la API, y si se borró pasa a null y el
+     modal se desmonta solo. */
+  const [detailTicketId, setDetailTicketId] = useState(null)
 
   /* `reloadKey` is the "retry": bumping it by one makes React run the effect below again.
      It is how you repeat a load without pulling the fetch out of the effect.
@@ -27,10 +48,12 @@ export function Sprints() {
      it here would trigger one extra render. `handleRetry` does, because there it is the
      response to a click. */
   useEffect(() => {
-    Promise.all([getSprints(), getTickets()])
-      .then(([nextSprints, nextTickets]) => {
+    Promise.all([getSprints(), getTickets(), getEpics(), getUsers()])
+      .then(([nextSprints, nextTickets, nextEpics, nextUsers]) => {
         setSprints(nextSprints)
         setTickets(nextTickets)
+        setEpics(nextEpics)
+        setUsers(nextUsers)
         setLoadState('ready')
       })
       .catch(() => setLoadState('error'))
@@ -64,18 +87,35 @@ export function Sprints() {
     )
   }
 
+  /* updateTicket devuelve el ticket recién leído de la API, así que se reemplaza entero. Es la
+     misma función, palabra por palabra, en las tres páginas que abren el modal de un ticket. */
+  async function handleUpdateTicket(ticket, patch) {
+    const updated = await updateTicket(ticket, patch)
+    setTickets((prev) => prev.map((current) => (current.id === updated.id ? updated : current)))
+  }
+
+  async function handleDeleteTicket(ticket) {
+    await deleteTicket(ticket.id)
+    setTickets((prev) => prev.filter((current) => current.id !== ticket.id))
+  }
+
   const activeSprint = sprints.find((sprint) => sprint.status === SPRINT_ACTIVE)
   const backlogTickets = tickets.filter((ticket) => ticket.sprintId === null)
+  const detailTicket = tickets.find((ticket) => ticket.id === detailTicketId) ?? null
 
   const activeText = activeSprint ? `${activeSprint.name} en curso · ` : ''
   const countText =
     sprints.length === 1 ? '1 sprint en total' : `${sprints.length} sprints en total`
   const subtitle = loadState === 'ready' ? `${activeText}${countText}.` : null
 
+  function handleSelectTicket(ticket) {
+    setDetailTicketId(ticket.id)
+  }
+
   return (
     <section>
       <PageHeader title="Sprints" subtitle={subtitle}>
-        <button type="button" onClick={() => setIsModalOpen(true)} className={NEW_BUTTON}>
+        <button type="button" onClick={() => setIsModalOpen(true)} className={PRIMARY_BUTTON}>
           <Plus className="size-4" aria-hidden="true" />
           Nuevo sprint
         </button>
@@ -98,12 +138,30 @@ export function Sprints() {
           tickets={tickets}
           onUpdateSprint={handleUpdateSprint}
           onDeleteSprint={handleDeleteSprint}
+          onSelectTicket={handleSelectTicket}
         />
       )}
 
-      {loadState === 'ready' && <SprintBacklog tickets={backlogTickets} />}
+      {loadState === 'ready' && (
+        <SprintBacklog tickets={backlogTickets} onSelectTicket={handleSelectTicket} />
+      )}
 
       <CreateSprintModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onCreate={handleCreate} />
+
+      {/* Montado sólo mientras hay un ticket elegido: así cada apertura siembra el formulario
+          de cero y no queda estado del anterior. */}
+      {detailTicket && (
+        <TicketDetailModal
+          key={detailTicket.id}
+          ticket={detailTicket}
+          epics={epics}
+          sprints={sprints}
+          users={users}
+          onClose={() => setDetailTicketId(null)}
+          onUpdateTicket={handleUpdateTicket}
+          onDeleteTicket={handleDeleteTicket}
+        />
+      )}
     </section>
   )
 }

@@ -3,8 +3,9 @@ import { ArrowUpDown, Plus } from 'lucide-react'
 
 import { PageHeader } from '@/components/layout/PageHeader'
 import { CreateTicketModal } from '@/components/tickets/CreateTicketModal'
-import { EditableTicketList } from '@/components/tickets/EditableTicketList'
+import { TicketDetailModal } from '@/components/tickets/TicketDetailModal'
 import { TicketFilterBar } from '@/components/tickets/TicketFilterBar'
+import { TicketList } from '@/components/tickets/TicketList'
 import { LoadState } from '@/components/ui/LoadState'
 import {
   createTicket,
@@ -17,13 +18,13 @@ import {
 } from '@/lib/api'
 import { NO_SPRINT, TICKET_PRIORITY_OPTIONS, TICKET_STATUS_OPTIONS } from '@/lib/ticketOptions'
 
-const NEW_BUTTON = `inline-flex shrink-0 items-center justify-center gap-1.5 rounded-control bg-blue px-3
-  py-2 text-subheadline font-medium text-white transition-[filter] duration-fast
+const PRIMARY_BUTTON = `inline-flex shrink-0 items-center justify-center gap-1.5 rounded-control
+  bg-blue px-3 py-1.5 text-subheadline font-medium text-white transition-[filter] duration-fast
   hover:brightness-110 disabled:opacity-50`
 
-const SORT_BUTTON = `inline-flex shrink-0 items-center justify-center gap-1.5 rounded-control
-  bg-fill-tertiary px-3 py-2 text-subheadline font-medium text-label transition-colors
-  duration-fast hover:bg-fill-secondary disabled:opacity-50`
+const NEUTRAL_BUTTON = `inline-flex shrink-0 items-center justify-center gap-1.5 rounded-control
+  bg-fill-tertiary px-3 py-1.5 text-subheadline font-medium text-label transition-colors
+  duration-fast ease-out-quad hover:bg-fill-secondary disabled:opacity-50`
 
 /* The order comes from TICKET_PRIORITY_OPTIONS, which runs low to high, so the sort
    subtracts the other way round. Deriving it instead of hand-writing a map keeps a newly
@@ -40,6 +41,11 @@ export function Tickets() {
   const [loadState, setLoadState] = useState('loading') // 'loading' | 'ready' | 'error'
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [reloadKey, setReloadKey] = useState(0)
+
+  /* El ticket abierto en el modal de detalle, guardado por id y no como objeto: el ticket de
+     verdad se busca en `tickets` en cada render, así que después de guardar el modal ve lo
+     que devolvió la API — el `updatedAt` nuevo incluido — sin que haya que refrescarlo a mano. */
+  const [detailTicketId, setDetailTicketId] = useState(null)
 
   const [search, setSearch] = useState('')
   const [assigneeFilter, setAssigneeFilter] = useState('')
@@ -78,20 +84,13 @@ export function Tickets() {
     setTickets((prev) => [...prev, created])
   }
 
-  // The PUT returns no body, so the merge is local. If the sprint is what changed, its name
-  // has to be recomputed too, since that is what the row's badge displays.
+  /* updateTicket devuelve el ticket recién leído de la API, así que acá se reemplaza entero
+     en vez de recomponerlo a mano. Antes había que recalcular `sprintName` en esta función; con
+     el modal de detalle también podrían cambiar `epicName` y `assigneeName`, y `updatedAt` no
+     hay forma de adivinarlo desde el navegador. */
   async function handleUpdateTicket(ticket, patch) {
-    await updateTicket(ticket, patch)
-
-    const merged = { ...patch }
-    if ('sprintId' in patch) {
-      const sprintId = patch.sprintId ? Number(patch.sprintId) : null
-      const sprint = sprints.find((candidate) => candidate.id === sprintId)
-      merged.sprintId = sprintId
-      merged.sprintName = sprint ? sprint.name : null
-    }
-
-    setTickets((prev) => prev.map((current) => (current.id === ticket.id ? { ...current, ...merged } : current)))
+    const updated = await updateTicket(ticket, patch)
+    setTickets((prev) => prev.map((current) => (current.id === updated.id ? updated : current)))
   }
 
   async function handleDeleteTicket(ticket) {
@@ -125,6 +124,10 @@ export function Tickets() {
     return { status, tickets: sectionTickets }
   })
 
+  /* Se busca acá y no se guarda en el estado: si el ticket se borró, esto pasa a null y el
+     modal se desmonta solo, sin un handler que se acuerde de cerrarlo. */
+  const detailTicket = tickets.find((ticket) => ticket.id === detailTicketId) ?? null
+
   const subtitle =
     loadState === 'ready'
       ? `${filteredTickets.length} de ${tickets.length} tickets del proyecto.`
@@ -137,12 +140,12 @@ export function Tickets() {
           type="button"
           onClick={() => setSortByPriority(!sortByPriority)}
           aria-pressed={sortByPriority}
-          className={SORT_BUTTON}
+          className={NEUTRAL_BUTTON}
         >
           <ArrowUpDown className="size-4" aria-hidden="true" />
           Prioridad
         </button>
-        <button type="button" onClick={() => setIsModalOpen(true)} className={NEW_BUTTON}>
+        <button type="button" onClick={() => setIsModalOpen(true)} className={PRIMARY_BUTTON}>
           <Plus className="size-4" aria-hidden="true" />
           Nuevo ticket
         </button>
@@ -186,12 +189,7 @@ export function Tickets() {
       )}
 
       {loadState === 'ready' && filteredTickets.length > 0 && (
-        <EditableTicketList
-          sections={sections}
-          sprints={sprints}
-          onUpdateTicket={handleUpdateTicket}
-          onDeleteTicket={handleDeleteTicket}
-        />
+        <TicketList sections={sections} onSelectTicket={(ticket) => setDetailTicketId(ticket.id)} />
       )}
 
       <CreateTicketModal
@@ -201,6 +199,23 @@ export function Tickets() {
         epics={epics}
         sprints={sprints}
       />
+
+      {/* Montado sólo mientras hay un ticket elegido: así cada apertura siembra el formulario
+          de cero y no queda estado del anterior. El `key` es la misma idea escrita dos veces,
+          y está a propósito — el día que se pueda saltar de un ticket a otro sin cerrar, es lo
+          único que evita que el segundo aparezca con el texto del primero. */}
+      {detailTicket && (
+        <TicketDetailModal
+          key={detailTicket.id}
+          ticket={detailTicket}
+          epics={epics}
+          sprints={sprints}
+          users={users}
+          onClose={() => setDetailTicketId(null)}
+          onUpdateTicket={handleUpdateTicket}
+          onDeleteTicket={handleDeleteTicket}
+        />
+      )}
     </section>
   )
 }

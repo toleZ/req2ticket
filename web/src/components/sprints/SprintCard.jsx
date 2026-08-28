@@ -13,16 +13,16 @@ import { summarizeTickets } from '@/lib/ticketStats'
 const TOGGLE_BUTTON = `mt-3 w-full border-t border-separator pt-3 text-left text-subheadline
   text-label-secondary transition-colors duration-fast hover:text-label`
 
-/* Smaller than the page-level buttons: this one sits in the card's header row. */
-const COMPLETE_BUTTON = `inline-flex shrink-0 items-center justify-center gap-1.5 rounded-control
-  bg-fill-tertiary px-3 py-1.5 text-footnote font-medium text-label transition-colors
-  duration-fast hover:bg-fill-secondary disabled:opacity-50`
-
 const DELETE_BUTTON = `grid size-8 shrink-0 place-items-center rounded-control text-label-tertiary
   transition-colors duration-fast ease-out-quad hover:bg-red/12 hover:text-red
   disabled:opacity-50`
 
-export function SprintCard({ sprint, tickets, onUpdateSprint, onDeleteSprint }) {
+/* Medidas chicas: este botón vive en la cabecera de la tarjeta, no en la de la página. */
+const COMPLETE_BUTTON = `inline-flex shrink-0 items-center justify-center gap-1.5 rounded-control
+  bg-fill-tertiary px-3 py-1.5 text-subheadline font-medium text-label transition-colors
+  duration-fast ease-out-quad hover:bg-fill-secondary disabled:opacity-50`
+
+export function SprintCard({ sprint, tickets, onUpdateSprint, onDeleteSprint, onSelectTicket }) {
   const [isExpanded, setIsExpanded] = useState(false)
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
   const [isCompleteOpen, setIsCompleteOpen] = useState(false)
@@ -130,7 +130,7 @@ export function SprintCard({ sprint, tickets, onUpdateSprint, onDeleteSprint }) 
           </p>
         ) : (
           <div className="px-0.5 pb-0.5">
-            <TicketSummaryList tickets={tickets} />
+            <TicketSummaryList tickets={tickets} onSelectTicket={onSelectTicket} />
           </div>
         ))}
 
