@@ -6,7 +6,7 @@ acá y lo mandes en un PR.
 
 | Archivo | Qué es |
 |---|---|
-| `req2ticket.postman_collection.json` | La colección: 63 requests en 5 carpetas (Auth, Users, Epics, Sprints, Historias) + una subcarpeta `Validaciones` en las tres últimas, con tests |
+| `req2ticket.postman_collection.json` | La colección: 81 requests en 5 carpetas (Auth, Users, Epics, Sprints, Tickets) + una subcarpeta `Validaciones` en las tres últimas, con tests |
 | `req2ticket.local.postman_environment.json` | El environment `req2ticket - Local`: solo `baseUrl` |
 
 ## Importar
@@ -30,7 +30,7 @@ defecto): volvé a correr el login.
 
 `Registro nuevo` usa `beta+{{$timestamp}}@req2ticket.com` para que la colección se pueda correr
 muchas veces seguidas sin chocar con el registro de la corrida anterior, y guarda su token en
-`viewerToken`. Eso es lo que hace posible los casos `Viewer no puede crear épicas / historias /
+`viewerToken`. Eso es lo que hace posible los casos `Viewer no puede crear épicas / tickets /
 sprints -> 403`, que prueban que la autorización mira el rol y no solo la sesión.
 
 ## Actualizar la colección (cuando agregás o cambiás un endpoint)
@@ -54,7 +54,7 @@ antes de commitear — si no, el resto del equipo va a empezar a ver duplicados.
 ## Cómo están armadas las variables
 
 Las variables de colección (`baseUrl`, `seedEmail`, `seedPassword`, `userId`, `epicId`, `epicCode`,
-`sprintId`, `storyId`, `storyCode`, `backlogStoryId`) viven adentro del JSON de la colección, así que
+`sprintId`, `ticketId`, `ticketCode`, `backlogTicketId`) viven adentro del JSON de la colección, así que
 la colección funciona aunque no selecciones ningún environment. El environment define **solo**
 `baseUrl` y pisa la de la colección: es el único valor que cambia si algún día apuntamos a un server
 que no sea local.
@@ -65,16 +65,23 @@ Varias de esas variables las escriben los tests solos durante la corrida:
 - `Crear épica (completa)` guarda `epicId` y `epicCode`, y las usan las requests de GET by id,
   GET by code, PUT y DELETE
 - `Crear sprint` guarda `sprintId`
-- `Crear historia (en un sprint)` guarda `storyId` y `storyCode`, y
-  `Crear historia (sin sprint, va al backlog)` guarda `backlogStoryId`
+- `Crear historia de usuario (en un sprint)` guarda `ticketId` y `ticketCode`;
+  `Crear tarea que cuelga de la historia` guarda `childTicketId`; `Crear bug` guarda
+  `bugTicketId`; `Crear fix que cuelga del bug` guarda `fixTicketId`; y
+  `Crear ticket (sin sprint, va al backlog)` guarda `backlogTicketId`
 
 Por eso la colección se puede correr entera con el **Runner** de arriba a abajo. Los valores que
 están hardcodeados en el JSON son solo defaults para cuando corrés una request suelta.
 
-Las requests que cruzan entidades (`Historias de la épica`, `Historias del sprint`, y la creación de
-historias) apuntan a ids del seed —épica 1, sprint 2— y no a los recién creados: así siguen andando
+Las requests que cruzan entidades (`Tickets de la épica`, `Tickets del sprint`, y la creación de
+tickets) apuntan a ids del seed —épica 1, sprint 2— y no a los recién creados: así siguen andando
 cuando las corrés sueltas, sin depender de que la request anterior haya pasado. Las carpetas
-`Sprints` e `Historias` borran al final todo lo que crearon, así que la base queda como estaba.
+`Sprints` y `Tickets` borran al final todo lo que crearon, así que la base queda como estaba.
+
+La carpeta `Tickets` cubre los cuatro tipos (userStory, task, bug, fix), el `parentId` que los
+encadena y el `extraFields` de cada uno. Dos casos que conviene no romper: una clave que no es
+del tipo del ticket tiene que dar 400 nombrándola, y borrar un ticket padre tiene que llevarse
+a sus hijos.
 
 ## Ojo con las contraseñas
 

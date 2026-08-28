@@ -6,5 +6,5 @@
 export * from './auth'
 export * from './epics'
 export * from './sprints'
-export * from './stories'
+export * from './tickets'
 export * from './users'

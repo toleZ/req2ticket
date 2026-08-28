@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Domain;
+namespace Domain.Common;
 
 // JsonStringEnumConverter accepts ints as well as names by default, so "priority": 2
 // would quietly land as "high". The API speaks strings only: this subclass exists just

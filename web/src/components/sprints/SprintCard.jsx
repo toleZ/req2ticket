@@ -1,14 +1,14 @@
 import { useState } from 'react'
 import { Calendar, CheckCheck, Flag, Trash2 } from 'lucide-react'
 
-import { StorySummaryList } from '@/components/stories/StorySummaryList'
+import { TicketSummaryList } from '@/components/tickets/TicketSummaryList'
 import { Badge } from '@/components/ui/Badge'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { daysRemaining, formatDateRange } from '@/lib/dates'
 import { findOption } from '@/lib/options'
 import { SPRINT_ACTIVE, SPRINT_COMPLETED, SPRINT_STATUS_OPTIONS } from '@/lib/sprintOptions'
-import { summarizeStories } from '@/lib/storyStats'
+import { summarizeTickets } from '@/lib/ticketStats'
 
 const TOGGLE_BUTTON = `mt-3 w-full border-t border-separator pt-3 text-left text-subheadline
   text-label-secondary transition-colors duration-fast hover:text-label`
@@ -22,7 +22,7 @@ const DELETE_BUTTON = `grid size-8 shrink-0 place-items-center rounded-control t
   transition-colors duration-fast ease-out-quad hover:bg-red/12 hover:text-red
   disabled:opacity-50`
 
-export function SprintCard({ sprint, stories, onUpdateSprint, onDeleteSprint }) {
+export function SprintCard({ sprint, tickets, onUpdateSprint, onDeleteSprint }) {
   const [isExpanded, setIsExpanded] = useState(false)
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
   const [isCompleteOpen, setIsCompleteOpen] = useState(false)
@@ -30,9 +30,9 @@ export function SprintCard({ sprint, stories, onUpdateSprint, onDeleteSprint }) 
   const status = findOption(SPRINT_STATUS_OPTIONS, sprint.status)
   const daysLeft = daysRemaining(sprint.endDate)
 
-  // `stories` are the stories assigned to this sprint, already filtered by the page: the
+  // `tickets` are the tickets assigned to this sprint, already filtered by the page: the
   // card never asks the API for them again.
-  const stats = summarizeStories(stories)
+  const stats = summarizeTickets(tickets)
   const progressPct = stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0
 
   return (
@@ -85,7 +85,7 @@ export function SprintCard({ sprint, stories, onUpdateSprint, onDeleteSprint }) 
         <div className="min-w-48 flex-1">
           <div className="flex items-center justify-between text-footnote text-label-secondary">
             <span>
-              {stats.completed} de {stats.total} historias completadas
+              {stats.completed} de {stats.total} tickets completados
             </span>
             <span>{progressPct}%</span>
           </div>
@@ -119,18 +119,18 @@ export function SprintCard({ sprint, stories, onUpdateSprint, onDeleteSprint }) 
         className={TOGGLE_BUTTON}
       >
         {isExpanded
-          ? 'Ocultar historias'
-          : `Ver ${stats.total} ${stats.total === 1 ? 'historia' : 'historias'}`}
+          ? 'Ocultar tickets'
+          : `Ver ${stats.total} ${stats.total === 1 ? 'ticket' : 'tickets'}`}
       </button>
 
       {isExpanded &&
         (stats.total === 0 ? (
           <p className="px-0.5 pb-0.5 text-footnote text-label-tertiary">
-            Todavía no hay historias asignadas a este sprint.
+            Todavía no hay tickets asignados a este sprint.
           </p>
         ) : (
           <div className="px-0.5 pb-0.5">
-            <StorySummaryList stories={stories} />
+            <TicketSummaryList tickets={tickets} />
           </div>
         ))}
 

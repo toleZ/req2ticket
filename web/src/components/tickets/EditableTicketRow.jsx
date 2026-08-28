@@ -2,6 +2,7 @@ import { useId, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { ChevronRight, FileText, Trash2 } from 'lucide-react'
 
+import { TicketExtrasPanel } from '@/components/tickets/TicketExtrasPanel'
 import { Avatar } from '@/components/ui/Avatar'
 import { Badge } from '@/components/ui/Badge'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
@@ -10,7 +11,8 @@ import { cn } from '@/lib/cn'
 import { errorMessage } from '@/lib/errors'
 import { findOption } from '@/lib/options'
 import { springSoft } from '@/lib/motion'
-import { STORY_PRIORITY_OPTIONS, STORY_STATUS_OPTIONS } from '@/lib/storyOptions'
+import { TICKET_PRIORITY_OPTIONS, TICKET_STATUS_OPTIONS, TICKET_TYPE_OPTIONS } from '@/lib/ticketOptions'
+import { checklistProgress } from '@/lib/ticketStats'
 
 /* The row's selects are smaller than a form field and sit on the expanded panel, which
    is bg-elevated. Written out in full: there is no twMerge here to drop the classes this
@@ -26,20 +28,22 @@ const DELETE_BUTTON = `grid size-8 shrink-0 place-items-center rounded-control t
   transition-colors duration-fast ease-out-quad hover:bg-red/12 hover:text-red
   disabled:opacity-50`
 
-export function EditableStoryRow({ story, sprints, onUpdateStory, onDeleteStory }) {
+export function EditableTicketRow({ ticket, sprints, onUpdateTicket, onDeleteTicket }) {
   const panelId = useId()
   const [isEditing, setIsEditing] = useState(false)
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
   const [savingField, setSavingField] = useState(null)
   const [saveError, setSaveError] = useState('')
 
-  const priority = findOption(STORY_PRIORITY_OPTIONS, story.priority)
+  const priority = findOption(TICKET_PRIORITY_OPTIONS, ticket.priority)
+  const type = findOption(TICKET_TYPE_OPTIONS, ticket.type)
+  const checklist = checklistProgress(ticket)
 
   async function saveField(field, value) {
     setSaveError('')
     setSavingField(field)
     try {
-      await onUpdateStory(story, { [field]: value })
+      await onUpdateTicket(ticket, { [field]: value })
     } catch (err) {
       setSaveError(errorMessage(err))
     } finally {
@@ -54,7 +58,7 @@ export function EditableStoryRow({ story, sprints, onUpdateStory, onDeleteStory 
             instead: the usual fill-tertiary hover would be invisible here. */}
         <button
           type="button"
-          aria-label={isEditing ? 'Cerrar edición' : 'Editar historia'}
+          aria-label={isEditing ? 'Cerrar edición' : 'Editar ticket'}
           onClick={() => setIsEditing(!isEditing)}
           aria-expanded={isEditing}
           aria-controls={panelId}
@@ -68,30 +72,34 @@ export function EditableStoryRow({ story, sprints, onUpdateStory, onDeleteStory 
 
         <FileText className="size-4 shrink-0 text-label-tertiary" aria-hidden="true" />
 
-        <span className="shrink-0 text-caption text-label-tertiary">{story.code}</span>
+        <span className="shrink-0 text-caption text-label-tertiary">{ticket.code}</span>
 
-        <span className="min-w-0 flex-1 truncate text-subheadline text-label">{story.title}</span>
+        {type && <Badge tone={type.tone}>{type.short}</Badge>}
 
-        {story.epicName && <Badge tone="neutral">{story.epicName}</Badge>}
+        <span className="min-w-0 flex-1 truncate text-subheadline text-label">{ticket.title}</span>
 
-        {story.sprintName && <Badge tone="purple">{story.sprintName}</Badge>}
+        {ticket.epicName && <Badge tone="neutral">{ticket.epicName}</Badge>}
 
-        <span className="flex shrink-0 items-center gap-1.5">
-          <span className="text-caption text-label-tertiary">
-            {story.criteriaDone}/{story.criteriaTotal} criterios
+        {ticket.sprintName && <Badge tone="purple">{ticket.sprintName}</Badge>}
+
+        {checklist.total > 0 && (
+          <span className="flex shrink-0 items-center gap-1.5">
+            <span className="text-caption text-label-tertiary">
+              {checklist.done}/{checklist.total}
+            </span>
+            <ProgressBar value={checklist.done} max={checklist.total} size="sm" className="w-14" />
           </span>
-          <ProgressBar value={story.criteriaDone} max={story.criteriaTotal} size="sm" className="w-14" />
-        </span>
+        )}
 
         {priority && <Badge tone={priority.tone}>{priority.label}</Badge>}
 
-        <span className="shrink-0 text-caption font-medium text-label-secondary">{story.points} pts</span>
+        <span className="shrink-0 text-caption font-medium text-label-secondary">{ticket.points} pts</span>
 
-        <Avatar name={story.assigneeName} size="sm" />
+        <Avatar name={ticket.assigneeName} size="sm" />
 
         <button
           type="button"
-          aria-label="Eliminar historia"
+          aria-label="Eliminar ticket"
           onClick={() => setIsDeleteOpen(true)}
           className={DELETE_BUTTON}
         >
@@ -120,12 +128,12 @@ export function EditableStoryRow({ story, sprints, onUpdateStory, onDeleteStory 
                 <label className="flex items-center gap-1.5 text-footnote text-label-secondary">
                   Estado
                   <select
-                    value={story.status}
+                    value={ticket.status}
                     disabled={savingField === 'status'}
                     onChange={(e) => saveField('status', e.target.value)}
                     className={ROW_SELECT}
                   >
-                    {STORY_STATUS_OPTIONS.map((option) => (
+                    {TICKET_STATUS_OPTIONS.map((option) => (
                       <option key={option.value} value={option.value}>
                         {option.label}
                       </option>
@@ -136,7 +144,7 @@ export function EditableStoryRow({ story, sprints, onUpdateStory, onDeleteStory 
                 <label className="flex items-center gap-1.5 text-footnote text-label-secondary">
                   Sprint
                   <select
-                    value={story.sprintId ?? ''}
+                    value={ticket.sprintId ?? ''}
                     disabled={savingField === 'sprintId'}
                     onChange={(e) => saveField('sprintId', e.target.value)}
                     className={ROW_SELECT}
@@ -153,12 +161,12 @@ export function EditableStoryRow({ story, sprints, onUpdateStory, onDeleteStory 
                 <label className="flex items-center gap-1.5 text-footnote text-label-secondary">
                   Prioridad
                   <select
-                    value={story.priority}
+                    value={ticket.priority}
                     disabled={savingField === 'priority'}
                     onChange={(e) => saveField('priority', e.target.value)}
                     className={ROW_SELECT}
                   >
-                    {STORY_PRIORITY_OPTIONS.map((option) => (
+                    {TICKET_PRIORITY_OPTIONS.map((option) => (
                       <option key={option.value} value={option.value}>
                         {option.label}
                       </option>
@@ -166,6 +174,8 @@ export function EditableStoryRow({ story, sprints, onUpdateStory, onDeleteStory 
                   </select>
                 </label>
               </div>
+
+              <TicketExtrasPanel ticket={ticket} onUpdateTicket={onUpdateTicket} />
             </div>
           </motion.div>
         )}
@@ -173,13 +183,13 @@ export function EditableStoryRow({ story, sprints, onUpdateStory, onDeleteStory 
 
       <ConfirmModal
         isOpen={isDeleteOpen}
-        title="Eliminar historia"
+        title="Eliminar ticket"
         confirmLabel="Eliminar"
         pendingLabel="Eliminando…"
         onClose={() => setIsDeleteOpen(false)}
-        onConfirm={() => onDeleteStory(story)}
+        onConfirm={() => onDeleteTicket(ticket)}
       >
-        ¿Seguro que querés eliminar <span className="font-medium text-label">"{story.title}"</span>?
+        ¿Seguro que querés eliminar <span className="font-medium text-label">"{ticket.title}"</span>?
         Esta acción no se puede deshacer.
       </ConfirmModal>
     </li>

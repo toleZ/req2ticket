@@ -73,11 +73,11 @@ export function validateEpicForm(values) {
   return errors
 }
 
-export function validateStoryForm(values) {
+export function validateTicketForm(values) {
   const errors = {}
 
   if (!values.title.trim()) {
-    errors.title = 'Ingresá un título para la historia'
+    errors.title = 'Ingresá un título para el ticket'
   }
 
   if (!values.epicId) {

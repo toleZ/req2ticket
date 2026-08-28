@@ -2,7 +2,7 @@ import { useId, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { ChevronRight, Trash2 } from 'lucide-react'
 
-import { StorySummaryList } from '@/components/stories/StorySummaryList'
+import { TicketSummaryList } from '@/components/tickets/TicketSummaryList'
 import { Badge } from '@/components/ui/Badge'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { ProgressBar } from '@/components/ui/ProgressBar'
@@ -11,7 +11,7 @@ import { errorMessage } from '@/lib/errors'
 import { ACCENT_COLORS, EPIC_PRIORITY_OPTIONS, EPIC_STATUS_OPTIONS } from '@/lib/epicOptions'
 import { findOption } from '@/lib/options'
 import { springSoft } from '@/lib/motion'
-import { summarizeStories } from '@/lib/storyStats'
+import { summarizeTickets } from '@/lib/ticketStats'
 
 /* The row's selects are smaller than a form field and sit on the expanded panel, which
    is bg-elevated. Written out in full: there is no twMerge here to drop the classes this
@@ -27,7 +27,7 @@ const DELETE_BUTTON = `grid size-8 shrink-0 place-items-center rounded-control t
   transition-colors duration-fast ease-out-quad hover:bg-red/12 hover:text-red
   disabled:opacity-50`
 
-export function EpicRow({ epic, stories, onUpdateEpic, onDeleteEpic }) {
+export function EpicRow({ epic, tickets, onUpdateEpic, onDeleteEpic }) {
   const panelId = useId()
   const [isEditing, setIsEditing] = useState(false)
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
@@ -37,7 +37,7 @@ export function EpicRow({ epic, stories, onUpdateEpic, onDeleteEpic }) {
   const accent = findOption(ACCENT_COLORS, epic.accentColor)
   const status = findOption(EPIC_STATUS_OPTIONS, epic.status)
   const priority = findOption(EPIC_PRIORITY_OPTIONS, epic.priority)
-  const stats = summarizeStories(stories)
+  const stats = summarizeTickets(tickets)
 
   async function saveField(field, value) {
     setSaveError('')
@@ -87,7 +87,7 @@ export function EpicRow({ epic, stories, onUpdateEpic, onDeleteEpic }) {
 
           <div className="mt-1.5 flex flex-wrap items-center gap-2">
             <span className="text-caption text-label-tertiary">
-              {stats.completed}/{stats.total} {stats.total === 1 ? 'historia' : 'historias'} ·{' '}
+              {stats.completed}/{stats.total} {stats.total === 1 ? 'ticket' : 'tickets'} ·{' '}
               {stats.pointsCompleted}/{stats.points} pts
             </span>
             <ProgressBar value={stats.completed} max={stats.total} size="sm" className="w-20" />
@@ -160,14 +160,14 @@ export function EpicRow({ epic, stories, onUpdateEpic, onDeleteEpic }) {
               </div>
 
               <div>
-                <p className="text-footnote font-medium text-label-secondary">Historias</p>
+                <p className="text-footnote font-medium text-label-secondary">Tickets</p>
                 {stats.total === 0 ? (
                   <p className="mt-1.5 text-footnote text-label-tertiary">
-                    Esta épica todavía no tiene historias.
+                    Esta épica todavía no tiene tickets.
                   </p>
                 ) : (
                   <div className="mt-1.5">
-                    <StorySummaryList stories={stories} />
+                    <TicketSummaryList tickets={tickets} />
                   </div>
                 )}
               </div>

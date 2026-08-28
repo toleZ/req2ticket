@@ -1,3 +1,4 @@
+using Domain.Common;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
@@ -30,7 +31,7 @@ public class User
     public UserRole Role { get; set; } = UserRole.Viewer;
 }
 
-// The names follow Scrum, since that is what the app models: epics, stories and sprints.
+// The names follow Scrum, since that is what the app models: epics, tickets and sprints.
 // SuperAdmin administers the platform; Admin administers this workspace.
 //
 // Declared from least to most privilege, which puts Viewer at 0. That is not cosmetic:

@@ -13,12 +13,12 @@ namespace Web.Controllers;
 public class EpicsController : ControllerBase
 {
     private readonly EpicService _epicService;
-    private readonly StoryService _storyService;
+    private readonly TicketService _ticketService;
 
-    public EpicsController(EpicService epicService, StoryService storyService)
+    public EpicsController(EpicService epicService, TicketService ticketService)
     {
         _epicService = epicService;
-        _storyService = storyService;
+        _ticketService = ticketService;
     }
 
     [HttpGet]
@@ -54,10 +54,10 @@ public class EpicsController : ControllerBase
         return Ok(EpicResponse.FromEntity(epic));
     }
 
-    // 404 when the epic does not exist, so an empty list always means "no stories" and
+    // 404 when the epic does not exist, so an empty list always means "no tickets" and
     // never "wrong id".
-    [HttpGet("{id:int}/stories")]
-    public async Task<IActionResult> GetStories([FromRoute] int id)
+    [HttpGet("{id:int}/tickets")]
+    public async Task<IActionResult> GetTickets([FromRoute] int id)
     {
         Epic? epic = await _epicService.GetByIdAsync(id);
         if (epic is null)
@@ -65,8 +65,8 @@ public class EpicsController : ControllerBase
             return NotFound();
         }
 
-        List<Story> stories = await _storyService.GetByEpicIdAsync(id);
-        return Ok(stories.Select(StoryResponse.FromEntity));
+        List<Ticket> tickets = await _ticketService.GetByEpicIdAsync(id);
+        return Ok(tickets.Select(TicketResponse.FromEntity));
     }
 
     [Authorize(Policy = "CanEditEpics")]

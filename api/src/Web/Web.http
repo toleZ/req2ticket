@@ -14,22 +14,48 @@
 #
 # Roles, de menor a mayor privilegio:
 #   viewer | qa | developer | scrumMaster | productOwner | admin | superAdmin
-# Escribir épicas, historias y sprints (POST, PUT, DELETE) exige cualquier rol menos viewer.
+# Escribir épicas, tickets y sprints (POST, PUT, DELETE) exige cualquier rol menos viewer.
 #
 # Valores válidos de épica (deben coincidir con web/src/lib/epicOptions.js):
 #   priority    -> low | medium | high | urgent
 #   status      -> backlog | active | closed
 #   accentColor -> blue | purple | indigo | teal | green | orange | red | pink | mint | yellow
 #
-# Valores válidos de historia (web/src/lib/storyOptions.js):
+# Valores válidos de ticket (web/src/lib/ticketOptions.js):
+#   type     -> userStory | task | bug | fix
 #   priority -> low | medium | high | critical
-#   status   -> todo | inProgress | done
+#   status   -> backlog | todo | inProgress | inReview | testing | done | cancelled
+#              (cancelled no cuenta ni como completado ni como pendiente en los rollups)
+#
+# El tipo decide el prefijo del código (UH- / TASK- / BUG- / FIX-) y no se puede cambiar
+# después: el código se asigna una sola vez, así que un ticket que cambiara de tipo quedaría
+# con un código que miente. Por eso PUT no acepta "type".
+#
+# Cada tipo acepta sus propias claves dentro de "extraFields", y solo esas — una clave de
+# otro tipo devuelve 400 nombrándola, no se ignora en silencio:
+#   userStory -> acceptanceCriteria[], definitionOfReady[], definitionOfDone[]
+#   task      -> checklist[]
+#   bug       -> severity (blocker|major|minor|trivial), stepsToReproduce, expectedResult,
+#                actualResult, environment
+#   fix       -> rootCause, solution, verificationSteps[], regressionRisk (low|medium|high)
+#
+# La narrativa "Como <rol> quiero <acción> para <beneficio>" de una historia va en
+# "description", que es texto libre — ya no son tres campos de extraFields.
+# Las listas marcadas con [] son de { "text": "…", "done": false }.
 #
 # Valores válidos de sprint (web/src/lib/sprintOptions.js):
 #   status -> planned | active | completed
 #
-# Una historia pertenece siempre a una épica (epicId obligatorio) y opcionalmente a un
-# sprint (sprintId nullable): sin sprint queda en el backlog.
+# Un ticket pertenece siempre a una épica (epicId obligatorio) y opcionalmente a un sprint
+# (sprintId nullable): sin sprint queda en el backlog.
+#
+# parentId es el "se divide en" del ERD, y qué puede colgar de qué lo decide el tipo:
+#   userStory -> no puede tener padre (su padre es la épica)
+#   task      -> de una userStory
+#   bug       -> de una userStory
+#   fix       -> de un bug
+# Esa tabla no tiene ciclos posibles, así que no hace falta un límite de profundidad.
+# Borrar un ticket borra los que colgaban de él.
 
 ### Login correcto -> 200 con { token, expiresAt, user }
 # @name login
@@ -248,50 +274,56 @@ Authorization: Bearer {{login.response.body.token}}
 
 
 # ---------------------------------------------------------------------------------------
-# Historias
+# Tickets
 # ---------------------------------------------------------------------------------------
 
-### Listar todas las historias (cada una trae sprintId y sprintName aplanados)
-GET {{Web_HostAddress}}/api/stories
+### Listar todos los tickets (cada uno trae sprintId/sprintName aplanados y extraFields como objeto)
+GET {{Web_HostAddress}}/api/tickets
 Accept: application/json
 Authorization: Bearer {{login.response.body.token}}
 
-### Historias sin sprint asignado, o sea el backlog
-GET {{Web_HostAddress}}/api/stories/backlog
+### Tickets sin sprint asignado, o sea el backlog
+GET {{Web_HostAddress}}/api/tickets/backlog
 Accept: application/json
 Authorization: Bearer {{login.response.body.token}}
 
-### Obtener una historia por id
-GET {{Web_HostAddress}}/api/stories/1
+### Obtener un ticket por id
+GET {{Web_HostAddress}}/api/tickets/1
 Accept: application/json
 Authorization: Bearer {{login.response.body.token}}
 
-### Obtener una historia por su código público
-GET {{Web_HostAddress}}/api/stories/code/STORY-2F8K3M9Q
+### Obtener un ticket por su código público
+GET {{Web_HostAddress}}/api/tickets/code/UH-2F8K3M9Q
 Accept: application/json
 Authorization: Bearer {{login.response.body.token}}
 
-### Historias de una épica
-GET {{Web_HostAddress}}/api/epics/1/stories
+### En qué se divide un ticket. El 1 es la historia del login, y de ella cuelga TASK-7H4N2P6R.
+GET {{Web_HostAddress}}/api/tickets/1/children
 Accept: application/json
 Authorization: Bearer {{login.response.body.token}}
 
-### Historias de un sprint
-GET {{Web_HostAddress}}/api/sprints/2/stories
+### Tickets de una épica
+GET {{Web_HostAddress}}/api/epics/1/tickets
 Accept: application/json
 Authorization: Bearer {{login.response.body.token}}
 
-### Historias de un sprint que no existe -> 404, no un array vacío
-GET {{Web_HostAddress}}/api/sprints/999/stories
+### Tickets de un sprint
+GET {{Web_HostAddress}}/api/sprints/2/tickets
 Accept: application/json
 Authorization: Bearer {{login.response.body.token}}
 
-### Crear una historia dentro de un sprint (mismo payload que manda el modal del front)
-POST {{Web_HostAddress}}/api/stories
+### Tickets de un sprint que no existe -> 404, no un array vacío
+GET {{Web_HostAddress}}/api/sprints/999/tickets
+Accept: application/json
+Authorization: Bearer {{login.response.body.token}}
+
+### Crear una historia de usuario (mismo payload que manda el modal del front)
+POST {{Web_HostAddress}}/api/tickets
 Content-Type: application/json
 Authorization: Bearer {{login.response.body.token}}
 
 {
+  "type": "userStory",
   "title": "Filtrar el backlog por responsable",
   "description": "Un select arriba del listado, igual que el de prioridad.",
   "epicId": 4,
@@ -300,44 +332,206 @@ Authorization: Bearer {{login.response.body.token}}
   "points": 3,
   "assigneeId": 2,
   "sprintId": 2,
-  "criteriaTotal": 2
+  "extraFields": {
+    "acceptanceCriteria": [
+      { "text": "El filtro lista solo usuarios activos", "done": false },
+      { "text": "Se combina con el filtro de prioridad", "done": false }
+    ]
+  }
 }
 
-### Crear una historia sin sprint: queda en el backlog
-POST {{Web_HostAddress}}/api/stories
+### Crear una tarea que cuelga de esa historia. El código sale con prefijo TASK-.
+POST {{Web_HostAddress}}/api/tickets
 Content-Type: application/json
 Authorization: Bearer {{login.response.body.token}}
 
 {
-  "title": "Historia sin planificar",
+  "type": "task",
+  "title": "Agregar el select de responsable al filtro",
   "epicId": 4,
-  "points": 2,
-  "criteriaTotal": 1
+  "parentId": 1,
+  "extraFields": {
+    "checklist": [{ "text": "Traer los usuarios de /api/users", "done": false }]
+  }
+}
+
+### Crear un bug. severity no es priority: severity es qué tan roto está, priority qué tan pronto se mira.
+POST {{Web_HostAddress}}/api/tickets
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.token}}
+
+{
+  "type": "bug",
+  "title": "El login acepta email con espacios al final",
+  "epicId": 1,
+  "priority": "critical",
+  "extraFields": {
+    "severity": "major",
+    "stepsToReproduce": "1. Ir a /login\n2. Escribir \" juan@req2ticket.com \"\n3. Enviar",
+    "expectedResult": "Entra igual: el email se normaliza",
+    "actualResult": "401 credenciales inválidas",
+    "environment": "Local, SQLite"
+  }
+}
+
+### Crear un fix colgando del bug del seed (BUG-8P2W6D4K es el id 6)
+POST {{Web_HostAddress}}/api/tickets
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.token}}
+
+{
+  "type": "fix",
+  "title": "Trim del email antes de buscar el usuario",
+  "epicId": 3,
+  "parentId": 6,
+  "extraFields": {
+    "rootCause": "AuthService no normalizaba el email de entrada.",
+    "solution": "email.Trim() antes del GetByEmailAsync.",
+    "verificationSteps": [{ "text": "Login con espacios al final", "done": false }],
+    "regressionRisk": "low"
+  }
+}
+
+### Crear un ticket con lo mínimo. Sin "type" nace userStory, sin extraFields nace vacío.
+POST {{Web_HostAddress}}/api/tickets
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.token}}
+
+{
+  "title": "Ticket sin planificar",
+  "epicId": 4,
+  "points": 2
+}
+
+### reporterId sale del token cuando no lo mandás: este queda a nombre de juan (id 1).
+POST {{Web_HostAddress}}/api/tickets
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.token}}
+
+{
+  "type": "task",
+  "title": "Ticket sin reporter explícito",
+  "epicId": 4
+}
+
+### Una clave que no es de este tipo -> 400 nombrándola. No se descarta en silencio.
+POST {{Web_HostAddress}}/api/tickets
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.token}}
+
+{
+  "type": "task",
+  "title": "Campo de otro tipo",
+  "epicId": 4,
+  "extraFields": { "severity": "major" }
+}
+
+### Una clave mal escrita -> 400. El mensaje trae el nombre que no se pudo mapear.
+POST {{Web_HostAddress}}/api/tickets
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.token}}
+
+{
+  "type": "bug",
+  "title": "Clave con typo",
+  "epicId": 4,
+  "extraFields": { "stepsToReproduse": "…" }
+}
+
+### Un ítem de checklist sin texto -> 400
+POST {{Web_HostAddress}}/api/tickets
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.token}}
+
+{
+  "type": "userStory",
+  "title": "Criterio vacío",
+  "epicId": 4,
+  "extraFields": { "acceptanceCriteria": [{ "text": "", "done": false }] }
+}
+
+### Un enum de extraFields con un valor inventado -> 400
+POST {{Web_HostAddress}}/api/tickets
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.token}}
+
+{
+  "type": "bug",
+  "title": "Severidad inventada",
+  "epicId": 4,
+  "extraFields": { "severity": "catastrofica" }
+}
+
+### Una userStory no puede tener padre -> 400
+POST {{Web_HostAddress}}/api/tickets
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.token}}
+
+{
+  "type": "userStory",
+  "title": "Historia con padre",
+  "epicId": 4,
+  "parentId": 1
+}
+
+### Un fix solo cuelga de un bug, no de una historia -> 400
+POST {{Web_HostAddress}}/api/tickets
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.token}}
+
+{
+  "type": "fix",
+  "title": "Fix colgado de una historia",
+  "epicId": 4,
+  "parentId": 1
+}
+
+### Un padre que no existe -> 400
+POST {{Web_HostAddress}}/api/tickets
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.token}}
+
+{
+  "type": "task",
+  "title": "Ticket huérfano",
+  "epicId": 4,
+  "parentId": 999
 }
 
 ### Un sprint que no existe -> 400 con mensaje del service
-POST {{Web_HostAddress}}/api/stories
+POST {{Web_HostAddress}}/api/tickets
 Content-Type: application/json
 Authorization: Bearer {{login.response.body.token}}
 
 {
-  "title": "Historia con sprint inválido",
+  "title": "Ticket con sprint inválido",
   "epicId": 4,
   "sprintId": 999
 }
 
 ### Una épica que no existe -> 400. A diferencia del sprint, la épica es obligatoria.
-POST {{Web_HostAddress}}/api/stories
+POST {{Web_HostAddress}}/api/tickets
 Content-Type: application/json
 Authorization: Bearer {{login.response.body.token}}
 
 {
-  "title": "Historia sin épica válida",
+  "title": "Ticket sin épica válida",
   "epicId": 999
 }
 
-### Prioridad inexistente -> 400. La escala de historia usa critical, no urgent.
-POST {{Web_HostAddress}}/api/stories
+### Un reporter que no existe -> 400
+POST {{Web_HostAddress}}/api/tickets
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.token}}
+
+{
+  "title": "Reporter fantasma",
+  "epicId": 4,
+  "reporterId": 999
+}
+
+### Prioridad inexistente -> 400. La escala de ticket usa critical, no urgent.
+POST {{Web_HostAddress}}/api/tickets
 Content-Type: application/json
 Authorization: Bearer {{login.response.body.token}}
 
@@ -347,8 +541,19 @@ Authorization: Bearer {{login.response.body.token}}
   "priority": "urgent"
 }
 
-### Un viewer no puede crear historias -> 403, no 401: el token es válido, el rol no alcanza.
-POST {{Web_HostAddress}}/api/stories
+### Un enum como número -> 400. La API habla strings (ver StringOnlyEnumConverter).
+POST {{Web_HostAddress}}/api/tickets
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.token}}
+
+{
+  "type": 2,
+  "title": "Tipo numérico",
+  "epicId": 4
+}
+
+### Un viewer no puede crear tickets -> 403, no 401: el token es válido, el rol no alcanza.
+POST {{Web_HostAddress}}/api/tickets
 Content-Type: application/json
 Authorization: Bearer {{registro.response.body.token}}
 
@@ -357,8 +562,9 @@ Authorization: Bearer {{registro.response.body.token}}
   "epicId": 4
 }
 
-### Actualizar una historia (reemplazo completo). Si omitís sprintId, se va al backlog.
-PUT {{Web_HostAddress}}/api/stories/3
+### Actualizar un ticket (reemplazo completo). Si omitís sprintId, se va al backlog.
+### Ojo: "type" no va acá — el tipo se asigna al crear y no se cambia.
+PUT {{Web_HostAddress}}/api/tickets/4
 Content-Type: application/json
 Authorization: Bearer {{login.response.body.token}}
 
@@ -371,12 +577,16 @@ Authorization: Bearer {{login.response.body.token}}
   "points": 8,
   "assigneeId": 2,
   "sprintId": 3,
-  "criteriaTotal": 4,
-  "criteriaDone": 1
+  "extraFields": {
+    "acceptanceCriteria": [
+      { "text": "Se puede agregar una columna", "done": true },
+      { "text": "Se puede renombrar una columna", "done": false }
+    ]
+  }
 }
 
-### Sacar una historia de su sprint: sprintId en null
-PUT {{Web_HostAddress}}/api/stories/3
+### Sacar un ticket de su sprint: sprintId en null
+PUT {{Web_HostAddress}}/api/tickets/4
 Content-Type: application/json
 Authorization: Bearer {{login.response.body.token}}
 
@@ -387,13 +597,23 @@ Authorization: Bearer {{login.response.body.token}}
   "status": "todo",
   "points": 8,
   "assigneeId": 2,
-  "sprintId": null,
-  "criteriaTotal": 4,
-  "criteriaDone": 0
+  "sprintId": null
 }
 
-### Borrar una historia
-DELETE {{Web_HostAddress}}/api/stories/10
+### Un ticket no puede ser su propio padre -> 400
+PUT {{Web_HostAddress}}/api/tickets/2
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.token}}
+
+{
+  "title": "Endpoint POST /api/auth/login",
+  "epicId": 1,
+  "parentId": 2
+}
+
+### Borrar un ticket. Si tenía hijos, se van con él.
+### El 11 es el primero que crean las requests de arriba: del 1 al 10 son el seed.
+DELETE {{Web_HostAddress}}/api/tickets/11
 Authorization: Bearer {{login.response.body.token}}
 
 # ---------------------------------------------------------------------------------------
@@ -487,6 +707,6 @@ Authorization: Bearer {{login.response.body.token}}
   "status": "planned"
 }
 
-### Borrar un sprint. Sus historias no se borran: vuelven al backlog (ON DELETE SET NULL).
+### Borrar un sprint. Sus tickets no se borran: vuelven al backlog (ON DELETE SET NULL).
 DELETE {{Web_HostAddress}}/api/sprints/4
 Authorization: Bearer {{login.response.body.token}}

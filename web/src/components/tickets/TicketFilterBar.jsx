@@ -1,6 +1,6 @@
 import { Search } from 'lucide-react'
 
-import { NO_SPRINT, STORY_PRIORITY_OPTIONS } from '@/lib/storyOptions'
+import { NO_SPRINT, TICKET_PRIORITY_OPTIONS, TICKET_TYPE_OPTIONS } from '@/lib/ticketOptions'
 
 /* The filters are chips, smaller than a form field. */
 const FILTER_SELECT = `w-auto rounded-control border border-separator bg-fill-tertiary px-2.5
@@ -13,7 +13,7 @@ const SEARCH_INPUT = `w-full bg-transparent text-footnote text-label
   placeholder:text-label-tertiary focus:outline-none`
 
 /**
- * The search box and the four filter chips above the story list.
+ * The search box and the five filter chips above the ticket list.
  *
  * There are a lot of props, but they are all the same two: the current value, and the
  * function that sets it. Each pair is named after the page's state — `epicFilter` /
@@ -23,14 +23,15 @@ const SEARCH_INPUT = `w-full bg-transparent text-footnote text-label
  * `e.target.value` itself. That is why the page can pass its useState setters straight in,
  * without writing a single arrow function:
  *
- *     <StoryFilterBar epicFilter={epicFilter} onEpicFilterChange={setEpicFilter} … />
+ *     <TicketFilterBar epicFilter={epicFilter} onEpicFilterChange={setEpicFilter} … />
  *
- * The four selects are deliberately written out one after the other instead of being one
- * component used four times. They are not the same: the sprint one has an extra "Sin
- * sprint" option, and the priority one reads `{value, label}` while the other three read
- * `{id, name}`. Side by side, those differences are visible; behind props they would not be.
+ * The five selects are deliberately written out one after the other instead of being one
+ * component used five times. They are not the same: the sprint one has an extra "Sin
+ * sprint" option, and the type and priority ones read `{value, label}` while the other three
+ * read `{id, name}`. Side by side, those differences are visible; behind props they would not
+ * be.
  */
-export function StoryFilterBar({
+export function TicketFilterBar({
   users,
   epics,
   sprints,
@@ -44,6 +45,8 @@ export function StoryFilterBar({
   onSprintFilterChange,
   priorityFilter,
   onPriorityFilterChange,
+  typeFilter,
+  onTypeFilterChange,
 }) {
   return (
     <div className="mt-4 flex flex-wrap items-center gap-2">
@@ -52,11 +55,25 @@ export function StoryFilterBar({
         <input
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
-          placeholder="Filtrar historias"
-          aria-label="Filtrar historias"
+          placeholder="Filtrar tickets"
+          aria-label="Filtrar tickets"
           className={SEARCH_INPUT}
         />
       </div>
+
+      <select
+        value={typeFilter}
+        onChange={(e) => onTypeFilterChange(e.target.value)}
+        aria-label="Tipo"
+        className={FILTER_SELECT}
+      >
+        <option value="">Tipo</option>
+        {TICKET_TYPE_OPTIONS.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
 
       <select
         value={assigneeFilter}
@@ -108,7 +125,7 @@ export function StoryFilterBar({
         className={FILTER_SELECT}
       >
         <option value="">Prioridad</option>
-        {STORY_PRIORITY_OPTIONS.map((option) => (
+        {TICKET_PRIORITY_OPTIONS.map((option) => (
           <option key={option.value} value={option.value}>
             {option.label}
           </option>

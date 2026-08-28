@@ -1,6 +1,6 @@
 using System.Security.Cryptography;
 
-namespace Domain;
+namespace Domain.Common;
 
 // Crockford-style base32: no I, L, O or U, so a code can never be misread or
 // mis-dictated. 32^8 is roughly 1.1e12 combinations.

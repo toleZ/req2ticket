@@ -64,7 +64,7 @@ export function RegisterForm({ onSubmit }) {
       <div className="mb-6 text-center">
         <h1 className="text-title2 text-label">Creá tu cuenta</h1>
         <p className="mt-1 text-footnote text-label-secondary">
-          Sumate para gestionar tus requisitos e historias
+          Sumate para gestionar tus requisitos y tickets
         </p>
       </div>
 

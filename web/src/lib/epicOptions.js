@@ -1,8 +1,8 @@
 /* Shared between the create form (as <select> options and as colour swatches) and the
    list (as badges), so label and colour never drift apart.
 
-   The EPIC_ prefix is not decoration: stories and sprints have their own scales with
-   different values (an epic uses `urgent`, a story uses `critical`), and without the
+   The EPIC_ prefix is not decoration: tickets and sprints have their own scales with
+   different values (an epic uses `urgent`, a ticket uses `critical`), and without the
    prefix autocomplete hands you the wrong one without anything failing. */
 
 export const EPIC_PRIORITY_OPTIONS = [
