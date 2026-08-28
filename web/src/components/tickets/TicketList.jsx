@@ -1,4 +1,4 @@
-import { EditableTicketRow } from '@/components/tickets/EditableTicketRow'
+import { TicketRow } from '@/components/tickets/TicketRow'
 
 const COUNT_PILL = `rounded-control bg-fill-tertiary px-1.5 py-0.5 text-caption2 font-medium
   text-label-secondary`
@@ -18,7 +18,7 @@ const COUNT_PILL = `rounded-control bg-fill-tertiary px-1.5 py-0.5 text-caption2
  * A group with no tickets still renders: it keeps its header and its count, and says so.
  * That is on purpose, so the columns do not jump around as you type in the filter.
  */
-export function EditableTicketList({ sections, sprints, onUpdateTicket, onDeleteTicket }) {
+export function TicketList({ sections, onSelectTicket }) {
   return (
     <div className="mt-4 flex flex-col gap-6">
       {sections.map(({ status, tickets }) => (
@@ -33,13 +33,7 @@ export function EditableTicketList({ sections, sprints, onUpdateTicket, onDelete
           ) : (
             <ul className="mt-2 flex flex-col gap-2">
               {tickets.map((ticket) => (
-                <EditableTicketRow
-                  key={ticket.id}
-                  ticket={ticket}
-                  sprints={sprints}
-                  onUpdateTicket={onUpdateTicket}
-                  onDeleteTicket={onDeleteTicket}
-                />
+                <TicketRow key={ticket.id} ticket={ticket} onSelectTicket={onSelectTicket} />
               ))}
             </ul>
           )}

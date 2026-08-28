@@ -1,55 +1,52 @@
 import { useId, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { ChevronRight, Trash2 } from 'lucide-react'
+import { ChevronRight } from 'lucide-react'
 
 import { TicketSummaryList } from '@/components/tickets/TicketSummaryList'
 import { Badge } from '@/components/ui/Badge'
-import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { cn } from '@/lib/cn'
-import { errorMessage } from '@/lib/errors'
 import { ACCENT_COLORS, EPIC_PRIORITY_OPTIONS, EPIC_STATUS_OPTIONS } from '@/lib/epicOptions'
 import { findOption } from '@/lib/options'
 import { springSoft } from '@/lib/motion'
 import { summarizeTickets } from '@/lib/ticketStats'
 
-/* The row's selects are smaller than a form field and sit on the expanded panel, which
-   is bg-elevated. Written out in full: there is no twMerge here to drop the classes this
-   overrides, so every class it replaces has to be absent rather than repeated. */
-const ROW_SELECT = `w-auto rounded-control border border-separator bg-elevated px-2 py-1 text-footnote
-  text-label disabled:opacity-50`
-
 const TOGGLE_BUTTON = `mt-0.5 grid size-6 shrink-0 place-items-center rounded-control
   text-label-secondary transition-colors duration-fast ease-out-quad hover:bg-fill-secondary
-  hover:text-label disabled:opacity-50`
+  hover:text-label`
 
-const DELETE_BUTTON = `grid size-8 shrink-0 place-items-center rounded-control text-label-tertiary
-  transition-colors duration-fast ease-out-quad hover:bg-red/12 hover:text-red
-  disabled:opacity-50`
+/* El área clickeable es sólo el código y el nombre, no la fila entera. A propósito: al lado
+   está el chevron y abajo, cuando se despliega, está la lista de tickets, que también son
+   botones. Si el clic viviera en el <li>, cada uno de esos necesitaría su e.stopPropagation()
+   y olvidarse de uno se ve como "abrir un ticket también abre la épica".
 
-export function EpicRow({ epic, tickets, onUpdateEpic, onDeleteEpic }) {
+   El hover NO pinta fondo. Pintarlo dejaba un bloque gris que envolvía media fila —badges de
+   colores incluidos— y se leía como un parche, no como algo clickeable. Lo que se anuncia es
+   lo mismo que anuncia un enlace: el nombre se subraya y el código sube un escalón de gris. */
+const OPEN_BUTTON = 'group flex min-w-0 flex-wrap items-center gap-2 text-left'
+
+const OPEN_CODE = `text-caption text-label-tertiary transition-colors duration-fast ease-out-quad
+  group-hover:text-label-secondary`
+
+/* `decoration-label-tertiary`: el subrayado hereda el color del texto si no se le dice otra
+   cosa, y una línea negra debajo de un nombre en negro pesa demasiado para un hover. */
+const OPEN_NAME = `text-body font-medium text-label underline-offset-2
+  group-hover:underline group-hover:decoration-label-tertiary`
+
+/**
+ * Una épica en la lista: sólo lectura, salvo el desplegable que muestra sus tickets.
+ *
+ * El estado y la prioridad se editaban acá adentro con dos selects; ahora eso vive en
+ * EpicDetailModal, que además deja tocar el nombre, la descripción, el responsable y el color.
+ */
+export function EpicRow({ epic, tickets, onSelectEpic, onSelectTicket }) {
   const panelId = useId()
-  const [isEditing, setIsEditing] = useState(false)
-  const [isDeleteOpen, setIsDeleteOpen] = useState(false)
-  const [savingField, setSavingField] = useState(null)
-  const [saveError, setSaveError] = useState('')
+  const [isExpanded, setIsExpanded] = useState(false)
 
   const accent = findOption(ACCENT_COLORS, epic.accentColor)
   const status = findOption(EPIC_STATUS_OPTIONS, epic.status)
   const priority = findOption(EPIC_PRIORITY_OPTIONS, epic.priority)
   const stats = summarizeTickets(tickets)
-
-  async function saveField(field, value) {
-    setSaveError('')
-    setSavingField(field)
-    try {
-      await onUpdateEpic(epic, { [field]: value })
-    } catch (err) {
-      setSaveError(errorMessage(err))
-    } finally {
-      setSavingField(null)
-    }
-  }
 
   return (
     <li className="rounded-control bg-fill-tertiary px-3 py-2.5">
@@ -58,14 +55,14 @@ export function EpicRow({ epic, tickets, onUpdateEpic, onDeleteEpic }) {
             instead: the usual fill-tertiary hover would be invisible here. */}
         <button
           type="button"
-          aria-label={isEditing ? 'Cerrar edición' : 'Editar épica'}
-          onClick={() => setIsEditing(!isEditing)}
-          aria-expanded={isEditing}
+          aria-label={isExpanded ? 'Ocultar tickets' : 'Ver tickets'}
+          onClick={() => setIsExpanded(!isExpanded)}
+          aria-expanded={isExpanded}
           aria-controls={panelId}
           className={TOGGLE_BUTTON}
         >
           <ChevronRight
-            className={cn('size-4 transition-transform duration-fast ease-out-quad', isEditing && 'rotate-90')}
+            className={cn('size-4 transition-transform duration-fast ease-out-quad', isExpanded && 'rotate-90')}
             aria-hidden="true"
           />
         </button>
@@ -75,15 +72,22 @@ export function EpicRow({ epic, tickets, onUpdateEpic, onDeleteEpic }) {
         )}
 
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-caption text-label-tertiary">{epic.code}</span>
-            <h3 className="text-body font-medium text-label">{epic.name}</h3>
+          <button
+            type="button"
+            onClick={() => onSelectEpic(epic)}
+            aria-label={`Abrir ${epic.code}: ${epic.name}`}
+            className={OPEN_BUTTON}
+          >
+            <span className={OPEN_CODE}>{epic.code}</span>
+            {/* Un <h3> adentro de un <button> es HTML válido y mantiene el índice de
+                encabezados de la página, que es como se navega una lista larga con lector. */}
+            <h3 className={OPEN_NAME}>{epic.name}</h3>
             {status && <Badge tone={status.tone}>{status.label}</Badge>}
             {priority && <Badge tone={priority.tone}>{priority.label}</Badge>}
             {epic.ownerName && (
               <span className="text-footnote text-label-secondary">{epic.ownerName}</span>
             )}
-          </div>
+          </button>
 
           <div className="mt-1.5 flex flex-wrap items-center gap-2">
             <span className="text-caption text-label-tertiary">
@@ -97,19 +101,10 @@ export function EpicRow({ epic, tickets, onUpdateEpic, onDeleteEpic }) {
             <p className="mt-1 text-footnote text-label-secondary">{epic.description}</p>
           )}
         </div>
-
-        <button
-          type="button"
-          aria-label="Eliminar épica"
-          onClick={() => setIsDeleteOpen(true)}
-          className={DELETE_BUTTON}
-        >
-          <Trash2 className="size-4" aria-hidden="true" />
-        </button>
       </div>
 
       <AnimatePresence initial={false}>
-        {isEditing && (
+        {isExpanded && (
           <motion.div
             id={panelId}
             initial={{ height: 0, opacity: 0 }}
@@ -118,75 +113,21 @@ export function EpicRow({ epic, tickets, onUpdateEpic, onDeleteEpic }) {
             transition={springSoft}
             className="overflow-hidden"
           >
-            <div className="ml-8 mt-3 flex flex-col gap-3 border-t border-separator pt-3">
-              {saveError && (
-                <p role="alert" className="text-footnote text-red">
-                  {saveError}
+            <div className="ml-8 mt-3 border-t border-separator pt-3">
+              <p className="text-footnote font-medium text-label-secondary">Tickets</p>
+              {stats.total === 0 ? (
+                <p className="mt-1.5 text-footnote text-label-tertiary">
+                  Esta épica todavía no tiene tickets.
                 </p>
+              ) : (
+                <div className="mt-1.5">
+                  <TicketSummaryList tickets={tickets} onSelectTicket={onSelectTicket} />
+                </div>
               )}
-
-              <div className="flex flex-wrap items-center gap-3">
-                <label className="flex items-center gap-1.5 text-footnote text-label-secondary">
-                  Estado
-                  <select
-                    value={epic.status}
-                    disabled={savingField === 'status'}
-                    onChange={(e) => saveField('status', e.target.value)}
-                    className={ROW_SELECT}
-                  >
-                    {EPIC_STATUS_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label className="flex items-center gap-1.5 text-footnote text-label-secondary">
-                  Prioridad
-                  <select
-                    value={epic.priority}
-                    disabled={savingField === 'priority'}
-                    onChange={(e) => saveField('priority', e.target.value)}
-                    className={ROW_SELECT}
-                  >
-                    {EPIC_PRIORITY_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-
-              <div>
-                <p className="text-footnote font-medium text-label-secondary">Tickets</p>
-                {stats.total === 0 ? (
-                  <p className="mt-1.5 text-footnote text-label-tertiary">
-                    Esta épica todavía no tiene tickets.
-                  </p>
-                ) : (
-                  <div className="mt-1.5">
-                    <TicketSummaryList tickets={tickets} />
-                  </div>
-                )}
-              </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
-
-      <ConfirmModal
-        isOpen={isDeleteOpen}
-        title="Eliminar épica"
-        confirmLabel="Eliminar"
-        pendingLabel="Eliminando…"
-        onClose={() => setIsDeleteOpen(false)}
-        onConfirm={() => onDeleteEpic(epic)}
-      >
-        ¿Seguro que querés eliminar <span className="font-medium text-label">"{epic.name}"</span>?
-        Esta acción no se puede deshacer.
-      </ConfirmModal>
     </li>
   )
 }

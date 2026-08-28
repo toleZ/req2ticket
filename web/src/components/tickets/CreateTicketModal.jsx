@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Hash, Type } from 'lucide-react'
 
 import { TicketExtraFields } from '@/components/tickets/TicketExtraFields'
 import { Modal } from '@/components/ui/Modal'
@@ -28,6 +29,35 @@ const INITIAL_VALUES = {
   assigneeId: '',
   sprintId: '',
 }
+
+const FORM_ERROR = 'rounded-control bg-red/12 px-3 py-2 text-footnote text-red'
+
+const LABEL = 'mb-1 block text-subheadline font-medium text-label'
+
+const OPTIONAL = 'font-normal text-label-tertiary'
+
+const FIELD_ERROR = 'mt-1 text-footnote text-red'
+
+const CONTROL = `w-full rounded-control border border-separator bg-fill-tertiary px-3 py-2
+  text-body text-label transition-colors duration-fast placeholder:text-label-tertiary
+  hover:border-separator-opaque disabled:opacity-50`
+
+const ICON_WRAP = 'pointer-events-none absolute inset-y-0 left-3 flex items-center text-label-tertiary'
+
+/* El icono va adentro del input; `pl-9` le hace lugar. */
+const CONTROL_ICON = `${CONTROL} pl-9`
+
+const CONTROL_TEXTAREA = `${CONTROL} resize-none`
+
+/* `type="button"` en Cancelar no es opcional: el default adentro de un <form> es
+   "submit", y sin él el botón crea el ticket en vez de cerrar. */
+const CANCEL_BUTTON = `inline-flex shrink-0 items-center justify-center gap-1.5 rounded-control
+  px-4 py-2 text-body font-medium text-label-secondary transition-colors duration-fast
+  ease-out-quad hover:bg-fill-tertiary hover:text-label disabled:opacity-50`
+
+const SUBMIT_BUTTON = `inline-flex shrink-0 items-center justify-center gap-1.5 rounded-control
+  bg-blue px-4 py-2 text-body font-medium text-white transition-[filter] duration-fast
+  hover:brightness-110 disabled:opacity-50`
 
 export function CreateTicketModal({ isOpen, onClose, onCreate, epics, sprints }) {
   const [values, setValues] = useState(INITIAL_VALUES)
@@ -120,23 +150,24 @@ export function CreateTicketModal({ isOpen, onClose, onCreate, epics, sprints })
     <Modal isOpen={isOpen} onClose={handleClose} title="Nuevo ticket">
       <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
         {formError && (
-          <p className="rounded-control bg-fill-tertiary px-3 py-2 text-footnote text-red" role="alert">
+          <p className={FORM_ERROR} role="alert">
             {formError}
           </p>
         )}
 
-        {/* Each field is one <div>: the form is `flex flex-col gap-4`, so label + input +
-            error as loose siblings would pick up two extra gaps. */}
+        {/* Los aria del control tienen que apuntar al id EXACTO del <p> del error: si no
+            coinciden, el lector de pantalla no lo lee y nada falla a la vista. */}
         <div>
-          <label htmlFor="ticket-type" className="mb-1 block text-subheadline font-medium text-label">
+          <label htmlFor="ticket-type" className={LABEL}>
             Tipo
           </label>
           <select
             id="ticket-type"
             name="type"
             value={values.type}
+            disabled={submitting}
             onChange={handleTypeChange}
-            className="w-full rounded-control border border-separator bg-fill-tertiary px-3 py-2 text-body text-label disabled:opacity-50"
+            className={CONTROL}
           >
             {TICKET_TYPE_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
@@ -147,56 +178,63 @@ export function CreateTicketModal({ isOpen, onClose, onCreate, epics, sprints })
         </div>
 
         <div>
-          <label htmlFor="ticket-title" className="mb-1 block text-subheadline font-medium text-label">
+          <label htmlFor="ticket-title" className={LABEL}>
             Título
           </label>
-          <input
-            id="ticket-title"
-            type="text"
-            name="title"
-            value={values.title}
-            onChange={handleChange}
-            aria-invalid={errors.title ? true : undefined}
-            aria-describedby={errors.title ? 'ticket-title-error' : undefined}
-            className="w-full rounded-control border border-separator bg-fill-tertiary px-3 py-2 text-body text-label disabled:opacity-50"
-          />
+          <div className="relative">
+            <span className={ICON_WRAP} aria-hidden="true">
+              <Type className="size-4" />
+            </span>
+            <input
+              id="ticket-title"
+              name="title"
+              value={values.title}
+              disabled={submitting}
+              onChange={handleChange}
+              aria-invalid={errors.title ? true : undefined}
+              aria-describedby={errors.title ? 'ticket-title-error' : undefined}
+              className={CONTROL_ICON}
+            />
+          </div>
           {errors.title && (
-            <p id="ticket-title-error" className="mt-1 text-footnote text-red">
+            <p id="ticket-title-error" className={FIELD_ERROR}>
               {errors.title}
             </p>
           )}
         </div>
 
+        {/* El placeholder cambia con el tipo: una historia sugiere el "Como… quiero… para…"
+            que antes eran tres campos. Es una sugerencia y nada más — el campo sigue siendo
+            texto libre y no se valida contra ese formato. */}
         <div>
-          <label htmlFor="ticket-description" className="mb-1 block text-subheadline font-medium text-label">
-            Descripción <span className="font-normal text-label-tertiary">(opcional)</span>
+          <label htmlFor="ticket-description" className={LABEL}>
+            Descripción <span className={OPTIONAL}>(opcional)</span>
           </label>
-          {/* El placeholder cambia con el tipo: una historia sugiere el "Como… quiero… para…"
-              que antes eran tres campos. Es una sugerencia y nada más — el campo sigue siendo
-              texto libre y no se valida contra ese formato. */}
           <textarea
             id="ticket-description"
-            rows={2}
             name="description"
-            value={values.description}
-            onChange={handleChange}
+            rows={2}
             placeholder={DESCRIPTION_PLACEHOLDER[values.type] || ''}
-            className="w-full resize-none rounded-control border border-separator bg-fill-tertiary px-3 py-2 text-body text-label disabled:opacity-50"
+            value={values.description}
+            disabled={submitting}
+            onChange={handleChange}
+            className={CONTROL_TEXTAREA}
           />
         </div>
 
         <div>
-          <label htmlFor="ticket-epic" className="mb-1 block text-subheadline font-medium text-label">
+          <label htmlFor="ticket-epic" className={LABEL}>
             Épica
           </label>
           <select
             id="ticket-epic"
             name="epicId"
             value={values.epicId}
+            disabled={submitting}
             onChange={handleChange}
             aria-invalid={errors.epicId ? true : undefined}
             aria-describedby={errors.epicId ? 'ticket-epic-error' : undefined}
-            className="w-full rounded-control border border-separator bg-fill-tertiary px-3 py-2 text-body text-label disabled:opacity-50"
+            className={CONTROL}
           >
             <option value="">Elegí una épica</option>
             {epics.map((epic) => (
@@ -206,7 +244,7 @@ export function CreateTicketModal({ isOpen, onClose, onCreate, epics, sprints })
             ))}
           </select>
           {errors.epicId && (
-            <p id="ticket-epic-error" className="mt-1 text-footnote text-red">
+            <p id="ticket-epic-error" className={FIELD_ERROR}>
               {errors.epicId}
             </p>
           )}
@@ -214,15 +252,16 @@ export function CreateTicketModal({ isOpen, onClose, onCreate, epics, sprints })
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label htmlFor="ticket-priority" className="mb-1 block text-subheadline font-medium text-label">
+            <label htmlFor="ticket-priority" className={LABEL}>
               Prioridad
             </label>
             <select
               id="ticket-priority"
               name="priority"
               value={values.priority}
+              disabled={submitting}
               onChange={handleChange}
-              className="w-full rounded-control border border-separator bg-fill-tertiary px-3 py-2 text-body text-label disabled:opacity-50"
+              className={CONTROL}
             >
               {TICKET_PRIORITY_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -233,15 +272,16 @@ export function CreateTicketModal({ isOpen, onClose, onCreate, epics, sprints })
           </div>
 
           <div>
-            <label htmlFor="ticket-status" className="mb-1 block text-subheadline font-medium text-label">
+            <label htmlFor="ticket-status" className={LABEL}>
               Estado
             </label>
             <select
               id="ticket-status"
               name="status"
               value={values.status}
+              disabled={submitting}
               onChange={handleChange}
-              className="w-full rounded-control border border-separator bg-fill-tertiary px-3 py-2 text-body text-label disabled:opacity-50"
+              className={CONTROL}
             >
               {TICKET_STATUS_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -253,30 +293,38 @@ export function CreateTicketModal({ isOpen, onClose, onCreate, epics, sprints })
         </div>
 
         <div>
-          <label htmlFor="ticket-points" className="mb-1 block text-subheadline font-medium text-label">
+          <label htmlFor="ticket-points" className={LABEL}>
             Puntos
           </label>
-          <input
-            id="ticket-points"
-            type="number"
-            min="0"
-            name="points"
-            value={values.points}
-            onChange={handleChange}
-            className="w-full rounded-control border border-separator bg-fill-tertiary px-3 py-2 text-body text-label disabled:opacity-50"
-          />
+          <div className="relative">
+            <span className={ICON_WRAP} aria-hidden="true">
+              <Hash className="size-4" />
+            </span>
+            <input
+              id="ticket-points"
+              name="points"
+              type="number"
+              min="0"
+              placeholder="0"
+              value={values.points}
+              disabled={submitting}
+              onChange={handleChange}
+              className={CONTROL_ICON}
+            />
+          </div>
         </div>
 
         <div>
-          <label htmlFor="ticket-assignee" className="mb-1 block text-subheadline font-medium text-label">
-            Responsable <span className="font-normal text-label-tertiary">(opcional)</span>
+          <label htmlFor="ticket-assignee" className={LABEL}>
+            Responsable <span className={OPTIONAL}>(opcional)</span>
           </label>
           <select
             id="ticket-assignee"
             name="assigneeId"
             value={values.assigneeId}
+            disabled={submitting}
             onChange={handleChange}
-            className="w-full rounded-control border border-separator bg-fill-tertiary px-3 py-2 text-body text-label disabled:opacity-50"
+            className={CONTROL}
           >
             <option value="">Sin asignar</option>
             {users.map((user) => (
@@ -288,15 +336,16 @@ export function CreateTicketModal({ isOpen, onClose, onCreate, epics, sprints })
         </div>
 
         <div>
-          <label htmlFor="ticket-sprint" className="mb-1 block text-subheadline font-medium text-label">
-            Sprint <span className="font-normal text-label-tertiary">(opcional)</span>
+          <label htmlFor="ticket-sprint" className={LABEL}>
+            Sprint <span className={OPTIONAL}>(opcional)</span>
           </label>
           <select
             id="ticket-sprint"
             name="sprintId"
             value={values.sprintId}
+            disabled={submitting}
             onChange={handleChange}
-            className="w-full rounded-control border border-separator bg-fill-tertiary px-3 py-2 text-body text-label disabled:opacity-50"
+            className={CONTROL}
           >
             <option value="">Sin sprint (backlog)</option>
             {sprints.map((sprint) => (
@@ -308,27 +357,27 @@ export function CreateTicketModal({ isOpen, onClose, onCreate, epics, sprints })
         </div>
 
         {/* Los campos propios del tipo elegido arriba. Es el mismo componente para los
-            cuatro: la lista sale de EXTRA_FIELDS en lib/ticketExtraFields.js. */}
+            cuatro: la lista sale de EXTRA_FIELDS en lib/ticketExtraFields.js. Acá se dibujan
+            todos, incluidos los `select`; el modal de detalle es el que los separa. */}
         <TicketExtraFields
           type={values.type}
           values={extras}
           onChange={handleExtraChange}
           disabled={submitting}
           idPrefix="ticket-nuevo"
+          optional
         />
 
         <div className="mt-1 flex justify-end gap-2">
-          {/* type="button" is not optional: inside a <form> the browser default is
-              "submit", so without it Cancelar would create the record. */}
           <button
             type="button"
             onClick={handleClose}
             disabled={submitting}
-            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-control px-4 py-2 text-body font-medium text-label-secondary transition-colors duration-fast hover:bg-fill-tertiary disabled:opacity-50"
+            className={CANCEL_BUTTON}
           >
             Cancelar
           </button>
-          <button type="submit" disabled={submitting} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-control bg-blue px-4 py-2 text-body font-medium text-white transition-[filter] duration-fast hover:brightness-110 disabled:opacity-50">
+          <button type="submit" disabled={submitting} className={SUBMIT_BUTTON}>
             {submitting ? 'Creando…' : 'Crear ticket'}
           </button>
         </div>

@@ -8,7 +8,7 @@
  * this file never has to know about them.
  *
  *     <PageHeader title="Sprints" subtitle={subtitle}>
- *       <button type="button" onClick={…} className={NEW_BUTTON}>Nuevo sprint</button>
+ *       <button type="button" onClick={…} className={PRIMARY_BUTTON}>Nuevo sprint</button>
  *     </PageHeader>
  *
  * `subtitle` is a string, not JSX — pass `null` while the page is still loading and it

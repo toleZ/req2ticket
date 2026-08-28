@@ -1,18 +1,20 @@
 import { useState } from 'react'
 
 import { Modal } from '@/components/ui/Modal'
+import { cn } from '@/lib/cn'
 import { errorMessage } from '@/lib/errors'
 
-const CANCEL_BUTTON = `inline-flex shrink-0 items-center justify-center gap-2 rounded-control px-4
-  py-2 text-body font-medium text-label-secondary transition-colors duration-fast
-  hover:bg-fill-tertiary disabled:opacity-50`
+const BUTTON = `inline-flex shrink-0 items-center justify-center gap-1.5 rounded-control px-4 py-2
+  text-body font-medium disabled:opacity-50`
 
-/* danger and success differ by the background colour and nothing else, so the ternary below
-   picks bg-red or bg-green and this string carries everything they share. Do not build the
-   class as `bg-${confirmVariant}`: Tailwind scans the source as text and never sees it. */
-const CONFIRM_BUTTON = `inline-flex shrink-0 items-center justify-center gap-2 rounded-control px-4
-  py-2 text-body font-medium text-white transition-[filter] duration-fast hover:brightness-110
-  disabled:opacity-50`
+const CANCEL = `text-label-secondary transition-colors duration-fast ease-out-quad
+  hover:bg-fill-tertiary hover:text-label`
+
+/* Escritas enteras y elegidas con un ternario. NO armarlas como `bg-${confirmVariant}`:
+   Tailwind lee el código como texto y esa clase nunca llegaría al CSS. */
+const DANGER = 'bg-red text-white transition-[filter] duration-fast hover:brightness-110'
+
+const SUCCESS = 'bg-green text-white transition-[filter] duration-fast hover:brightness-110'
 
 /**
  * The "are you sure?" modal for an action that cannot be undone. Deleting epics, tickets
@@ -81,7 +83,7 @@ export function ConfirmModal({
             type="button"
             onClick={handleClose}
             disabled={submitting}
-            className={CANCEL_BUTTON}
+            className={cn(BUTTON, CANCEL)}
           >
             Cancelar
           </button>
@@ -89,7 +91,7 @@ export function ConfirmModal({
             type="button"
             onClick={handleConfirm}
             disabled={submitting}
-            className={`${CONFIRM_BUTTON} ${confirmVariant === 'success' ? 'bg-green' : 'bg-red'}`}
+            className={cn(BUTTON, confirmVariant === 'success' ? SUCCESS : DANGER)}
           >
             {submitting ? pendingLabel : confirmLabel}
           </button>

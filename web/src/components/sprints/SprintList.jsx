@@ -7,7 +7,7 @@ import { SprintCard } from '@/components/sprints/SprintCard'
  * Tickets with no sprint are not shown here — they belong to SprintBacklog, further down
  * the page.
  */
-export function SprintList({ sprints, tickets, onUpdateSprint, onDeleteSprint }) {
+export function SprintList({ sprints, tickets, onUpdateSprint, onDeleteSprint, onSelectTicket }) {
   return (
     <ul className="mt-4 flex flex-col gap-4">
       {sprints.map((sprint) => (
@@ -17,6 +17,7 @@ export function SprintList({ sprints, tickets, onUpdateSprint, onDeleteSprint })
           tickets={tickets.filter((ticket) => ticket.sprintId === sprint.id)}
           onUpdateSprint={onUpdateSprint}
           onDeleteSprint={onDeleteSprint}
+          onSelectTicket={onSelectTicket}
         />
       ))}
     </ul>
