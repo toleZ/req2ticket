@@ -16,16 +16,16 @@ public class UserRepository : BaseRepository<User>, IUserRepository
             .OrderBy(u => u.Id)
             .ToListAsync();
 
-    // AsNoTracking because the login only reads. The Email column uses the NOCASE
-    // collation, so this comparison is case-insensitive without a ToLower() that would
-    // skip the index.
+    // AsNoTracking because the login only reads. Plain == so it uses the index — a ToLower()
+    // here would translate to lower("Email") and skip it. The caller lowercases the argument;
+    // pass a raw address and this silently misses.
     public async Task<User?> GetByEmailAsync(string email) =>
         await _dbSet
             .AsNoTracking()
             .FirstOrDefaultAsync(u => u.Email == email);
 
-    // Inherits the NOCASE collation from the same column, so registering "Juan@..." when
-    // "juan@..." already exists is caught here and not by the unique index.
+    // Same rule: lowercase in, lowercase stored, so registering "Juan@..." when "juan@..."
+    // exists is caught here and not by the unique index.
     public async Task<bool> ExistsByEmailAsync(string email) =>
         await _dbSet.AnyAsync(u => u.Email == email);
 

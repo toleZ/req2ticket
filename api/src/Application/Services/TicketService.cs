@@ -141,9 +141,9 @@ public class TicketService
         return true;
     }
 
-    // The pre-check is check-then-act, so the unique index is the real guarantee. For a
-    // single-process SQLite app that is enough; catching DbUpdateException here would drag
-    // EF Core into Application, which only references Domain.
+    // The pre-check is check-then-act, so the unique index is the real guarantee: two racing
+    // writers get past this and the index stops them, as a 500 rather than a readable message.
+    // Catching DbUpdateException would drag EF Core into Application, which only knows Domain.
     private async Task<string> GenerateUniqueCodeAsync(TicketType type)
     {
         for (int attempt = 0; attempt < MaxCodeAttempts; attempt++)

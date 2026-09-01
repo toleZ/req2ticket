@@ -74,7 +74,7 @@ Content-Type: application/json
   "password": "Passw0rd!"
 }
 
-### Login con el email en otra capitalización -> 200 igual (collation NOCASE)
+### Login con el email en otra capitalización -> 200 igual (EmailAddress.Normalize)
 POST {{Web_HostAddress}}/api/auth/login
 Content-Type: application/json
 
@@ -121,7 +121,7 @@ Content-Type: application/json
   "password": "BetaPass123"
 }
 
-### Registro con un email que ya existe -> 400 (NOCASE: la capitalización no lo salva)
+### Registro con un email que ya existe -> 400 (se normaliza: la capitalización no lo salva)
 POST {{Web_HostAddress}}/api/auth/register
 Content-Type: application/json
 
@@ -272,7 +272,7 @@ Authorization: Bearer {{loginSuper.response.body.token}}
 DELETE {{Web_HostAddress}}/api/users/5
 Authorization: Bearer {{loginSuper.response.body.token}}
 
-### Email repetido -> 400 (NOCASE: la capitalización no lo salva)
+### Email repetido -> 400 (se normaliza: la capitalización no lo salva)
 POST {{Web_HostAddress}}/api/users
 Content-Type: application/json
 Authorization: Bearer {{loginSuper.response.body.token}}
@@ -536,7 +536,7 @@ Authorization: Bearer {{login.response.body.token}}
     "stepsToReproduce": "1. Ir a /login\n2. Escribir \" juan@req2ticket.com \"\n3. Enviar",
     "expectedResult": "Entra igual: el email se normaliza",
     "actualResult": "401 credenciales inválidas",
-    "environment": "Local, SQLite"
+    "environment": "Local, PostgreSQL"
   }
 }
 

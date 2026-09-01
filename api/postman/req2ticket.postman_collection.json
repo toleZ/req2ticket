@@ -197,7 +197,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('status 200 (la columna Email es NOCASE)', function () {",
+                  "pm.test('status 200 (el email se normaliza a minúsculas)', function () {",
                   "  pm.response.to.have.status(200);",
                   "});"
                 ]
@@ -561,7 +561,7 @@
                 }
               }
             },
-            "description": "El email del seed en otra capitalización: la columna es NOCASE, así que también cuenta como duplicado."
+            "description": "El email del seed en otra capitalización: el email se normaliza a minúsculas, así que también cuenta como duplicado."
           },
           "response": []
         },
@@ -1451,7 +1451,7 @@
                     }
                   }
                 },
-                "description": "La columna Email usa la collation NOCASE, así que la capitalización no lo salva."
+                "description": "El email se normaliza a minúsculas antes de guardarlo y de buscarlo, así que la capitalización no lo salva."
               },
               "response": []
             },
@@ -3218,7 +3218,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"type\": \"bug\",\n  \"title\": \"Bug de prueba\",\n  \"epicId\": 1,\n  \"priority\": \"critical\",\n  \"extraFields\": {\n    \"severity\": \"major\",\n    \"stepsToReproduce\": \"1. Correr la colección\\n2. Mirar acá\",\n    \"expectedResult\": \"Todo verde\",\n    \"actualResult\": \"Algo rojo\",\n    \"environment\": \"Local, SQLite\"\n  }\n}",
+              "raw": "{\n  \"type\": \"bug\",\n  \"title\": \"Bug de prueba\",\n  \"epicId\": 1,\n  \"priority\": \"critical\",\n  \"extraFields\": {\n    \"severity\": \"major\",\n    \"stepsToReproduce\": \"1. Correr la colección\\n2. Mirar acá\",\n    \"expectedResult\": \"Todo verde\",\n    \"actualResult\": \"Algo rojo\",\n    \"environment\": \"Local, PostgreSQL\"\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"

@@ -85,7 +85,7 @@ a sus hijos.
 
 ## Ojo con las contraseñas
 
-`seedPassword` está en texto plano porque es la credencial del seed de una base SQLite local. En la
+`seedPassword` está en texto plano porque es la credencial del seed de una base PostgreSQL local. En la
 base ya no se guarda así: desde la rama del JWT las contraseñas van hasheadas con BCrypt, y lo que
 queda acá es solo el texto plano que hay que mandarle al login para obtener el token.
 

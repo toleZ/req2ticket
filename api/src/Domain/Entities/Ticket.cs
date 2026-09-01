@@ -65,15 +65,15 @@ public class Ticket
 
     public Ticket? Parent { get; set; }
 
-    // The per-type fields, as a JSON object whose shape Type decides. SQLite has no jsonb,
-    // so the column is plain TEXT: what guarantees the text is valid for this type is
-    // TicketExtrasValidator, not the database.
+    // The per-type fields, as a JSON object whose shape Type decides. text and not jsonb,
+    // which would reorder the keys — see the note in Req2TicketContext. What guarantees the
+    // text is valid for this type is TicketExtrasValidator, not the database.
     public string? ExtraFields { get; set; }
 
-    // DateTimeOffset and not DateTime: SQLite stores a DateTime as TEXT without its Kind, so
-    // a UTC value read back has Kind=Unspecified and serializes without the trailing "Z" —
-    // and `new Date("2026-08-26T12:00:00")` in the browser is local time, so every timestamp
-    // would silently shift by the reader's offset. DateTimeOffset round-trips the offset.
+    // DateTimeOffset and not DateTime: a DateTime loses its Kind in the database, and
+    // `new Date("2026-08-26T12:00:00")` in the browser is local time, so every timestamp would
+    // shift by the reader's offset. Maps to timestamptz, which only accepts UTC — Npgsql throws
+    // on a non-zero offset, so keep writing UtcNow.
     public DateTimeOffset CreatedAt { get; set; }
 
     public DateTimeOffset UpdatedAt { get; set; }

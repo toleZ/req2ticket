@@ -21,7 +21,8 @@ public class AuthService
     // the response can never be used to find out which emails exist.
     public async Task<User?> LoginAsync(string email, string password)
     {
-        User? user = await _userRepository.GetByEmailAsync(email.Trim());
+        // Lowercased because the stored address is: the column lost SQLite's NOCASE collation.
+        User? user = await _userRepository.GetByEmailAsync(email.Trim().ToLowerInvariant());
         if (user is null)
         {
             return null;
@@ -36,7 +37,7 @@ public class AuthService
     // someone with the Admin policy has to change it afterwards.
     public async Task<User> RegisterAsync(string name, string email, string password)
     {
-        string normalizedEmail = email.Trim();
+        string normalizedEmail = email.Trim().ToLowerInvariant();
 
         // Check-then-act, like EpicService does with the epic code: the unique index on
         // Email is the real guarantee, this is the part that produces a readable message.

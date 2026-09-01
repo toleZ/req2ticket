@@ -317,7 +317,7 @@ internal static class SeedData
                 AssigneeId = 3,
                 ReporterId = 2,
                 SprintId = 2,
-                ExtraFields = """{"severity":"major","stepsToReproduce":"1. Cerrar un ticket que está en el backlog.\n2. Abrir el burndown del sprint activo.","expectedResult":"La curva baja por los puntos cerrados.","actualResult":"La curva queda plana.","environment":"Local, SQLite"}""",
+                ExtraFields = """{"severity":"major","stepsToReproduce":"1. Cerrar un ticket que está en el backlog.\n2. Abrir el burndown del sprint activo.","expectedResult":"La curva baja por los puntos cerrados.","actualResult":"La curva queda plana.","environment":"Local, PostgreSQL"}""",
                 CreatedAt = new DateTimeOffset(2026, 8, 11, 8, 45, 0, TimeSpan.Zero),
                 UpdatedAt = new DateTimeOffset(2026, 8, 13, 10, 0, 0, TimeSpan.Zero)
             },
