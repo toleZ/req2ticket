@@ -65,35 +65,30 @@ public class Req2TicketContext : DbContext
             .HasForeignKey(t => t.SprintId)
             .OnDelete(DeleteBehavior.SetNull);
 
-        // Restrict and not Cascade, even though a subtask really cannot outlive its parent:
-        // SQLite would accept a self-referencing cascade, but SQL Server rejects one
-        // outright, and the swap to SQL Server is still on the table (see Program.cs).
-        // TicketService.DeleteAsync removes the children first, which behaves the same and
-        // works on either provider.
+        // Restrict and not Cascade, even though a subtask cannot outlive its parent:
+        // TicketService.DeleteAsync already removes the children, and a cascade here would be a
+        // second, invisible copy of that rule.
         modelBuilder.Entity<Ticket>()
             .HasOne(t => t.Parent)
             .WithMany()
             .HasForeignKey(t => t.ParentId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // SQLite has no json or jsonb type, so this lands in TEXT either way. Saying it out
-        // loud keeps the intent readable, and keeps the column from silently becoming
-        // something else if the provider changes.
+        // text and not jsonb: jsonb reorders the keys, and TicketExtrasValidator emits them in
+        // schema order on purpose so two tickets of a type read the same way. What guarantees the
+        // text is valid for its type is the validator, not the database.
         modelBuilder.Entity<Ticket>()
             .Property(t => t.ExtraFields)
-            .HasColumnType("TEXT");
+            .HasColumnType("text");
 
         modelBuilder.Entity<Ticket>()
             .HasIndex(t => t.Code)
             .IsUnique();
 
-        // NOCASE so logging in does not depend on how the email was typed. SQLite compares
-        // strings case-sensitively by default, and the unique index inherits the collation,
-        // so two users cannot differ only in capitalization either.
-        modelBuilder.Entity<User>()
-            .Property(u => u.Email)
-            .UseCollation("NOCASE");
-
+        // Plain case-sensitive index. Case-insensitivity used to be SQLite's NOCASE collation
+        // here; PostgreSQL could do it with citext or an ICU collation, but the rule lives in the
+        // services now — they lowercase the email on every write and every lookup. Skip that in a
+        // new write path and two users can differ by capitalization again.
         modelBuilder.Entity<User>()
             .HasIndex(u => u.Email)
             .IsUnique();

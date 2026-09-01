@@ -32,7 +32,7 @@ public class UserService
         User actor = await LoadActorAsync(actorId);
         EnsureCanActOn(actor, nuevo.Role, "asignar el rol");
 
-        string email = nuevo.Email.Trim();
+        string email = nuevo.Email.Trim().ToLowerInvariant();
 
         // Check-then-act: the unique index is the real guarantee, this is the readable message.
         if (await _userRepository.ExistsByEmailAsync(email))
@@ -80,8 +80,10 @@ public class UserService
             await EnsureNotLastSuperAdminAsync(user, "degradar");
         }
 
-        string email = changes.Email.Trim();
-        if (!string.Equals(email, user.Email, StringComparison.OrdinalIgnoreCase)
+        // Ordinal, not OrdinalIgnoreCase: both sides are lowercase already, and if a row ever
+        // is not, IgnoreCase would call this "unchanged", skip the check and let the index 500.
+        string email = changes.Email.Trim().ToLowerInvariant();
+        if (!string.Equals(email, user.Email, StringComparison.Ordinal)
             && await _userRepository.ExistsByEmailAsync(email))
         {
             throw new ArgumentException($"Ya existe un usuario con el email {email}.");

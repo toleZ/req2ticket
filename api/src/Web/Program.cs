@@ -127,12 +127,11 @@ builder.Services.AddAuthorization(authorizationOptions =>
 
 builder.Services.AddCors();
 
+// The string in appsettings.json matches the setup in api/dotnet-commands.md, with no password
+// because a Homebrew cluster trusts local connections. If yours needs one, put the whole string
+// in user-secrets under the same key and it wins.
 builder.Services.AddDbContext<Req2TicketContext>(dbContextOptions =>
-    dbContextOptions.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
-
-// To move to SQL Server: swap the package for Microsoft.EntityFrameworkCore.SqlServer,
-// use the SqlServerConnection string from appsettings.json and regenerate the migrations.
-// dbContextOptions.UseSqlServer(builder.Configuration.GetConnectionString("SqlServerConnection"));
+    dbContextOptions.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 var app = builder.Build();
 

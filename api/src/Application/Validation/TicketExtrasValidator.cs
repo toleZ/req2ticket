@@ -42,7 +42,7 @@ public static class TicketExtrasValidator
 
     /* The default encoder escapes everything above ASCII, so "planificación" would be stored as
        "planificación" — correct JSON, unreadable in a database browser, and different from
-       the seed rows, which reach SQLite as C# literals without passing through here. Two
+       the seed rows, which reach the database as C# literals without passing through here. Two
        spellings of the same text in one column is a trap for anyone diffing them.
 
        UnicodeRanges.All lets the accents through while still escaping the HTML-sensitive

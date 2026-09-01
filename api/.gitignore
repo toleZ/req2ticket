@@ -16,10 +16,5 @@ appsettings.Development.json
 appsettings.Local.json
 *.env
 
-# SQLite database files
-*.db
-*.db-shm
-*.db-wal
-
 # macOS
 .DS_Store

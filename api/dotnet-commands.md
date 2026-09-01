@@ -42,6 +42,40 @@ dotnet watch --project src/Web/Web.csproj              # Con hot reload
 dotnet clean
 ```
 
+## PostgreSQL (requisito)
+
+La API corre sobre PostgreSQL. No hay fallback a SQLite: sin una base levantada no arranca.
+
+```bash
+brew install postgresql@18
+brew services start postgresql@18
+```
+
+Las fórmulas `postgresql@N` son keg-only, así que instalar la 18 **no** cambia el `psql` del
+PATH. Si `psql --version` no dice 18, agregá esto al `~/.zshrc`:
+
+```bash
+export PATH="/opt/homebrew/opt/postgresql@18/bin:$PATH"
+```
+
+Una vez, para crear el rol y la base. `CREATEDB` no es un lujo: `dotnet ef database drop` +
+`update` lo necesita, y ese es el ciclo normal de esta app.
+
+```bash
+psql -h localhost -d postgres -c "CREATE ROLE req2ticket LOGIN PASSWORD 'req2ticket' CREATEDB;"
+createdb -h localhost -O req2ticket req2ticket
+```
+
+Para mirar la base a mano, ojo con las comillas: EF conserva los nombres en PascalCase y los
+cita, así que en `psql` las tablas y las columnas van entre comillas dobles o no las encuentra.
+
+```bash
+psql -h localhost -U req2ticket -d req2ticket
+# \dt                                    -> listar tablas
+# SELECT "Id", "Name" FROM "Epics";       -> con comillas
+# select * from epics;                    -> ERROR: relation "epics" does not exist
+```
+
 ## Entity Framework Core
 
 > Requiere la herramienta: `dotnet tool install --global dotnet-ef`
@@ -69,8 +103,9 @@ dotnet ef database update NombreMigracionAnterior --project src/Infrastructure -
 # Borrar la base
 dotnet ef database drop --project src/Infrastructure --startup-project src/Web
 
-# Después de traerse la rama refactor/story-to-ticket: la base vieja tiene la tabla Stories,
-# así que hay que rehacerla. El seed la deja igual que antes.
+# Después de traerse la rama de PostgreSQL: la base vieja era un archivo SQLite y las
+# migraciones se rehicieron de cero, así que hay que crear la base nueva. El seed la deja
+# igual que antes.
 dotnet ef database drop --force --project src/Infrastructure --startup-project src/Web
 dotnet ef database update --project src/Infrastructure --startup-project src/Web
 
@@ -87,7 +122,7 @@ Para no commitear connection strings ni claves:
 
 ```bash
 dotnet user-secrets init --project src/Web
-dotnet user-secrets set "ConnectionStrings:DefaultConnection" "..." --project src/Web
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Host=localhost;Port=5432;Database=req2ticket;Username=req2ticket;Password=req2ticket" --project src/Web
 dotnet user-secrets list --project src/Web
 ```
 
@@ -107,7 +142,8 @@ Los `dotnet ef` también la necesitan, porque construyen el host: si te tira
 `Falta la configuración Jwt:Key`, corré el comando de arriba antes de la migración.
 
 En Azure no van user-secrets: la clave se carga como App Setting `Jwt__Key` (doble guión
-bajo, que es como App Service representa el `:` de la configuración).
+bajo, que es como App Service representa el `:` de la configuración). La connection string
+sigue la misma regla: `ConnectionStrings__DefaultConnection`.
 
 El resto de la sección `Jwt` (`Issuer`, `Audience`, `ExpiresHours`) sí está commiteada en
 `appsettings.json`, porque no son secretos.
