@@ -26,7 +26,6 @@ public class SprintService
         return sprint;
     }
 
-    // Returns false when the sprint does not exist.
     public async Task<bool> UpdateAsync(int id, Sprint changes)
     {
         Sprint? sprint = await _sprintRepository.GetByIdAsync(id);
@@ -48,7 +47,6 @@ public class SprintService
         return true;
     }
 
-    // Returns false when the sprint does not exist.
     public async Task<bool> DeleteAsync(int id)
     {
         Sprint? sprint = await _sprintRepository.GetByIdAsync(id);

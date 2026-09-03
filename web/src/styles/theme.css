@@ -121,8 +121,8 @@
 
   --highlight-top: rgb(255 255 255 / 0.6);
 
-  /* Elevación. Se llaman --elev-* y no --shadow-* porque el @theme inline del final
-     necesita un nombre distinto al del token de Tailwind para no autorreferenciarse. */
+  /* Elevation. These are called --elev-* and not --shadow-* because the @theme inline block
+     at the end needs a name different from Tailwind's token so it does not self-reference. */
   --elev-hairline: 0 0 0 0.5px var(--separator);
   --elev-card: 0 1px 2px rgb(0 0 0 / 0.04), 0 4px 12px -2px rgb(0 0 0 / 0.06);
   --elev-raised: 0 2px 6px rgb(0 0 0 / 0.06), 0 12px 32px -6px rgb(0 0 0 / 0.12);
@@ -145,8 +145,8 @@
 .dark {
   color-scheme: dark;
 
-  /* Los acentos quedan como estaban: son los colores de sistema de Apple para oscuro,
-     ya subidos de saturación respecto de los claros para no apagarse sobre el fondo. */
+  /* The accents stay as they were: they are Apple's system colours for dark, already more
+     saturated than the light ones so they do not go dull against the background. */
   --sys-blue: #0a84ff;
   --sys-green: #30d158;
   --sys-red: #ff453a;
@@ -158,8 +158,8 @@
   --sys-indigo: #5e5ce6;
   --sys-mint: #63e6e2;
 
-  /* Grises con una punta de azul (el canal B queda unos puntos por encima del R). Un gris
-     perfectamente neutro sobre un fondo frío se lee sucio, tirando a marrón. */
+  /* Greys with a hint of blue (the B channel sits a few points above R). A perfectly neutral
+     grey over a cool background reads as dirty, leaning brown. */
   --sys-gray: #8e9199;
   --sys-gray2: #63666e;
   --sys-gray3: #494c54;
@@ -167,17 +167,17 @@
   --sys-gray5: #2b2e35;
   --sys-gray6: #1d2026;
 
-  /* Blanco puro sobre casi negro produce halación: el texto parece vibrar y cansa a los
-     dos minutos. Un blanco roto corta eso sin perder contraste (sigue por encima de 15:1). */
+  /* Pure white on near-black produces halation: the text seems to vibrate and tires you out
+     within two minutes. An off-white stops that without losing contrast (still above 15:1). */
   --label: #f2f3f5;
   --label-secondary: rgb(235 236 245 / 0.62);
   --label-tertiary: rgb(235 236 245 / 0.38);
   --label-quaternary: rgb(235 236 245 / 0.2);
 
-  /* La escalera de elevación. Antes --bg-base era #000000, y con la página en negro puro
-     no queda nada por debajo: `sunken` terminaba siendo MÁS CLARO que el fondo, al revés
-     que en el tema claro. Ahora sube parejo, sunken < base < grouped < elevated, y las
-     sombras vuelven a tener sobre qué dibujarse. */
+  /* The elevation ladder. --bg-base used to be #000000, and with the page in pure black
+     there is nothing left below it: `sunken` ended up LIGHTER than the background, the
+     opposite of the light theme. Now it climbs evenly, sunken < base < grouped < elevated,
+     and the shadows have something to draw against again. */
   --bg-sunken: #0d0e11;
   --bg-grouped: #101115;
   --bg-base: #121317;
@@ -198,8 +198,8 @@
 
   --highlight-top: rgb(255 255 255 / 0.07);
 
-  /* Las mismas sombras del tema claro son invisibles acá: un negro al 6% sobre un fondo
-     casi negro no se ve. Suben mucho de opacidad para que la elevación siga leyéndose. */
+  /* The light theme's shadows are invisible here: black at 6% over a near-black background
+     cannot be seen. Their opacity climbs a lot so elevation still reads. */
   --elev-card: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 12px -2px rgb(0 0 0 / 0.5);
   --elev-raised: 0 2px 6px rgb(0 0 0 / 0.45), 0 12px 32px -6px rgb(0 0 0 / 0.6);
   --elev-dragging: 0 8px 16px rgb(0 0 0 / 0.5), 0 24px 48px -12px rgb(0 0 0 / 0.7);

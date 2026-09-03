@@ -1,5 +1,13 @@
-import { PlaceholderPage } from '@/components/layout/PlaceholderPage'
+import { PageHeader } from '@/components/layout/PageHeader/PageHeader'
 
+// Scaffolding. When this screen is built for real, replace everything below.
 export function Home() {
-  return <PlaceholderPage title="Inicio" description="Todavía no hay proyectos para mostrar." />
+  return (
+    <section>
+      <PageHeader title="Inicio" />
+      <p className="mt-2 max-w-prose text-body text-label-secondary">
+        Todavía no hay proyectos para mostrar.
+      </p>
+    </section>
+  )
 }

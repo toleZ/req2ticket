@@ -1,8 +1,7 @@
-/* Los cuatro tipos de ticket. Mismo formato { value, label, tone } que las listas de abajo,
-   así findOption y <Badge> funcionan igual para los tres.
+/* The four ticket types. Same { value, label, tone } shape as the lists below, so findOption
+   and <Badge> work the same way for all three.
 
-   `short` es lo que entra en el badge de una fila, donde no hay lugar para "Historia de
-   usuario". */
+   `short` is what fits in a row's badge, where there is no room for "Historia de usuario". */
 export const TICKET_TYPE_OPTIONS = [
   { value: 'userStory', label: 'Historia de usuario', short: 'UH', tone: 'blue' },
   { value: 'task', label: 'Tarea', short: 'Tarea', tone: 'teal' },
@@ -25,21 +24,21 @@ export const TICKET_PRIORITY_OPTIONS = [
    up as `undefined` instead of silently matching nothing. */
 export const TICKET_DONE = 'done'
 
-/* Terminal pero no exitoso. No cuenta como completado ni como pendiente: summarizeTickets
-   lo saca del total, así que un ticket cancelado no arrastra para abajo el porcentaje de
-   un sprint para siempre. */
+/* Terminal but not successful. It counts as neither done nor pending: summarizeTickets takes
+   it out of the total, so a cancelled ticket does not drag a sprint's percentage down
+   forever. */
 export const TICKET_CANCELLED = 'cancelled'
 
 /* Sentinel for the sprint filter's "Sin sprint" option. Not a sprint id and not a status:
-   it is a case of its own, and it never sale de acá — el filtro compara contra sprintId,
-   así que este string no viaja nunca a la API.
+   it is a case of its own, and it never leaves this file — the filter compares against
+   sprintId, so this string never travels to the API.
 
-   Se llamaba 'backlog' y se renombró: ahora 'backlog' es un TicketStatus de verdad (y
-   además ya era un EpicStatus). Tres cosas distintas con el mismo nombre es una de más. */
+   It used to be called 'backlog' and was renamed: 'backlog' is now a real TicketStatus (and
+   it already was an EpicStatus). Three different things under one name is one too many. */
 export const NO_SPRINT = '__sinSprint__'
 
-/* En orden de flujo, y ese orden importa: la página de Tickets dibuja una sección por
-   estado leyendo este array (no el enum de C#). Reordenar acá reordena la página. */
+/* In flow order, and that order matters: the Tickets page draws one section per status by
+   reading this array (not the C# enum). Reordering here reorders the page. */
 export const TICKET_STATUS_OPTIONS = [
   { value: 'backlog', label: 'Backlog', tone: 'neutral' },
   { value: 'todo', label: 'Por hacer', tone: 'gray' },

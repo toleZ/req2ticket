@@ -4,7 +4,6 @@ export function getEpics() {
   return get('/api/epics')
 }
 
-/* Translates the form values into the API's contract. */
 export function createEpic(values) {
   return post('/api/epics', {
     name: values.name,

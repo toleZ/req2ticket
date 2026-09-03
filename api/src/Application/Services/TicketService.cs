@@ -39,11 +39,9 @@ public class TicketService
     public async Task<List<Ticket>> GetByEpicIdAsync(int epicId) =>
         await _ticketRepository.GetByEpicIdAsync(epicId);
 
-    // A null sprintId returns the backlog.
     public async Task<List<Ticket>> GetBySprintIdAsync(int? sprintId) =>
         await _ticketRepository.GetBySprintIdAsync(sprintId);
 
-    // The tickets this one divides into.
     public async Task<List<Ticket>> GetChildrenAsync(int parentId) =>
         await _ticketRepository.GetByParentIdAsync(parentId);
 
@@ -74,7 +72,6 @@ public class TicketService
         return ticket;
     }
 
-    // Returns false when the ticket does not exist.
     public async Task<bool> UpdateAsync(int id, Ticket changes)
     {
         Ticket? ticket = await _ticketRepository.GetByIdAsync(id);
@@ -114,7 +111,6 @@ public class TicketService
         return true;
     }
 
-    // Returns false when the ticket does not exist.
     public async Task<bool> DeleteAsync(int id)
     {
         Ticket? ticket = await _ticketRepository.GetByIdAsync(id);

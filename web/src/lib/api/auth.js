@@ -4,8 +4,8 @@ export function login({ email, password }) {
   return post('/api/auth/login', { email: email.trim(), password })
 }
 
-/* Devuelve lo mismo que login() — { token, expiresAt, user } — así que la cuenta queda
-   logueada apenas se crea. Si el email ya existe, la API responde 409 y esto tira. */
+/* Returns the same as login() — { token, expiresAt, user } — so the account is logged in as
+   soon as it is created. If the email already exists, the API answers 409 and this throws. */
 export function register({ name, email, password }) {
   return post('/api/auth/register', { name: name.trim(), email: email.trim(), password })
 }

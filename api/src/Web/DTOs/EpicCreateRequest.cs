@@ -24,7 +24,6 @@ public record EpicCreateRequest
     [Range(1, int.MaxValue, ErrorMessage = "OwnerId inválido.")]
     public int? OwnerId { get; init; }
 
-    // Manual mapping: AutoMapper is not installed.
     public Epic ToEntity() => new()
     {
         Name = Name,

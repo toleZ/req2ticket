@@ -1,24 +1,24 @@
-/* Qué campos extra tiene cada tipo de ticket.
+/* Which extra fields each ticket type has.
 
-   Este archivo es la única fuente: el modal de alta, el panel de edición y la validación
-   leen los mismos objetos. Agregar un campo es agregar una línea acá — no se toca ningún
-   componente. Sacarlo es borrar la línea.
+   This file is the only source: the create modal, the edit panel and the validation all read
+   the same objects. Adding a field is adding a line here — no component is touched. Removing
+   one is deleting the line.
 
-   Cada campo es un objeto con:
-     name     la clave que viaja a la API dentro de "extraFields". Tiene que coincidir EXACTO
-              con la propiedad del record de C# (UserStoryExtras, BugExtras, …). Si no
-              coincide, el back responde 400 nombrando la clave: no falla en silencio.
-     kind     cómo se dibuja: 'text' | 'textarea' | 'select' | 'checklist'
-     label    lo que ve el usuario, en español
-     options  solo para kind 'select': [{ value, label }]
-     addLabel solo para kind 'checklist': el texto de la fila para agregar un ítem. Va acá y
-              no armado con el label ('Añadir ' + label) porque el label está en plural
-              ("Criterios de aceptación") y la fila habla de uno solo. */
+   Each field is an object with:
+     name     the key that travels to the API inside "extraFields". It has to match the C#
+              record's property EXACTLY (UserStoryExtras, BugExtras, …). If it does not, the
+              backend answers 400 naming the key: it does not fail silently.
+     kind     how it is drawn: 'text' | 'textarea' | 'select' | 'checklist'
+     label    what the user sees, in Spanish
+     options  only for kind 'select': [{ value, label }]
+     addLabel only for kind 'checklist': the text of the row that adds an item. It lives here
+              instead of being built from the label ('Añadir ' + label) because the label is
+              plural ("Criterios de aceptación") and the row talks about a single one. */
 
 export const EXTRA_FIELDS = {
-  /* La narrativa "Como <rol> quiero <acción> para <beneficio>" no está acá a propósito: va en
-     la descripción, como texto libre. Lo que queda son los tres checklists que deciden cuándo
-     se puede empezar la historia y cuándo está terminada. */
+  /* The "Como <rol> quiero <acción> para <beneficio>" narrative is deliberately not here: it
+     goes in the description, as free text. What is left are the three checklists that decide
+     when the story can start and when it is finished. */
   userStory: [
     {
       name: 'acceptanceCriteria',
@@ -82,8 +82,8 @@ export const EXTRA_FIELDS = {
   ],
 }
 
-/* Qué lista lleva la barra de progreso de cada tipo. El bug no tiene ninguna, así que no
-   muestra barra: null es la respuesta, no un olvido. */
+/* Which list carries each type's progress bar. The bug has none, so it shows no bar: null is
+   the answer, not an oversight. */
 export const CHECKLIST_KEY = {
   userStory: 'acceptanceCriteria',
   task: 'checklist',
@@ -91,11 +91,11 @@ export const CHECKLIST_KEY = {
   fix: 'verificationSteps',
 }
 
-/* El estado inicial de los campos extra de un tipo: un objeto con una clave por campo.
+/* The initial state of a type's extra fields: an object with one key per field.
 
-   Todo arranca en '' (los <input> guardan strings) y los checklist en []. Nunca en
-   undefined: un <input> que pasa de undefined a un valor deja de ser controlado y React
-   tira un warning en consola que nadie entiende la primera vez. */
+   Everything starts at '' (an <input> holds strings) and the checklists at []. Never at
+   undefined: an <input> that goes from undefined to a value stops being controlled, and React
+   logs a warning nobody understands the first time. */
 export function emptyExtras(type) {
   const values = {}
 
@@ -106,11 +106,11 @@ export function emptyExtras(type) {
   return values
 }
 
-/* Al revés: lo que devolvió la API -> los valores del formulario.
+/* The other way round: what the API returned -> the form values.
 
-   Hace falta porque la API omite las claves vacías: el back serializa sin nulls, así que si le
-   pasáramos su respuesta directo al <input>, los campos que el ticket no tiene llegarían como
-   undefined y el input dejaría de ser controlado. */
+   It is needed because the API omits empty keys: the backend serializes without nulls, so
+   handing its response straight to an <input> would deliver undefined for the fields the
+   ticket does not have, and the input would stop being controlled. */
 export function toFormValues(type, extraFields) {
   const values = emptyExtras(type)
   if (!extraFields) return values
@@ -125,10 +125,10 @@ export function toFormValues(type, extraFields) {
   return values
 }
 
-/* Y de vuelta: los valores del formulario -> el objeto "extraFields" que espera la API.
+/* And back again: the form values -> the "extraFields" object the API expects.
 
-   Los campos vacíos no se mandan: el back los trata como ausentes, y mandar "" en vez de nada
-   guardaría una cadena vacía donde debería no haber clave. */
+   Empty fields are not sent: the backend treats them as absent, and sending "" instead of
+   nothing would store an empty string where there should be no key at all. */
 export function toExtraFieldsPayload(type, values) {
   const payload = {}
 
@@ -148,13 +148,14 @@ export function toExtraFieldsPayload(type, values) {
   return payload
 }
 
-/* Sugerencia para el campo Descripción, por tipo.
+/* Suggestion for the Description field, per type.
 
-   Es solo un placeholder: no se valida, no se guarda distinto y no obliga a nada. La
-   descripción sigue siendo texto libre y se puede escribir como se quiera — esto está para
-   que no se pierda el formato de historia de usuario ahora que dejó de ser tres campos.
+   It is only a placeholder: it is not validated, it is not stored differently and it forces
+   nothing. The description is still free text and can be written however you like — this is
+   here so the user-story format is not lost now that it is no longer three fields.
 
-   Vive acá y no en el componente porque es lo mismo que EXTRA_FIELDS: información por tipo. */
+   It lives here and not in the component because it is the same thing as EXTRA_FIELDS:
+   information per type. */
 export const DESCRIPTION_PLACEHOLDER = {
   userStory: 'Como <rol> quiero <acción> para <beneficio>',
 }

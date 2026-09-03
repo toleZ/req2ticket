@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 import { Plus } from 'lucide-react'
 
-import { PageHeader } from '@/components/layout/PageHeader'
-import { CreateEpicModal } from '@/components/epics/CreateEpicModal'
-import { EpicDetailModal } from '@/components/epics/EpicDetailModal'
-import { EpicList } from '@/components/epics/EpicList'
-import { TicketDetailModal } from '@/components/tickets/TicketDetailModal'
-import { LoadState } from '@/components/ui/LoadState'
+import { PageHeader } from '@/components/layout/PageHeader/PageHeader'
+import { CreateEpicModal } from '@/components/epics/CreateEpicModal/CreateEpicModal'
+import { EpicDetailModal } from '@/components/epics/EpicDetailModal/EpicDetailModal'
+import { EpicList } from '@/components/epics/EpicList/EpicList'
+import { TicketDetailModal } from '@/components/tickets/TicketDetailModal/TicketDetailModal'
+import { Button } from '@/components/ui/Button/Button'
+import { LoadState } from '@/components/ui/LoadState/LoadState'
 import {
   createEpic,
   deleteEpic,
@@ -19,26 +20,22 @@ import {
   updateTicket,
 } from '@/lib/api'
 
-const PRIMARY_BUTTON = `inline-flex shrink-0 items-center justify-center gap-1.5 rounded-control
-  bg-blue px-3 py-1.5 text-subheadline font-medium text-white transition-[filter] duration-fast
-  hover:brightness-110 disabled:opacity-50`
-
 export function Epics() {
   const [epics, setEpics] = useState([])
   // The tickets are fetched once and each row receives its own already filtered, instead
   // of every row asking /api/epics/{id}/tickets for itself.
   const [tickets, setTickets] = useState([])
-  /* Los sprints y los usuarios no se dibujan en esta página: son para los desplegables del
-     modal de detalle de un ticket, que desde acá también se puede abrir. */
+  /* The sprints and the users are not drawn on this page: they are for the dropdowns of a
+     ticket's detail modal, which can be opened from here too. */
   const [sprints, setSprints] = useState([])
   const [users, setUsers] = useState([])
   const [loadState, setLoadState] = useState('loading') // 'loading' | 'ready' | 'error'
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [reloadKey, setReloadKey] = useState(0)
 
-  /* Qué ficha está abierta, guardada por id y no como objeto: la entidad se busca en su lista
-     en cada render, así que después de guardar el modal ve lo que devolvió la API, y si se
-     borró pasa a null y el modal se desmonta solo. */
+  /* Which record is open, held by id and not as an object: the entity is looked up in its list
+     on every render, so after saving the modal sees what the API returned, and if it was
+     deleted this becomes null and the modal unmounts on its own. */
   const [detailEpicId, setDetailEpicId] = useState(null)
   const [detailTicketId, setDetailTicketId] = useState(null)
 
@@ -84,9 +81,9 @@ export function Epics() {
     setTickets((prev) => prev.filter((ticket) => ticket.epicId !== epic.id))
   }
 
-  /* updateTicket devuelve el ticket recién leído de la API, así que se reemplaza entero: la
-     respuesta ya trae epicName, sprintName, assigneeName y updatedAt recalculados. Es la misma
-     función, palabra por palabra, en las tres páginas que abren el modal de un ticket. */
+  /* updateTicket returns the ticket freshly read from the API, so it is replaced whole: the
+     response already carries epicName, sprintName, assigneeName and updatedAt recalculated. It
+     is the same function, word for word, in the three pages that open a ticket's modal. */
   async function handleUpdateTicket(ticket, patch) {
     const updated = await updateTicket(ticket, patch)
     setTickets((prev) => prev.map((current) => (current.id === updated.id ? updated : current)))
@@ -103,10 +100,10 @@ export function Epics() {
   return (
     <section>
       <PageHeader title="Épicas">
-        <button type="button" onClick={() => setIsModalOpen(true)} className={PRIMARY_BUTTON}>
+        <Button size="sm" onClick={() => setIsModalOpen(true)}>
           <Plus className="size-4" aria-hidden="true" />
           Nueva épica
-        </button>
+        </Button>
       </PageHeader>
 
       <LoadState
@@ -129,9 +126,9 @@ export function Epics() {
 
       <CreateEpicModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onCreate={handleCreate} />
 
-      {/* Los dos modales se montan sólo mientras hay algo elegido: así cada apertura siembra
-          su formulario de cero. No pueden estar los dos a la vez — desde la ficha de una épica
-          no se abre un ticket, justamente para no encimar dos hojas modales. */}
+      {/* Both modals mount only while something is chosen: that way every opening seeds its
+          form from scratch. They cannot both be up at once — a ticket is not opened from an
+          epic's record, precisely so two modal sheets never stack. */}
       {detailEpic && (
         <EpicDetailModal
           key={detailEpic.id}

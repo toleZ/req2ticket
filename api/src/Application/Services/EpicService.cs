@@ -37,7 +37,6 @@ public class EpicService
         return epic;
     }
 
-    // Returns false when the epic does not exist.
     public async Task<bool> UpdateAsync(int id, Epic changes)
     {
         Epic? epic = await _epicRepository.GetByIdAsync(id);
@@ -60,7 +59,6 @@ public class EpicService
         return true;
     }
 
-    // Returns false when the epic does not exist.
     public async Task<bool> DeleteAsync(int id)
     {
         Epic? epic = await _epicRepository.GetByIdAsync(id);
