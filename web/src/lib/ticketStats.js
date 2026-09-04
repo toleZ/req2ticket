@@ -5,9 +5,10 @@ import { TICKET_CANCELLED, TICKET_DONE } from '@/lib/ticketOptions'
    same numbers over different slices of the backlog. */
 
 export function summarizeTickets(tickets) {
-  /* Los cancelados salen de la cuenta antes que nada: no son ni completados ni pendientes.
-     Si contaran en `total`, un sprint con trabajo descartado nunca llegaría al 100%. Siguen
-     visibles en la lista de Tickets, en su propia sección — lo que no hacen es sumar acá. */
+  /* Cancelled ones leave the count before anything else: they are neither done nor pending.
+     If they counted towards `total`, a sprint with discarded work would never reach 100%.
+     They stay visible in the Tickets list, in their own section — what they do not do is
+     count here. */
   const counted = tickets.filter((ticket) => ticket.status !== TICKET_CANCELLED)
   const done = counted.filter((ticket) => ticket.status === TICKET_DONE)
 
@@ -19,11 +20,11 @@ export function summarizeTickets(tickets) {
   }
 }
 
-/* Cuántos ítems del checklist del ticket están tildados, y cuántos hay.
+/* How many of the ticket's checklist items are ticked, and how many there are.
 
-   Qué lista cuenta depende del tipo (CHECKLIST_KEY): los criterios de aceptación de una
-   historia, el checklist de una tarea, los pasos de verificación de un fix. El bug no tiene,
-   y devuelve 0 de 0 — la fila usa eso para no dibujar la barra. */
+   Which list counts depends on the type (CHECKLIST_KEY): a story's acceptance criteria, a
+   task's checklist, a fix's verification steps. The bug has none and returns 0 of 0 — the row
+   uses that to skip drawing the bar. */
 export function checklistProgress(ticket) {
   const key = CHECKLIST_KEY[ticket.type]
   const items = key && ticket.extraFields ? ticket.extraFields[key] : null

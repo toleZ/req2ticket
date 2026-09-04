@@ -24,7 +24,6 @@ public record SprintCreateRequest
     [EnumDataType(typeof(SprintStatus), ErrorMessage = "Estado inválido.")]
     public SprintStatus? Status { get; init; }
 
-    // Manual mapping: AutoMapper is not installed.
     public Sprint ToEntity() => new()
     {
         Name = Name,

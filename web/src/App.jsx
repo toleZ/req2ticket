@@ -1,9 +1,9 @@
 import { Route, Routes } from 'react-router-dom'
 
-import { AuthLayout } from '@/components/auth/AuthLayout'
-import { RedirectIfAuth } from '@/components/auth/RedirectIfAuth'
-import { RequireAuth } from '@/components/auth/RequireAuth'
-import { AppShell } from '@/components/layout/AppShell'
+import { AuthLayout } from '@/components/auth/AuthLayout/AuthLayout'
+import { RedirectIfAuth } from '@/components/auth/RedirectIfAuth/RedirectIfAuth'
+import { RequireAuth } from '@/components/auth/RequireAuth/RequireAuth'
+import { AppShell } from '@/components/layout/AppShell/AppShell'
 import { Board } from '@/pages/Board'
 import { Home } from '@/pages/Home'
 import { Epics } from '@/pages/Epics'

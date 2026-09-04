@@ -1,68 +1,37 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import { useOutletContext } from 'react-router-dom'
 import { Plus } from 'lucide-react'
 
-import { PageHeader } from '@/components/layout/PageHeader'
-import { CreateSprintModal } from '@/components/sprints/CreateSprintModal'
-import { SprintBacklog } from '@/components/sprints/SprintBacklog'
-import { SprintList } from '@/components/sprints/SprintList'
-import { TicketDetailModal } from '@/components/tickets/TicketDetailModal'
-import { LoadState } from '@/components/ui/LoadState'
-import {
-  createSprint,
-  deleteSprint,
-  deleteTicket,
-  getEpics,
-  getSprints,
-  getTickets,
-  getUsers,
-  updateSprint,
-  updateTicket,
-} from '@/lib/api'
+import { PageHeader } from '@/components/layout/PageHeader/PageHeader'
+import { CreateSprintModal } from '@/components/sprints/CreateSprintModal/CreateSprintModal'
+import { SprintBacklog } from '@/components/sprints/SprintBacklog/SprintBacklog'
+import { SprintList } from '@/components/sprints/SprintList/SprintList'
+import { TicketDetailModal } from '@/components/tickets/TicketDetailModal/TicketDetailModal'
+import { Button } from '@/components/ui/Button/Button'
+import { LoadState } from '@/components/ui/LoadState/LoadState'
+import { createSprint, deleteSprint, updateSprint } from '@/lib/api'
 import { SPRINT_ACTIVE } from '@/lib/sprintOptions'
 
-const PRIMARY_BUTTON = `inline-flex shrink-0 items-center justify-center gap-1.5 rounded-control
-  bg-blue px-3 py-1.5 text-subheadline font-medium text-white transition-[filter] duration-fast
-  hover:brightness-110 disabled:opacity-50`
-
 export function Sprints() {
-  const [sprints, setSprints] = useState([])
-  const [tickets, setTickets] = useState([])
-  /* Las épicas y los usuarios no se dibujan en esta página: son para los desplegables del
-     modal de detalle de un ticket, que se abre desde la tarjeta de un sprint y desde el
-     bloque Backlog. */
-  const [epics, setEpics] = useState([])
-  const [users, setUsers] = useState([])
-  const [loadState, setLoadState] = useState('loading') // 'loading' | 'ready' | 'error'
+  const {
+    tickets,
+    setTickets,
+    epics,
+    sprints,
+    setSprints,
+    users,
+    loadState,
+    reload,
+    updateTicketAndStore,
+    deleteTicketAndStore,
+  } = useOutletContext()
+
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [reloadKey, setReloadKey] = useState(0)
 
-  /* Guardado por id y no como objeto: el ticket se busca en `tickets` en cada render, así que
-     después de guardar el modal ve lo que devolvió la API, y si se borró pasa a null y el
-     modal se desmonta solo. */
+  /* Held by id and not as an object: the ticket is looked up in `tickets` on every render, so
+     after saving the modal sees what the API returned, and if it was deleted this becomes null
+     and the modal unmounts on its own. */
   const [detailTicketId, setDetailTicketId] = useState(null)
-
-  /* `reloadKey` is the "retry": bumping it by one makes React run the effect below again.
-     It is how you repeat a load without pulling the fetch out of the effect.
-
-     The effect does not set loadState to 'loading': the initial state already is, and doing
-     it here would trigger one extra render. `handleRetry` does, because there it is the
-     response to a click. */
-  useEffect(() => {
-    Promise.all([getSprints(), getTickets(), getEpics(), getUsers()])
-      .then(([nextSprints, nextTickets, nextEpics, nextUsers]) => {
-        setSprints(nextSprints)
-        setTickets(nextTickets)
-        setEpics(nextEpics)
-        setUsers(nextUsers)
-        setLoadState('ready')
-      })
-      .catch(() => setLoadState('error'))
-  }, [reloadKey])
-
-  function handleRetry() {
-    setLoadState('loading')
-    setReloadKey(reloadKey + 1)
-  }
 
   // Appends what the POST returns, which already carries the id the backend assigned.
   async function handleCreate(values) {
@@ -87,18 +56,6 @@ export function Sprints() {
     )
   }
 
-  /* updateTicket devuelve el ticket recién leído de la API, así que se reemplaza entero. Es la
-     misma función, palabra por palabra, en las tres páginas que abren el modal de un ticket. */
-  async function handleUpdateTicket(ticket, patch) {
-    const updated = await updateTicket(ticket, patch)
-    setTickets((prev) => prev.map((current) => (current.id === updated.id ? updated : current)))
-  }
-
-  async function handleDeleteTicket(ticket) {
-    await deleteTicket(ticket.id)
-    setTickets((prev) => prev.filter((current) => current.id !== ticket.id))
-  }
-
   const activeSprint = sprints.find((sprint) => sprint.status === SPRINT_ACTIVE)
   const backlogTickets = tickets.filter((ticket) => ticket.sprintId === null)
   const detailTicket = tickets.find((ticket) => ticket.id === detailTicketId) ?? null
@@ -115,10 +72,10 @@ export function Sprints() {
   return (
     <section>
       <PageHeader title="Sprints" subtitle={subtitle}>
-        <button type="button" onClick={() => setIsModalOpen(true)} className={PRIMARY_BUTTON}>
+        <Button size="sm" onClick={() => setIsModalOpen(true)}>
           <Plus className="size-4" aria-hidden="true" />
           Nuevo sprint
-        </button>
+        </Button>
       </PageHeader>
 
       {/* mt-4 rather than the default mt-2: the card list below it needs more room to breathe. */}
@@ -128,7 +85,7 @@ export function Sprints() {
         loadingText="Cargando sprints…"
         errorText="No se pudieron cargar los sprints."
         emptyText="Todavía no hay sprints planificados."
-        onRetry={handleRetry}
+        onRetry={reload}
         className="mt-4"
       />
 
@@ -148,8 +105,8 @@ export function Sprints() {
 
       <CreateSprintModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onCreate={handleCreate} />
 
-      {/* Montado sólo mientras hay un ticket elegido: así cada apertura siembra el formulario
-          de cero y no queda estado del anterior. */}
+      {/* Mounted only while a ticket is chosen: that way every opening seeds the form from
+          scratch and no state from the previous one is left. */}
       {detailTicket && (
         <TicketDetailModal
           key={detailTicket.id}
@@ -158,8 +115,8 @@ export function Sprints() {
           sprints={sprints}
           users={users}
           onClose={() => setDetailTicketId(null)}
-          onUpdateTicket={handleUpdateTicket}
-          onDeleteTicket={handleDeleteTicket}
+          onUpdateTicket={updateTicketAndStore}
+          onDeleteTicket={deleteTicketAndStore}
         />
       )}
     </section>

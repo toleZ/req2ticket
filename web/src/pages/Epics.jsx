@@ -1,69 +1,37 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import { useOutletContext } from 'react-router-dom'
 import { Plus } from 'lucide-react'
 
-import { PageHeader } from '@/components/layout/PageHeader'
-import { CreateEpicModal } from '@/components/epics/CreateEpicModal'
-import { EpicDetailModal } from '@/components/epics/EpicDetailModal'
-import { EpicList } from '@/components/epics/EpicList'
-import { TicketDetailModal } from '@/components/tickets/TicketDetailModal'
-import { LoadState } from '@/components/ui/LoadState'
-import {
-  createEpic,
-  deleteEpic,
-  deleteTicket,
-  getEpics,
-  getSprints,
-  getTickets,
-  getUsers,
-  updateEpic,
-  updateTicket,
-} from '@/lib/api'
-
-const PRIMARY_BUTTON = `inline-flex shrink-0 items-center justify-center gap-1.5 rounded-control
-  bg-blue px-3 py-1.5 text-subheadline font-medium text-white transition-[filter] duration-fast
-  hover:brightness-110 disabled:opacity-50`
+import { PageHeader } from '@/components/layout/PageHeader/PageHeader'
+import { CreateEpicModal } from '@/components/epics/CreateEpicModal/CreateEpicModal'
+import { EpicDetailModal } from '@/components/epics/EpicDetailModal/EpicDetailModal'
+import { EpicList } from '@/components/epics/EpicList/EpicList'
+import { TicketDetailModal } from '@/components/tickets/TicketDetailModal/TicketDetailModal'
+import { Button } from '@/components/ui/Button/Button'
+import { LoadState } from '@/components/ui/LoadState/LoadState'
+import { createEpic, deleteEpic, updateEpic } from '@/lib/api'
 
 export function Epics() {
-  const [epics, setEpics] = useState([])
-  // The tickets are fetched once and each row receives its own already filtered, instead
-  // of every row asking /api/epics/{id}/tickets for itself.
-  const [tickets, setTickets] = useState([])
-  /* Los sprints y los usuarios no se dibujan en esta página: son para los desplegables del
-     modal de detalle de un ticket, que desde acá también se puede abrir. */
-  const [sprints, setSprints] = useState([])
-  const [users, setUsers] = useState([])
-  const [loadState, setLoadState] = useState('loading') // 'loading' | 'ready' | 'error'
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [reloadKey, setReloadKey] = useState(0)
+  const {
+    tickets,
+    setTickets,
+    epics,
+    setEpics,
+    sprints,
+    users,
+    loadState,
+    reload,
+    updateTicketAndStore,
+    deleteTicketAndStore,
+  } = useOutletContext()
 
-  /* Qué ficha está abierta, guardada por id y no como objeto: la entidad se busca en su lista
-     en cada render, así que después de guardar el modal ve lo que devolvió la API, y si se
-     borró pasa a null y el modal se desmonta solo. */
+  const [isModalOpen, setIsModalOpen] = useState(false)
+
+  /* Which record is open, held by id and not as an object: the entity is looked up in its list
+     on every render, so after saving the modal sees what the API returned, and if it was
+     deleted this becomes null and the modal unmounts on its own. */
   const [detailEpicId, setDetailEpicId] = useState(null)
   const [detailTicketId, setDetailTicketId] = useState(null)
-
-  /* `reloadKey` is the "retry": bumping it by one makes React run the effect below again.
-     It is how you repeat a load without pulling the fetch out of the effect.
-
-     The effect does not set loadState to 'loading': the initial state already is, and doing
-     it here would trigger one extra render. `handleRetry` does, because there it is the
-     response to a click. */
-  useEffect(() => {
-    Promise.all([getEpics(), getTickets(), getSprints(), getUsers()])
-      .then(([nextEpics, nextTickets, nextSprints, nextUsers]) => {
-        setEpics(nextEpics)
-        setTickets(nextTickets)
-        setSprints(nextSprints)
-        setUsers(nextUsers)
-        setLoadState('ready')
-      })
-      .catch(() => setLoadState('error'))
-  }, [reloadKey])
-
-  function handleRetry() {
-    setLoadState('loading')
-    setReloadKey(reloadKey + 1)
-  }
 
   // Appends what the POST returns, which already carries the id and code the backend assigned.
   async function handleCreate(values) {
@@ -84,29 +52,16 @@ export function Epics() {
     setTickets((prev) => prev.filter((ticket) => ticket.epicId !== epic.id))
   }
 
-  /* updateTicket devuelve el ticket recién leído de la API, así que se reemplaza entero: la
-     respuesta ya trae epicName, sprintName, assigneeName y updatedAt recalculados. Es la misma
-     función, palabra por palabra, en las tres páginas que abren el modal de un ticket. */
-  async function handleUpdateTicket(ticket, patch) {
-    const updated = await updateTicket(ticket, patch)
-    setTickets((prev) => prev.map((current) => (current.id === updated.id ? updated : current)))
-  }
-
-  async function handleDeleteTicket(ticket) {
-    await deleteTicket(ticket.id)
-    setTickets((prev) => prev.filter((current) => current.id !== ticket.id))
-  }
-
   const detailEpic = epics.find((epic) => epic.id === detailEpicId) ?? null
   const detailTicket = tickets.find((ticket) => ticket.id === detailTicketId) ?? null
 
   return (
     <section>
       <PageHeader title="Épicas">
-        <button type="button" onClick={() => setIsModalOpen(true)} className={PRIMARY_BUTTON}>
+        <Button size="sm" onClick={() => setIsModalOpen(true)}>
           <Plus className="size-4" aria-hidden="true" />
           Nueva épica
-        </button>
+        </Button>
       </PageHeader>
 
       <LoadState
@@ -115,7 +70,7 @@ export function Epics() {
         loadingText="Cargando épicas…"
         errorText="No se pudieron cargar las épicas."
         emptyText="Todavía no hay épicas cargadas."
-        onRetry={handleRetry}
+        onRetry={reload}
       />
 
       {loadState === 'ready' && epics.length > 0 && (
@@ -129,9 +84,9 @@ export function Epics() {
 
       <CreateEpicModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onCreate={handleCreate} />
 
-      {/* Los dos modales se montan sólo mientras hay algo elegido: así cada apertura siembra
-          su formulario de cero. No pueden estar los dos a la vez — desde la ficha de una épica
-          no se abre un ticket, justamente para no encimar dos hojas modales. */}
+      {/* Both modals mount only while something is chosen: that way every opening seeds its
+          form from scratch. They cannot both be up at once — a ticket is not opened from an
+          epic's record, precisely so two modal sheets never stack. */}
       {detailEpic && (
         <EpicDetailModal
           key={detailEpic.id}
@@ -152,8 +107,8 @@ export function Epics() {
           sprints={sprints}
           users={users}
           onClose={() => setDetailTicketId(null)}
-          onUpdateTicket={handleUpdateTicket}
-          onDeleteTicket={handleDeleteTicket}
+          onUpdateTicket={updateTicketAndStore}
+          onDeleteTicket={deleteTicketAndStore}
         />
       )}
     </section>

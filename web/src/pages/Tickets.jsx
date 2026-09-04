@@ -1,30 +1,16 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import { useOutletContext } from 'react-router-dom'
 import { ArrowUpDown, Plus } from 'lucide-react'
 
-import { PageHeader } from '@/components/layout/PageHeader'
-import { CreateTicketModal } from '@/components/tickets/CreateTicketModal'
-import { TicketDetailModal } from '@/components/tickets/TicketDetailModal'
-import { TicketFilterBar } from '@/components/tickets/TicketFilterBar'
-import { TicketList } from '@/components/tickets/TicketList'
-import { LoadState } from '@/components/ui/LoadState'
-import {
-  createTicket,
-  deleteTicket,
-  getEpics,
-  getSprints,
-  getTickets,
-  getUsers,
-  updateTicket,
-} from '@/lib/api'
+import { PageHeader } from '@/components/layout/PageHeader/PageHeader'
+import { CreateTicketModal } from '@/components/tickets/CreateTicketModal/CreateTicketModal'
+import { TicketDetailModal } from '@/components/tickets/TicketDetailModal/TicketDetailModal'
+import { TicketFilterBar } from '@/components/tickets/TicketFilterBar/TicketFilterBar'
+import { TicketList } from '@/components/tickets/TicketList/TicketList'
+import { Button } from '@/components/ui/Button/Button'
+import { LoadState } from '@/components/ui/LoadState/LoadState'
+import { createTicket } from '@/lib/api'
 import { NO_SPRINT, TICKET_PRIORITY_OPTIONS, TICKET_STATUS_OPTIONS } from '@/lib/ticketOptions'
-
-const PRIMARY_BUTTON = `inline-flex shrink-0 items-center justify-center gap-1.5 rounded-control
-  bg-blue px-3 py-1.5 text-subheadline font-medium text-white transition-[filter] duration-fast
-  hover:brightness-110 disabled:opacity-50`
-
-const NEUTRAL_BUTTON = `inline-flex shrink-0 items-center justify-center gap-1.5 rounded-control
-  bg-fill-tertiary px-3 py-1.5 text-subheadline font-medium text-label transition-colors
-  duration-fast ease-out-quad hover:bg-fill-secondary disabled:opacity-50`
 
 /* The order comes from TICKET_PRIORITY_OPTIONS, which runs low to high, so the sort
    subtracts the other way round. Deriving it instead of hand-writing a map keeps a newly
@@ -34,17 +20,23 @@ function priorityRank(priority) {
 }
 
 export function Tickets() {
-  const [tickets, setTickets] = useState([])
-  const [epics, setEpics] = useState([])
-  const [users, setUsers] = useState([])
-  const [sprints, setSprints] = useState([])
-  const [loadState, setLoadState] = useState('loading') // 'loading' | 'ready' | 'error'
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [reloadKey, setReloadKey] = useState(0)
+  const {
+    tickets,
+    setTickets,
+    epics,
+    sprints,
+    users,
+    loadState,
+    reload,
+    updateTicketAndStore,
+    deleteTicketAndStore,
+  } = useOutletContext()
 
-  /* El ticket abierto en el modal de detalle, guardado por id y no como objeto: el ticket de
-     verdad se busca en `tickets` en cada render, así que después de guardar el modal ve lo
-     que devolvió la API — el `updatedAt` nuevo incluido — sin que haya que refrescarlo a mano. */
+  const [isModalOpen, setIsModalOpen] = useState(false)
+
+  /* The ticket open in the detail modal, held by id and not as an object: the real ticket is
+     looked up in `tickets` on every render, so after saving the modal sees what the API
+     returned — the new `updatedAt` included — without anyone refreshing it by hand. */
   const [detailTicketId, setDetailTicketId] = useState(null)
 
   const [search, setSearch] = useState('')
@@ -55,47 +47,10 @@ export function Tickets() {
   const [typeFilter, setTypeFilter] = useState('')
   const [sortByPriority, setSortByPriority] = useState(false)
 
-  /* `reloadKey` is the "retry": bumping it by one makes React run the effect below again.
-     It is how you repeat a load without pulling the fetch out of the effect.
-
-     The effect does not set loadState to 'loading': the initial state already is, and doing
-     it here would trigger one extra render. `handleRetry` does, because there it is the
-     response to a click. */
-  useEffect(() => {
-    Promise.all([getTickets(), getEpics(), getUsers(), getSprints()])
-      .then(([nextTickets, nextEpics, nextUsers, nextSprints]) => {
-        setTickets(nextTickets)
-        setEpics(nextEpics)
-        setUsers(nextUsers)
-        setSprints(nextSprints)
-        setLoadState('ready')
-      })
-      .catch(() => setLoadState('error'))
-  }, [reloadKey])
-
-  function handleRetry() {
-    setLoadState('loading')
-    setReloadKey(reloadKey + 1)
-  }
-
   // Appends what the POST returns, which already carries the id and code the backend assigned.
   async function handleCreate(values) {
     const created = await createTicket(values)
     setTickets((prev) => [...prev, created])
-  }
-
-  /* updateTicket devuelve el ticket recién leído de la API, así que acá se reemplaza entero
-     en vez de recomponerlo a mano. Antes había que recalcular `sprintName` en esta función; con
-     el modal de detalle también podrían cambiar `epicName` y `assigneeName`, y `updatedAt` no
-     hay forma de adivinarlo desde el navegador. */
-  async function handleUpdateTicket(ticket, patch) {
-    const updated = await updateTicket(ticket, patch)
-    setTickets((prev) => prev.map((current) => (current.id === updated.id ? updated : current)))
-  }
-
-  async function handleDeleteTicket(ticket) {
-    await deleteTicket(ticket.id)
-    setTickets((prev) => prev.filter((current) => current.id !== ticket.id))
   }
 
   /* Recomputed on every render, and that is fine: a few hundred tickets at most.
@@ -115,7 +70,6 @@ export function Tickets() {
     return true
   })
 
-  /* One section per status, in the order of TICKET_STATUS_OPTIONS. */
   const sections = TICKET_STATUS_OPTIONS.map((status) => {
     const sectionTickets = filteredTickets.filter((ticket) => ticket.status === status.value)
     if (sortByPriority) {
@@ -124,8 +78,8 @@ export function Tickets() {
     return { status, tickets: sectionTickets }
   })
 
-  /* Se busca acá y no se guarda en el estado: si el ticket se borró, esto pasa a null y el
-     modal se desmonta solo, sin un handler que se acuerde de cerrarlo. */
+  /* Looked up here rather than held in state: if the ticket was deleted this becomes null and
+     the modal unmounts on its own, with no handler having to remember to close it. */
   const detailTicket = tickets.find((ticket) => ticket.id === detailTicketId) ?? null
 
   const subtitle =
@@ -136,19 +90,19 @@ export function Tickets() {
   return (
     <section>
       <PageHeader title="Tickets" subtitle={subtitle}>
-        <button
-          type="button"
+        <Button
+          variant="neutral"
+          size="sm"
           onClick={() => setSortByPriority(!sortByPriority)}
-          aria-pressed={sortByPriority}
-          className={NEUTRAL_BUTTON}
+          ariaPressed={sortByPriority}
         >
           <ArrowUpDown className="size-4" aria-hidden="true" />
           Prioridad
-        </button>
-        <button type="button" onClick={() => setIsModalOpen(true)} className={PRIMARY_BUTTON}>
+        </Button>
+        <Button size="sm" onClick={() => setIsModalOpen(true)}>
           <Plus className="size-4" aria-hidden="true" />
           Nuevo ticket
-        </button>
+        </Button>
       </PageHeader>
 
       {loadState === 'ready' && (
@@ -177,7 +131,7 @@ export function Tickets() {
         loadingText="Cargando tickets…"
         errorText="No se pudieron cargar los tickets."
         emptyText="Todavía no hay tickets cargados."
-        onRetry={handleRetry}
+        onRetry={reload}
       />
 
       {/* There are tickets loaded but the filters left none. Different from the empty list
@@ -200,10 +154,11 @@ export function Tickets() {
         sprints={sprints}
       />
 
-      {/* Montado sólo mientras hay un ticket elegido: así cada apertura siembra el formulario
-          de cero y no queda estado del anterior. El `key` es la misma idea escrita dos veces,
-          y está a propósito — el día que se pueda saltar de un ticket a otro sin cerrar, es lo
-          único que evita que el segundo aparezca con el texto del primero. */}
+      {/* Mounted only while a ticket is chosen: that way every opening seeds the form from
+          scratch and no state from the previous one is left. The `key` is the same idea
+          written twice, and it is deliberate — the day you can jump from one ticket to another
+          without closing, it is the only thing stopping the second appearing with the first's
+          text. */}
       {detailTicket && (
         <TicketDetailModal
           key={detailTicket.id}
@@ -212,8 +167,8 @@ export function Tickets() {
           sprints={sprints}
           users={users}
           onClose={() => setDetailTicketId(null)}
-          onUpdateTicket={handleUpdateTicket}
-          onDeleteTicket={handleDeleteTicket}
+          onUpdateTicket={updateTicketAndStore}
+          onDeleteTicket={deleteTicketAndStore}
         />
       )}
     </section>

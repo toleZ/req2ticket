@@ -48,7 +48,7 @@ public class UserService
         return nuevo;
     }
 
-    // Full replacement. Returns false when the user does not exist.
+    // Full replacement: every field is overwritten.
     public async Task<bool> UpdateAsync(int id, int? actorId, User changes, string? newPassword)
     {
         User actor = await LoadActorAsync(actorId);
@@ -103,7 +103,6 @@ public class UserService
         return true;
     }
 
-    // Returns false when the user does not exist.
     public async Task<bool> DeleteAsync(int id, int? actorId)
     {
         User actor = await LoadActorAsync(actorId);

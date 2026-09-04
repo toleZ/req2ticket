@@ -14,7 +14,7 @@ import {
    and the page component in pages/.
 
    `end` is not decoration, and only "/" needs it: without it the match is a prefix
-   match, so Inicio would stay active on /board and two items would be highlighted. */
+   match, so "Inicio" would stay active on /board and two items would be highlighted. */
 export const PRIMARY_ITEMS = [{ to: '/', label: 'Inicio', icon: House, end: true }]
 
 export const PROJECT_SECTION_LABEL = 'Proyecto'

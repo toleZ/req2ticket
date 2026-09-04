@@ -1,8 +1,8 @@
 // Requires a "@" and a ".com" domain, per product rule — not a general RFC email check.
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.com$/i
 const MIN_LOGIN_PASSWORD_LENGTH = 6
-// La API exige mínimo 8 (ver RegisterRequest.cs): validar 6 acá dejaría pasar un form que
-// el backend rechaza igual.
+// The API demands at least 8 (see RegisterRequest.cs): validating 6 here would let through a
+// form the backend rejects anyway.
 const MIN_REGISTER_PASSWORD_LENGTH = 8
 const UPPERCASE_RE = /[A-Z]/
 const NUMBER_RE = /[0-9]/

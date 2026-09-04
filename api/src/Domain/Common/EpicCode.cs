@@ -10,7 +10,6 @@ public static class EpicCode
     private const string Prefix = "EPIC-";
     private const int RandomLength = 8;
 
-    // "EPIC-" plus the random part.
     public const int Length = 13;
 
     // GetItems draws from a CSPRNG and has no modulo bias, unlike hashing bytes by hand.

@@ -28,19 +28,19 @@ export function daysRemaining(endDate) {
   return Math.ceil((end - today) / MS_PER_DAY)
 }
 
-/* "hace 5 horas", "hace 40 días". Solo mira hacia atrás: `createdAt` y `updatedAt` siempre
-   están en el pasado, así que no hay un caso "en 3 días" que resolver.
+/* "hace 5 horas", "hace 40 días". It only looks backwards: `createdAt` and `updatedAt` are
+   always in the past, so there is no "in 3 days" case to solve.
 
-   Escrita a mano y no con Intl.RelativeTimeFormat porque esa formatea en el idioma del
-   navegador, y el resto de este archivo ya escribe los meses en español (ver SHORT_MONTHS).
-   Mezclar las dos fuentes daría "hace 5 hours" en un navegador en inglés.
+   Hand-written rather than Intl.RelativeTimeFormat because that one formats in the browser's
+   language, and the rest of this file already writes the months in Spanish (see SHORT_MONTHS).
+   Mixing the two sources would give "hace 5 hours" in an English browser.
 
-   Los meses son de 30 días y los años de 365. No es exacto y no hace falta que lo sea: esto
-   dice hace cuánto pasó algo, no en qué fecha — para eso está la fecha completa en el title. */
+   Months are 30 days and years 365. It is not exact and does not need to be: this says how
+   long ago something happened, not on what date — the full date in the title is for that. */
 export function timeAgo(value) {
   const seconds = Math.floor((Date.now() - new Date(value).getTime()) / 1000)
 
-  // Debajo de este umbral cualquier número se lee raro ("hace 0 minutos").
+  // Below this threshold any number reads oddly ("hace 0 minutos").
   if (seconds < 45) return 'hace un momento'
 
   const minutes = Math.floor(seconds / 60)
@@ -59,7 +59,7 @@ export function timeAgo(value) {
   return years === 1 ? 'hace un año' : `hace ${years} años`
 }
 
-/* La fecha completa, para el `title` de lo que muestra un timeAgo. "28 ago 2026, 14:05". */
+/* The full date, for the `title` of whatever shows a timeAgo. "28 ago 2026, 14:05". */
 export function formatDateTime(value) {
   const date = new Date(value)
   const time = `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
