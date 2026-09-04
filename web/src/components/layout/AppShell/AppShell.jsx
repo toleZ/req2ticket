@@ -4,6 +4,7 @@ import { Outlet } from 'react-router-dom'
 import { MobileDrawer } from '@/components/layout/MobileDrawer/MobileDrawer'
 import { SidebarBody } from '@/components/layout/SidebarBody/SidebarBody'
 import { TopBar } from '@/components/layout/TopBar/TopBar'
+import { useProjectData } from '@/hooks/useProjectData'
 import { useTheme } from '@/hooks/useTheme'
 import { CONTENT, MAIN, RAIL, RAIL_COLLAPSED, RAIL_EXPANDED, SHELL } from './AppShell.styles'
 import { COLLAPSED_PREF } from './AppShell.data'
@@ -18,6 +19,10 @@ export function AppShell() {
   /* Here and nowhere else: the hook is the sole owner of the `dark` class on <html>. The
      login screens sit outside this tree and are covered by the script in index.html. */
   const { isDark, toggleTheme } = useTheme()
+
+  /* Loaded here, once, because this component survives the navigation between pages while the
+     thing under <Outlet /> does not. Every page below reads it with useOutletContext(). */
+  const projectData = useProjectData()
 
   function closeDrawer() {
     setIsDrawerOpen(false)
@@ -65,7 +70,7 @@ export function AppShell() {
           onToggleTheme={toggleTheme}
         />
         <main className={MAIN}>
-          <Outlet />
+          <Outlet context={projectData} />
         </main>
       </div>
     </div>

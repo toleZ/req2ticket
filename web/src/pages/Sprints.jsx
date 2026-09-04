@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import { useOutletContext } from 'react-router-dom'
 import { Plus } from 'lucide-react'
 
 import { PageHeader } from '@/components/layout/PageHeader/PageHeader'
@@ -8,57 +9,29 @@ import { SprintList } from '@/components/sprints/SprintList/SprintList'
 import { TicketDetailModal } from '@/components/tickets/TicketDetailModal/TicketDetailModal'
 import { Button } from '@/components/ui/Button/Button'
 import { LoadState } from '@/components/ui/LoadState/LoadState'
-import {
-  createSprint,
-  deleteSprint,
-  deleteTicket,
-  getEpics,
-  getSprints,
-  getTickets,
-  getUsers,
-  updateSprint,
-  updateTicket,
-} from '@/lib/api'
+import { createSprint, deleteSprint, updateSprint } from '@/lib/api'
 import { SPRINT_ACTIVE } from '@/lib/sprintOptions'
 
 export function Sprints() {
-  const [sprints, setSprints] = useState([])
-  const [tickets, setTickets] = useState([])
-  /* The epics and the users are not drawn on this page: they are for the dropdowns of a
-     ticket's detail modal, which opens from a sprint's card and from the Backlog block. */
-  const [epics, setEpics] = useState([])
-  const [users, setUsers] = useState([])
-  const [loadState, setLoadState] = useState('loading') // 'loading' | 'ready' | 'error'
+  const {
+    tickets,
+    setTickets,
+    epics,
+    sprints,
+    setSprints,
+    users,
+    loadState,
+    reload,
+    updateTicketAndStore,
+    deleteTicketAndStore,
+  } = useOutletContext()
+
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [reloadKey, setReloadKey] = useState(0)
 
   /* Held by id and not as an object: the ticket is looked up in `tickets` on every render, so
      after saving the modal sees what the API returned, and if it was deleted this becomes null
      and the modal unmounts on its own. */
   const [detailTicketId, setDetailTicketId] = useState(null)
-
-  /* `reloadKey` is the "retry": bumping it by one makes React run the effect below again.
-     It is how you repeat a load without pulling the fetch out of the effect.
-
-     The effect does not set loadState to 'loading': the initial state already is, and doing
-     it here would trigger one extra render. `handleRetry` does, because there it is the
-     response to a click. */
-  useEffect(() => {
-    Promise.all([getSprints(), getTickets(), getEpics(), getUsers()])
-      .then(([nextSprints, nextTickets, nextEpics, nextUsers]) => {
-        setSprints(nextSprints)
-        setTickets(nextTickets)
-        setEpics(nextEpics)
-        setUsers(nextUsers)
-        setLoadState('ready')
-      })
-      .catch(() => setLoadState('error'))
-  }, [reloadKey])
-
-  function handleRetry() {
-    setLoadState('loading')
-    setReloadKey(reloadKey + 1)
-  }
 
   // Appends what the POST returns, which already carries the id the backend assigned.
   async function handleCreate(values) {
@@ -81,18 +54,6 @@ export function Sprints() {
         ticket.sprintId === sprint.id ? { ...ticket, sprintId: null, sprintName: null } : ticket,
       ),
     )
-  }
-
-  /* updateTicket returns the ticket freshly read from the API, so it is replaced whole. It is
-     the same function, word for word, in the three pages that open a ticket's modal. */
-  async function handleUpdateTicket(ticket, patch) {
-    const updated = await updateTicket(ticket, patch)
-    setTickets((prev) => prev.map((current) => (current.id === updated.id ? updated : current)))
-  }
-
-  async function handleDeleteTicket(ticket) {
-    await deleteTicket(ticket.id)
-    setTickets((prev) => prev.filter((current) => current.id !== ticket.id))
   }
 
   const activeSprint = sprints.find((sprint) => sprint.status === SPRINT_ACTIVE)
@@ -124,7 +85,7 @@ export function Sprints() {
         loadingText="Cargando sprints…"
         errorText="No se pudieron cargar los sprints."
         emptyText="Todavía no hay sprints planificados."
-        onRetry={handleRetry}
+        onRetry={reload}
         className="mt-4"
       />
 
@@ -154,8 +115,8 @@ export function Sprints() {
           sprints={sprints}
           users={users}
           onClose={() => setDetailTicketId(null)}
-          onUpdateTicket={handleUpdateTicket}
-          onDeleteTicket={handleDeleteTicket}
+          onUpdateTicket={updateTicketAndStore}
+          onDeleteTicket={deleteTicketAndStore}
         />
       )}
     </section>

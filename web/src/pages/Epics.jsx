@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import { useOutletContext } from 'react-router-dom'
 import { Plus } from 'lucide-react'
 
 import { PageHeader } from '@/components/layout/PageHeader/PageHeader'
@@ -8,59 +9,29 @@ import { EpicList } from '@/components/epics/EpicList/EpicList'
 import { TicketDetailModal } from '@/components/tickets/TicketDetailModal/TicketDetailModal'
 import { Button } from '@/components/ui/Button/Button'
 import { LoadState } from '@/components/ui/LoadState/LoadState'
-import {
-  createEpic,
-  deleteEpic,
-  deleteTicket,
-  getEpics,
-  getSprints,
-  getTickets,
-  getUsers,
-  updateEpic,
-  updateTicket,
-} from '@/lib/api'
+import { createEpic, deleteEpic, updateEpic } from '@/lib/api'
 
 export function Epics() {
-  const [epics, setEpics] = useState([])
-  // The tickets are fetched once and each row receives its own already filtered, instead
-  // of every row asking /api/epics/{id}/tickets for itself.
-  const [tickets, setTickets] = useState([])
-  /* The sprints and the users are not drawn on this page: they are for the dropdowns of a
-     ticket's detail modal, which can be opened from here too. */
-  const [sprints, setSprints] = useState([])
-  const [users, setUsers] = useState([])
-  const [loadState, setLoadState] = useState('loading') // 'loading' | 'ready' | 'error'
+  const {
+    tickets,
+    setTickets,
+    epics,
+    setEpics,
+    sprints,
+    users,
+    loadState,
+    reload,
+    updateTicketAndStore,
+    deleteTicketAndStore,
+  } = useOutletContext()
+
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [reloadKey, setReloadKey] = useState(0)
 
   /* Which record is open, held by id and not as an object: the entity is looked up in its list
      on every render, so after saving the modal sees what the API returned, and if it was
      deleted this becomes null and the modal unmounts on its own. */
   const [detailEpicId, setDetailEpicId] = useState(null)
   const [detailTicketId, setDetailTicketId] = useState(null)
-
-  /* `reloadKey` is the "retry": bumping it by one makes React run the effect below again.
-     It is how you repeat a load without pulling the fetch out of the effect.
-
-     The effect does not set loadState to 'loading': the initial state already is, and doing
-     it here would trigger one extra render. `handleRetry` does, because there it is the
-     response to a click. */
-  useEffect(() => {
-    Promise.all([getEpics(), getTickets(), getSprints(), getUsers()])
-      .then(([nextEpics, nextTickets, nextSprints, nextUsers]) => {
-        setEpics(nextEpics)
-        setTickets(nextTickets)
-        setSprints(nextSprints)
-        setUsers(nextUsers)
-        setLoadState('ready')
-      })
-      .catch(() => setLoadState('error'))
-  }, [reloadKey])
-
-  function handleRetry() {
-    setLoadState('loading')
-    setReloadKey(reloadKey + 1)
-  }
 
   // Appends what the POST returns, which already carries the id and code the backend assigned.
   async function handleCreate(values) {
@@ -81,19 +52,6 @@ export function Epics() {
     setTickets((prev) => prev.filter((ticket) => ticket.epicId !== epic.id))
   }
 
-  /* updateTicket returns the ticket freshly read from the API, so it is replaced whole: the
-     response already carries epicName, sprintName, assigneeName and updatedAt recalculated. It
-     is the same function, word for word, in the three pages that open a ticket's modal. */
-  async function handleUpdateTicket(ticket, patch) {
-    const updated = await updateTicket(ticket, patch)
-    setTickets((prev) => prev.map((current) => (current.id === updated.id ? updated : current)))
-  }
-
-  async function handleDeleteTicket(ticket) {
-    await deleteTicket(ticket.id)
-    setTickets((prev) => prev.filter((current) => current.id !== ticket.id))
-  }
-
   const detailEpic = epics.find((epic) => epic.id === detailEpicId) ?? null
   const detailTicket = tickets.find((ticket) => ticket.id === detailTicketId) ?? null
 
@@ -112,7 +70,7 @@ export function Epics() {
         loadingText="Cargando épicas…"
         errorText="No se pudieron cargar las épicas."
         emptyText="Todavía no hay épicas cargadas."
-        onRetry={handleRetry}
+        onRetry={reload}
       />
 
       {loadState === 'ready' && epics.length > 0 && (
@@ -149,8 +107,8 @@ export function Epics() {
           sprints={sprints}
           users={users}
           onClose={() => setDetailTicketId(null)}
-          onUpdateTicket={handleUpdateTicket}
-          onDeleteTicket={handleDeleteTicket}
+          onUpdateTicket={updateTicketAndStore}
+          onDeleteTicket={deleteTicketAndStore}
         />
       )}
     </section>

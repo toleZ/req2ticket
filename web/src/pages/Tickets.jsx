@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import { useOutletContext } from 'react-router-dom'
 import { ArrowUpDown, Plus } from 'lucide-react'
 
 import { PageHeader } from '@/components/layout/PageHeader/PageHeader'
@@ -8,15 +9,7 @@ import { TicketFilterBar } from '@/components/tickets/TicketFilterBar/TicketFilt
 import { TicketList } from '@/components/tickets/TicketList/TicketList'
 import { Button } from '@/components/ui/Button/Button'
 import { LoadState } from '@/components/ui/LoadState/LoadState'
-import {
-  createTicket,
-  deleteTicket,
-  getEpics,
-  getSprints,
-  getTickets,
-  getUsers,
-  updateTicket,
-} from '@/lib/api'
+import { createTicket } from '@/lib/api'
 import { NO_SPRINT, TICKET_PRIORITY_OPTIONS, TICKET_STATUS_OPTIONS } from '@/lib/ticketOptions'
 
 /* The order comes from TICKET_PRIORITY_OPTIONS, which runs low to high, so the sort
@@ -27,13 +20,19 @@ function priorityRank(priority) {
 }
 
 export function Tickets() {
-  const [tickets, setTickets] = useState([])
-  const [epics, setEpics] = useState([])
-  const [users, setUsers] = useState([])
-  const [sprints, setSprints] = useState([])
-  const [loadState, setLoadState] = useState('loading') // 'loading' | 'ready' | 'error'
+  const {
+    tickets,
+    setTickets,
+    epics,
+    sprints,
+    users,
+    loadState,
+    reload,
+    updateTicketAndStore,
+    deleteTicketAndStore,
+  } = useOutletContext()
+
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [reloadKey, setReloadKey] = useState(0)
 
   /* The ticket open in the detail modal, held by id and not as an object: the real ticket is
      looked up in `tickets` on every render, so after saving the modal sees what the API
@@ -48,47 +47,10 @@ export function Tickets() {
   const [typeFilter, setTypeFilter] = useState('')
   const [sortByPriority, setSortByPriority] = useState(false)
 
-  /* `reloadKey` is the "retry": bumping it by one makes React run the effect below again.
-     It is how you repeat a load without pulling the fetch out of the effect.
-
-     The effect does not set loadState to 'loading': the initial state already is, and doing
-     it here would trigger one extra render. `handleRetry` does, because there it is the
-     response to a click. */
-  useEffect(() => {
-    Promise.all([getTickets(), getEpics(), getUsers(), getSprints()])
-      .then(([nextTickets, nextEpics, nextUsers, nextSprints]) => {
-        setTickets(nextTickets)
-        setEpics(nextEpics)
-        setUsers(nextUsers)
-        setSprints(nextSprints)
-        setLoadState('ready')
-      })
-      .catch(() => setLoadState('error'))
-  }, [reloadKey])
-
-  function handleRetry() {
-    setLoadState('loading')
-    setReloadKey(reloadKey + 1)
-  }
-
   // Appends what the POST returns, which already carries the id and code the backend assigned.
   async function handleCreate(values) {
     const created = await createTicket(values)
     setTickets((prev) => [...prev, created])
-  }
-
-  /* updateTicket returns the ticket freshly read from the API, so here it is replaced whole
-     instead of being rebuilt by hand. `sprintName` used to be recalculated in this function;
-     with the detail modal `epicName` and `assigneeName` could change too, and `updatedAt`
-     cannot be guessed from the browser at all. */
-  async function handleUpdateTicket(ticket, patch) {
-    const updated = await updateTicket(ticket, patch)
-    setTickets((prev) => prev.map((current) => (current.id === updated.id ? updated : current)))
-  }
-
-  async function handleDeleteTicket(ticket) {
-    await deleteTicket(ticket.id)
-    setTickets((prev) => prev.filter((current) => current.id !== ticket.id))
   }
 
   /* Recomputed on every render, and that is fine: a few hundred tickets at most.
@@ -169,7 +131,7 @@ export function Tickets() {
         loadingText="Cargando tickets…"
         errorText="No se pudieron cargar los tickets."
         emptyText="Todavía no hay tickets cargados."
-        onRetry={handleRetry}
+        onRetry={reload}
       />
 
       {/* There are tickets loaded but the filters left none. Different from the empty list
@@ -205,8 +167,8 @@ export function Tickets() {
           sprints={sprints}
           users={users}
           onClose={() => setDetailTicketId(null)}
-          onUpdateTicket={handleUpdateTicket}
-          onDeleteTicket={handleDeleteTicket}
+          onUpdateTicket={updateTicketAndStore}
+          onDeleteTicket={deleteTicketAndStore}
         />
       )}
     </section>
