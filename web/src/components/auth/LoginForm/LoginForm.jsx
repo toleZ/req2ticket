@@ -13,8 +13,13 @@ import { INITIAL_VALUES } from './LoginForm.data'
    `e.target.name` to know what to update. If they do not match, the field silently stops
    accepting input and nothing raises an error. */
 
-/* Demo account credentials: the button below fills them in for the user. */
-const DEMO_ACCOUNT = { email: 'juan@req2ticket.com', password: 'Passw0rd!' }
+/* Demo account credentials: the button below fills them in for the user.
+
+   Every seeded account shares this password and the email is the role in lowercase
+   (admin@, productowner@, scrummaster@, developer@, superadmin@), so switching roles
+   while developing means editing the local part of what this button typed. See
+   api/src/Infrastructure/SeedData.cs — this has to match it. */
+const DEMO_ACCOUNT = { email: 'admin@req2ticket.com', password: 'Passw0rd!' }
 
 export function LoginForm({ onSubmit }) {
   const [values, setValues] = useState(INITIAL_VALUES)
@@ -124,7 +129,8 @@ export function LoginForm({ onSubmit }) {
         <Sparkles className="mt-0.5 size-4 shrink-0 text-blue" aria-hidden="true" />
         <span>
           <span className="font-medium text-label">Cuenta de demostración. </span>
-          Pulsá aquí para completar el correo y la contraseña de la cuenta de prueba.
+          Pulsá aquí para entrar como admin. Los demás roles comparten la contraseña y el
+          correo es el rol: developer@, productowner@, scrummaster@, superadmin@.
         </span>
       </button>
     </div>

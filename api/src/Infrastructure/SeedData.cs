@@ -23,11 +23,20 @@ internal static class SeedData
         SeedTickets(modelBuilder);
     }
 
-    // BCrypt salts randomly, so the hashes are literals like everything else here.
+    // Every seeded account carries the same password, Passw0rd!, and therefore the same hash.
+    // That is deliberate: on a local instance you switch roles constantly to see what each one
+    // is allowed to do, and having to look up a different password for each was friction with
+    // nothing behind it. Seed data for a local database, never a credential that guards anything.
     //
-    // The passwords behind them are the ones documented in api/postman and Web.http:
-    // Passw0rd! · Camila#25 · Martin$77 · Sofia*9x1 · Sup3rAdm!n — seed data for a local
-    // database, not credentials for anything that matters.
+    // A const and not five copies of the literal, but a literal all the same: BCrypt salts
+    // randomly, so calling Hash("Passw0rd!") here would produce a different string on every
+    // "migrations add" and leave the model permanently out of step with its snapshot.
+    private const string SeedPasswordHash = "$2a$11$OxumkutAnNycObUAp.sI5OR8/FoDacrtay0b2z61feEKJxGR5Tzd6";
+
+    // Name and email say the role and nothing else, and the email's local part is the role in
+    // lowercase — admin@, developer@ — so the login is guessable from the role alone and every
+    // screen that draws an owner or an assignee says which role wrote it. Invented person names
+    // were worse at both jobs: one tells you nothing except that the row came from the seed.
     //
     // Seeding id 5 is the only way to get a superAdmin: RegisterAsync always creates a viewer,
     // and only a superAdmin may hand the role out. Drop this row and the top of the hierarchy
@@ -37,41 +46,41 @@ internal static class SeedData
             new User
             {
                 Id = 1,
-                Name = "Juan Cruz",
-                Email = "juan@req2ticket.com",
-                PasswordHash = "$2a$11$OxumkutAnNycObUAp.sI5OR8/FoDacrtay0b2z61feEKJxGR5Tzd6",
+                Name = "Admin",
+                Email = "admin@req2ticket.com",
+                PasswordHash = SeedPasswordHash,
                 Role = UserRole.Admin
             },
             new User
             {
                 Id = 2,
-                Name = "Camila Rossi",
-                Email = "camila@req2ticket.com",
-                PasswordHash = "$2a$11$9JK.29wC/YYDMPrx/17SzuQXEnij2SgPTrAAVOfG6BWtoBwgtOA5e",
+                Name = "Product Owner",
+                Email = "productowner@req2ticket.com",
+                PasswordHash = SeedPasswordHash,
                 Role = UserRole.ProductOwner
             },
             new User
             {
                 Id = 3,
-                Name = "Martín Díaz",
-                Email = "martin@req2ticket.com",
-                PasswordHash = "$2a$11$5YLkOMjlsgsrGOqYxhb8s.0V9wC7UKQOn3zrHRH5SZh4oMMIOdt/S",
+                Name = "Scrum Master",
+                Email = "scrummaster@req2ticket.com",
+                PasswordHash = SeedPasswordHash,
                 Role = UserRole.ScrumMaster
             },
             new User
             {
                 Id = 4,
-                Name = "Sofía Vega",
-                Email = "sofia@req2ticket.com",
-                PasswordHash = "$2a$11$LtN.MT4Q48L1DP4qVhzCK.FpO09sg2QRWHfkiFpJxBHqQM21ftqGS",
+                Name = "Developer",
+                Email = "developer@req2ticket.com",
+                PasswordHash = SeedPasswordHash,
                 Role = UserRole.Developer
             },
             new User
             {
                 Id = 5,
                 Name = "Super Admin",
-                Email = "super@req2ticket.com",
-                PasswordHash = "$2a$11$fkAugXmXGHzCughLu.qRbOdUqu2RwMo53qyrsSgYum/LE1lDIaECq",
+                Email = "superadmin@req2ticket.com",
+                PasswordHash = SeedPasswordHash,
                 Role = UserRole.SuperAdmin
             }
         );
