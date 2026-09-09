@@ -5,13 +5,16 @@
 # pone `# @name login`, y el resto de las requests sacan el token de ahí con
 # {{login.response.body.token}}. Si el token venció, volvés a correr el login y listo.
 #
-# Usuarios del seed (se guardan hasheados con BCrypt; estas son las contraseñas en texto
-# plano que hay que mandarle al login):
-#   juan@req2ticket.com   / Passw0rd!   -> admin
-#   camila@req2ticket.com / Camila#25   -> productOwner
-#   martin@req2ticket.com / Martin$77   -> scrumMaster
-#   sofia@req2ticket.com  / Sofia*9x1   -> developer
-#   super@req2ticket.com  / Sup3rAdm!n  -> superAdmin
+# Usuarios del seed. Todos comparten la misma contraseña, Passw0rd!, y el mail es el rol en
+# minúscula: para entrar con otro rol se cambia el local part y nada más.
+#   admin@req2ticket.com        / Passw0rd!  -> admin
+#   productowner@req2ticket.com / Passw0rd!  -> productOwner
+#   scrummaster@req2ticket.com  / Passw0rd!  -> scrumMaster
+#   developer@req2ticket.com    / Passw0rd!  -> developer
+#   superadmin@req2ticket.com   / Passw0rd!  -> superAdmin
+#
+# Se guardan hasheadas con BCrypt; Passw0rd! es el texto plano que hay que mandarle al login.
+# El seed no trae ningún viewer: el viewer es la cuenta que crea `Registro` acá abajo.
 #
 # Roles, de menor a mayor privilegio:
 #   viewer | qa | developer | scrumMaster | productOwner | admin | superAdmin
@@ -70,7 +73,7 @@ POST {{Web_HostAddress}}/api/auth/login
 Content-Type: application/json
 
 {
-  "email": "juan@req2ticket.com",
+  "email": "admin@req2ticket.com",
   "password": "Passw0rd!"
 }
 
@@ -79,7 +82,7 @@ POST {{Web_HostAddress}}/api/auth/login
 Content-Type: application/json
 
 {
-  "email": "JUAN@Req2Ticket.com",
+  "email": "ADMIN@Req2Ticket.com",
   "password": "Passw0rd!"
 }
 
@@ -88,7 +91,7 @@ POST {{Web_HostAddress}}/api/auth/login
 Content-Type: application/json
 
 {
-  "email": "juan@req2ticket.com",
+  "email": "admin@req2ticket.com",
   "password": "otra"
 }
 
@@ -126,8 +129,8 @@ POST {{Web_HostAddress}}/api/auth/register
 Content-Type: application/json
 
 {
-  "name": "Otro Juan",
-  "email": "JUAN@req2ticket.com",
+  "name": "Otro Admin",
+  "email": "ADMIN@req2ticket.com",
   "password": "BetaPass123"
 }
 
@@ -147,8 +150,8 @@ POST {{Web_HostAddress}}/api/auth/login
 Content-Type: application/json
 
 {
-  "email": "super@req2ticket.com",
-  "password": "Sup3rAdm!n"
+  "email": "superadmin@req2ticket.com",
+  "password": "Passw0rd!"
 }
 
 ### Sin token -> 401. La fallback policy cubre todo lo que no sea AllowAnonymous.
@@ -170,7 +173,7 @@ GET {{Web_HostAddress}}/api/users/1
 Accept: application/json
 Authorization: Bearer {{login.response.body.token}}
 
-### Crear un usuario por debajo del propio rol -> 201. juan es admin, developer está por debajo.
+### Crear un usuario por debajo del propio rol -> 201. admin@ es admin, developer está por debajo.
 # @name crearUsuario
 POST {{Web_HostAddress}}/api/users
 Content-Type: application/json
@@ -214,7 +217,7 @@ Authorization: Bearer {{login.response.body.token}}
 
 {
   "name": "Intento",
-  "email": "super@req2ticket.com",
+  "email": "superadmin@req2ticket.com",
   "role": "viewer"
 }
 
@@ -264,7 +267,7 @@ Authorization: Bearer {{loginSuper.response.body.token}}
 
 {
   "name": "Super Admin",
-  "email": "super@req2ticket.com",
+  "email": "superadmin@req2ticket.com",
   "role": "admin"
 }
 
@@ -279,7 +282,7 @@ Authorization: Bearer {{loginSuper.response.body.token}}
 
 {
   "name": "Duplicado",
-  "email": "JUAN@req2ticket.com",
+  "email": "ADMIN@req2ticket.com",
   "password": "DupliPass123",
   "role": "viewer"
 }
@@ -533,7 +536,7 @@ Authorization: Bearer {{login.response.body.token}}
   "priority": "critical",
   "extraFields": {
     "severity": "major",
-    "stepsToReproduce": "1. Ir a /login\n2. Escribir \" juan@req2ticket.com \"\n3. Enviar",
+    "stepsToReproduce": "1. Ir a /login\n2. Escribir \" admin@req2ticket.com \"\n3. Enviar",
     "expectedResult": "Entra igual: el email se normaliza",
     "actualResult": "401 credenciales inválidas",
     "environment": "Local, PostgreSQL"
@@ -569,7 +572,7 @@ Authorization: Bearer {{login.response.body.token}}
   "points": 2
 }
 
-### reporterId sale del token cuando no lo mandás: este queda a nombre de juan (id 1).
+### reporterId sale del token cuando no lo mandás: este queda a nombre de admin@ (id 1).
 POST {{Web_HostAddress}}/api/tickets
 Content-Type: application/json
 Authorization: Bearer {{login.response.body.token}}

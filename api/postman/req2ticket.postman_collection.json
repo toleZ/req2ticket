@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "96b60245-2e59-42fd-ad7d-4e12f2abe3aa",
     "name": "req2ticket API",
-    "description": "API del proyecto req2ticket (ASP.NET Core, api/src/Web).\n\nLa API pide JWT en todos los endpoints salvo /api/auth/login y /api/auth/register.\nCorré 'Login correcto' primero: guarda el token y el resto de la colección lo hereda\ncomo Bearer.\n\nUsuarios del seed (las contraseñas se guardan hasheadas con BCrypt; estas son las de\ntexto plano que hay que mandar al login):\n- juan@req2ticket.com   / Passw0rd!  -> admin\n- camila@req2ticket.com / Camila#25  -> productOwner\n- martin@req2ticket.com / Martin$77  -> scrumMaster\n- sofia@req2ticket.com  / Sofia*9x1  -> developer\n\nRoles, de menor a mayor privilegio:\n  viewer | qa | developer | scrumMaster | productOwner | admin | superAdmin\nEscribir épicas, tickets y sprints (POST, PUT, DELETE) exige cualquier rol menos viewer.\n\nValores válidos de épica (deben coincidir con web/src/lib/epicOptions.js):\n- priority    -> low | medium | high | urgent\n- status      -> backlog | active | closed\n- accentColor -> blue | purple | indigo | teal | green | orange | red | pink | mint | yellow\n\nValores válidos de ticket (web/src/lib/ticketOptions.js):\n- type     -> userStory | task | bug | fix\n- priority -> low | medium | high | critical\n- status   -> backlog | todo | inProgress | inReview | testing | done | cancelled\n  (cancelled no cuenta ni como completado ni como pendiente en los rollups)\n\nEl tipo decide el prefijo del código (UH- / TASK- / BUG- / FIX-) y no se puede cambiar\ndespués: el código se asigna una sola vez, así que un ticket que cambiara de tipo quedaría\ncon un código que miente. Por eso el PUT no acepta \"type\".\n\nCada tipo acepta sus propias claves dentro de \"extraFields\", y solo esas — una clave de otro\ntipo devuelve 400 nombrándola, no se descarta en silencio:\n- userStory -> acceptanceCriteria[], definitionOfReady[], definitionOfDone[]\n- task      -> checklist[]\n- bug       -> severity (blocker|major|minor|trivial), stepsToReproduce, expectedResult,\n               actualResult, environment\n- fix       -> rootCause, solution, verificationSteps[], regressionRisk (low|medium|high)\n\nLa narrativa \"Como <rol> quiero <accion> para <beneficio>\" de una historia va en\n\"description\", que es texto libre - ya no son tres campos de extraFields.\nLas listas marcadas con [] son de { \"text\": \"…\", \"done\": false }.\n\nparentId es el \"se divide en\" del ERD, y qué cuelga de qué lo decide el tipo:\n  userStory -> no puede tener padre (su padre es la épica)\n  task      -> de una userStory\n  bug       -> de una userStory\n  fix       -> de un bug\nBorrar un ticket borra los que colgaban de él.\n\nValores válidos de sprint (web/src/lib/sprintOptions.js):\n- status -> planned | active | completed\n\nUna historia pertenece siempre a una épica (epicId obligatorio) y opcionalmente a un\nsprint (sprintId nullable): sin sprint queda en el backlog.\n\nLevantar la API antes: dotnet run --project src/Web (http://localhost:5080).\nLa colección se puede correr entera con el Runner en el orden en que están las carpetas.\n\nEste archivo es la fuente de verdad: ver api/postman/README.md antes de editar.",
+    "description": "API del proyecto req2ticket (ASP.NET Core, api/src/Web).\n\nLa API pide JWT en todos los endpoints salvo /api/auth/login y /api/auth/register.\nCorré 'Login correcto' primero: guarda el token y el resto de la colección lo hereda\ncomo Bearer.\n\nUsuarios del seed. Todos comparten la misma contraseña, Passw0rd!, y el mail es el rol\nen minúscula: para entrar con otro rol se cambia el local part y nada más. Se guardan\nhasheadas con BCrypt; Passw0rd! es el texto plano que hay que mandar al login.\n- admin@req2ticket.com        / Passw0rd!  -> admin\n- productowner@req2ticket.com / Passw0rd!  -> productOwner\n- scrummaster@req2ticket.com  / Passw0rd!  -> scrumMaster\n- developer@req2ticket.com    / Passw0rd!  -> developer\n- superadmin@req2ticket.com   / Passw0rd!  -> superAdmin\nEl seed no trae ningún viewer: el viewer lo crea 'Registro nuevo'.\n\nRoles, de menor a mayor privilegio:\n  viewer | qa | developer | scrumMaster | productOwner | admin | superAdmin\nEscribir épicas, tickets y sprints (POST, PUT, DELETE) exige cualquier rol menos viewer.\n\nValores válidos de épica (deben coincidir con web/src/lib/epicOptions.js):\n- priority    -> low | medium | high | urgent\n- status      -> backlog | active | closed\n- accentColor -> blue | purple | indigo | teal | green | orange | red | pink | mint | yellow\n\nValores válidos de ticket (web/src/lib/ticketOptions.js):\n- type     -> userStory | task | bug | fix\n- priority -> low | medium | high | critical\n- status   -> backlog | todo | inProgress | inReview | testing | done | cancelled\n  (cancelled no cuenta ni como completado ni como pendiente en los rollups)\n\nEl tipo decide el prefijo del código (UH- / TASK- / BUG- / FIX-) y no se puede cambiar\ndespués: el código se asigna una sola vez, así que un ticket que cambiara de tipo quedaría\ncon un código que miente. Por eso el PUT no acepta \"type\".\n\nCada tipo acepta sus propias claves dentro de \"extraFields\", y solo esas — una clave de otro\ntipo devuelve 400 nombrándola, no se descarta en silencio:\n- userStory -> acceptanceCriteria[], definitionOfReady[], definitionOfDone[]\n- task      -> checklist[]\n- bug       -> severity (blocker|major|minor|trivial), stepsToReproduce, expectedResult,\n               actualResult, environment\n- fix       -> rootCause, solution, verificationSteps[], regressionRisk (low|medium|high)\n\nLa narrativa \"Como <rol> quiero <accion> para <beneficio>\" de una historia va en\n\"description\", que es texto libre - ya no son tres campos de extraFields.\nLas listas marcadas con [] son de { \"text\": \"…\", \"done\": false }.\n\nparentId es el \"se divide en\" del ERD, y qué cuelga de qué lo decide el tipo:\n  userStory -> no puede tener padre (su padre es la épica)\n  task      -> de una userStory\n  bug       -> de una userStory\n  fix       -> de un bug\nBorrar un ticket borra los que colgaban de él.\n\nValores válidos de sprint (web/src/lib/sprintOptions.js):\n- status -> planned | active | completed\n\nUna historia pertenece siempre a una épica (epicId obligatorio) y opcionalmente a un\nsprint (sprintId nullable): sin sprint queda en el backlog.\n\nLevantar la API antes: dotnet run --project src/Web (http://localhost:5080).\nLa colección se puede correr entera con el Runner en el orden en que están las carpetas.\n\nEste archivo es la fuente de verdad: ver api/postman/README.md antes de editar.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -24,7 +24,7 @@
     },
     {
       "key": "seedEmail",
-      "value": "juan@req2ticket.com",
+      "value": "admin@req2ticket.com",
       "type": "string"
     },
     {
@@ -214,7 +214,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"JUAN@Req2Ticket.com\",\n  \"password\": \"Passw0rd!\"\n}",
+              "raw": "{\n  \"email\": \"ADMIN@Req2Ticket.com\",\n  \"password\": \"Passw0rd!\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -267,7 +267,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"juan@req2ticket.com\",\n  \"password\": \"otra\"\n}",
+              "raw": "{\n  \"email\": \"admin@req2ticket.com\",\n  \"password\": \"otra\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -438,7 +438,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"super@req2ticket.com\",\n  \"password\": \"Sup3rAdm!n\"\n}",
+              "raw": "{\n  \"email\": \"superadmin@req2ticket.com\",\n  \"password\": \"Passw0rd!\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -554,7 +554,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Otro Juan\",\n  \"email\": \"JUAN@req2ticket.com\",\n  \"password\": \"BetaPass123\"\n}",
+              "raw": "{\n  \"name\": \"Otro Admin\",\n  \"email\": \"ADMIN@req2ticket.com\",\n  \"password\": \"BetaPass123\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -832,7 +832,7 @@
                 }
               }
             },
-            "description": "juan es admin y developer está por debajo, así que la regla lo deja pasar. El email lleva {{$timestamp}} para poder correr la colección muchas veces."
+            "description": "admin@ es admin y developer está por debajo, así que la regla lo deja pasar. El email lleva {{$timestamp}} para poder correr la colección muchas veces."
           },
           "response": []
         },
@@ -940,7 +940,7 @@
                 }
               }
             },
-            "description": "LA diferencia entre los dos roles: el mismo body con el token de juan (admin) devuelve 403. Ver Validaciones."
+            "description": "LA diferencia entre los dos roles: el mismo body con el token de admin@ (admin) devuelve 403. Ver Validaciones."
           },
           "response": []
         },
@@ -1021,7 +1021,7 @@
             "auth": {
               "type": "noauth"
             },
-            "description": "Con superToken y no con {{token}}: juan es admin y un admin no puede borrar a otro admin. Deja la base como estaba."
+            "description": "Con superToken y no con {{token}}: admin@ es admin y un admin no puede borrar a otro admin. Deja la base como estaba."
           },
           "response": []
         },
@@ -1184,7 +1184,7 @@
                 },
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"name\": \"Otro Super\",\n  \"email\": \"otrosuper@req2ticket.com\",\n  \"password\": \"OtroPass123\",\n  \"role\": \"superAdmin\"\n}",
+                  "raw": "{\n  \"name\": \"Otro Super\",\n  \"email\": \"otrosuperadmin@req2ticket.com\",\n  \"password\": \"OtroPass123\",\n  \"role\": \"superAdmin\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -1241,7 +1241,7 @@
                 },
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"name\": \"Intento\",\n  \"email\": \"super@req2ticket.com\",\n  \"role\": \"viewer\"\n}",
+                  "raw": "{\n  \"name\": \"Intento\",\n  \"email\": \"superadmin@req2ticket.com\",\n  \"role\": \"viewer\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -1343,7 +1343,7 @@
                 },
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"name\": \"Super Admin\",\n  \"email\": \"super@req2ticket.com\",\n  \"role\": \"admin\"\n}",
+                  "raw": "{\n  \"name\": \"Super Admin\",\n  \"email\": \"superadmin@req2ticket.com\",\n  \"role\": \"admin\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -1444,7 +1444,7 @@
                 },
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"name\": \"Duplicado\",\n  \"email\": \"JUAN@req2ticket.com\",\n  \"password\": \"DupliPass123\",\n  \"role\": \"viewer\"\n}",
+                  "raw": "{\n  \"name\": \"Duplicado\",\n  \"email\": \"ADMIN@req2ticket.com\",\n  \"password\": \"DupliPass123\",\n  \"role\": \"viewer\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
