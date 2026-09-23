@@ -6,6 +6,12 @@ name: Build and deploy ASP.Net Core app to Azure Web App - req2ticket-dev
 on:
   workflow_dispatch:
 
+# Same reasoning as production, with its own group so dev never queues behind a
+# production deploy. No paths filter: this workflow only ever runs on demand.
+concurrency:
+  group: deploy-dev
+  cancel-in-progress: false
+
 jobs:
   build:
     runs-on: windows-latest
