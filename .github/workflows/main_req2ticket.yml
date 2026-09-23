@@ -7,7 +7,18 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'api/**'
+      - '.github/workflows/main_req2ticket.yml'
   workflow_dispatch:
+
+# Deploys never overlap and are never cancelled: killing a run mid
+# azure/webapps-deploy can leave the App Service half-written, so a newer push
+# waits instead. A constant group (not github.ref) keeps push and
+# workflow_dispatch in the same lane.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
 
 jobs:
   build:

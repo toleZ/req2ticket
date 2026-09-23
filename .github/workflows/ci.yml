@@ -1,0 +1,127 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# No path filters here on purpose. A workflow skipped by a path filter never
+# reports its check, and a required check that never reports leaves the pull
+# request blocked forever. Path filtering belongs on the deploy workflow, which
+# is never a required check.
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # These job names are the contexts the ruleset requires, and GitHub matches
+  # contexts by name across every workflow in the repo. That is why none of them
+  # can be called "build" or "deploy": the deploy workflows already use those.
+  api:
+    name: api
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.x'
+
+      - name: Restore
+        run: dotnet restore api/src/req2ticket.sln
+
+      - name: Build
+        run: dotnet build api/src/req2ticket.sln --configuration Release --no-restore
+
+  migrations:
+    name: migrations
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      # There is no IDesignTimeDbContextFactory, so dotnet ef builds the Web host
+      # and Program.cs throws without Jwt:Key, then throws again under 32 bytes.
+      # This is not a secret: has-pending-model-changes signs nothing and opens no
+      # connection, and the connection string comes from the committed
+      # appsettings.json without ever being dialled.
+      Jwt__Key: ci-dummy-key-not-a-secret-0123456789
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.x'
+
+      # dotnet-ef does not ship with the SDK and the repo has no dotnet-tools.json
+      - name: Install dotnet-ef
+        run: |
+          dotnet tool install --global dotnet-ef --version 10.0.11
+          echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
+
+      # dotnet ef builds the projects but never restores them, and a clean runner
+      # has no obj/project.assets.json, so without this the command dies with
+      # NETSDK1004 before it ever reaches the model comparison.
+      - name: Restore
+        run: dotnet restore api/src/req2ticket.sln
+
+      - name: Model matches the last migration
+        id: pending
+        working-directory: api
+        run: >
+          dotnet ef migrations has-pending-model-changes
+          --project src/Infrastructure
+          --startup-project src/Web
+
+      - name: How to fix
+        if: failure() && steps.pending.outcome == 'failure'
+        run: |
+          echo "::error::The EF Core model changed and no migration captures it. Run: cd api && dotnet ef migrations add <Name> --project src/Infrastructure --startup-project src/Web"
+
+  web:
+    name: web
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # Must come before setup-node: `cache: pnpm` shells out to `pnpm store path`.
+      # The version is pinned because web/package.json has no "packageManager"
+      # field, and pnpm/action-setup errors out without one.
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.20.0
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: pnpm
+          # Resolved from the repo root: cache-dependency-path ignores
+          # defaults.run.working-directory, which only applies to `run:` steps.
+          cache-dependency-path: web/pnpm-lock.yaml
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Build
+        run: pnpm build
