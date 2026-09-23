@@ -69,6 +69,12 @@ jobs:
           dotnet tool install --global dotnet-ef --version 10.0.11
           echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
 
+      # dotnet ef builds the projects but never restores them, and a clean runner
+      # has no obj/project.assets.json, so without this the command dies with
+      # NETSDK1004 before it ever reaches the model comparison.
+      - name: Restore
+        run: dotnet restore api/src/req2ticket.sln
+
       - name: Model matches the last migration
         id: pending
         working-directory: api
