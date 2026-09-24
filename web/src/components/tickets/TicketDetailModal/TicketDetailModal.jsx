@@ -219,6 +219,11 @@ export function TicketDetailModal({
       ariaLabel={`${ticket.code}: ${ticket.title}`}
     >
       <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col" noValidate>
+        {/* The sheet's visible title is an editable field, so the dialog also carries a real
+            heading for anyone moving through it by headings. Visible only to screen readers. */}
+        <h2 className="sr-only">
+          {ticket.code}: {ticket.title}
+        </h2>
         <DetailHeader
           leading={<TicketTypeIcon type={ticket.type} className="size-4.5" />}
           code={ticket.code}

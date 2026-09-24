@@ -45,7 +45,7 @@ export function SprintCard({ sprint, tickets, onUpdateSprint, onDeleteSprint, on
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="text-title3 text-label">{sprint.name}</h3>
+            <h2 className="text-title3 text-label">{sprint.name}</h2>
             {status && <Badge tone={status.tone}>{status.label}</Badge>}
             {sprint.status === SPRINT_ACTIVE && (
               <Badge tone={daysLeft < 0 ? 'orange' : 'neutral'}>{remainingLabel(daysLeft)}</Badge>
@@ -53,7 +53,7 @@ export function SprintCard({ sprint, tickets, onUpdateSprint, onDeleteSprint, on
           </div>
 
           {sprint.goal && (
-            <p className="mt-1.5 flex items-start gap-1.5 text-body text-label-secondary">
+            <p className="mt-1.5 flex max-w-prose items-start gap-1.5 text-body text-label-secondary">
               <Flag className="mt-0.5 size-3.5 shrink-0 text-label-tertiary" aria-hidden="true" />
               {sprint.goal}
             </p>

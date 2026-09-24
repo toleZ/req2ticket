@@ -115,6 +115,10 @@ export function EpicDetailModal({ epic, tickets, users, onClose, onUpdateEpic, o
   return (
     <Modal isOpen onClose={handleRequestClose} size="lg" ariaLabel={`${epic.code}: ${epic.name}`}>
       <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col" noValidate>
+        {/* Same as the ticket sheet: the title is an editable field, so a hidden heading. */}
+        <h2 className="sr-only">
+          {epic.code}: {epic.name}
+        </h2>
         <DetailHeader
           leading={
             accent && (

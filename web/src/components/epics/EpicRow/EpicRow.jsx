@@ -76,24 +76,33 @@ export function EpicRow({ epic, tickets, onSelectEpic, onSelectTicket }) {
         )}
 
         <div className="min-w-0 flex-1">
-          <button
-            type="button"
-            onClick={() => onSelectEpic(epic)}
-            aria-label={[`Abrir ${epic.code}: ${epic.name}`, status?.label, priority && `prioridad ${priority.label}`, epic.ownerName]
-              .filter(Boolean)
-              .join(' · ')}
-            className={OPEN_BUTTON}
-          >
-            <span className={OPEN_CODE}>{epic.code}</span>
-            {/* An <h3> inside a <button> is valid HTML and keeps the page's heading outline,
-                which is how a long list is navigated with a screen reader. */}
-            <h3 className={OPEN_NAME}>{epic.name}</h3>
-            {status && <Badge tone={status.tone}>{status.label}</Badge>}
-            {priority && <Badge tone={priority.tone}>{priority.label}</Badge>}
-            {epic.ownerName && (
-              <span className="text-footnote text-label-secondary">{epic.ownerName}</span>
-            )}
-          </button>
+          {/* The heading wraps the button, not the other way round: a <button> may only hold
+              phrasing content, and whatever is inside it is presentational to a screen reader,
+              so a heading in there never reached the page outline. Wrapped like this each epic
+              is an <h2> named by its button, which is how a long list is navigated. */}
+          <h2 className="min-w-0">
+            <button
+              type="button"
+              onClick={() => onSelectEpic(epic)}
+              aria-label={[
+                `Abrir ${epic.code}: ${epic.name}`,
+                status?.label,
+                priority && `prioridad ${priority.label}`,
+                epic.ownerName,
+              ]
+                .filter(Boolean)
+                .join(' · ')}
+              className={OPEN_BUTTON}
+            >
+              <span className={OPEN_CODE}>{epic.code}</span>
+              <span className={OPEN_NAME}>{epic.name}</span>
+              {status && <Badge tone={status.tone}>{status.label}</Badge>}
+              {priority && <Badge tone={priority.tone}>{priority.label}</Badge>}
+              {epic.ownerName && (
+                <span className="text-footnote font-normal text-label-secondary">{epic.ownerName}</span>
+              )}
+            </button>
+          </h2>
 
           <div className="mt-1.5 flex flex-wrap items-center gap-2">
             <span className="text-caption text-label-secondary">
