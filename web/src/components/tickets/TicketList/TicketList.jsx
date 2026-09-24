@@ -14,7 +14,7 @@ import { TicketRow } from '@/components/tickets/TicketRow/TicketRow'
  * A group with no tickets still renders: it keeps its header and its count, and says so.
  * That is on purpose, so the columns do not jump around as you type in the filter.
  */
-export function TicketList({ sections, onSelectTicket }) {
+export function TicketList({ sections, epics, onSelectTicket }) {
   return (
     <div className="mt-4 flex flex-col gap-6">
       {sections.map(({ status, tickets }) => (
@@ -29,7 +29,7 @@ export function TicketList({ sections, onSelectTicket }) {
           ) : (
             <ul className="mt-2 flex flex-col gap-2">
               {tickets.map((ticket) => (
-                <TicketRow key={ticket.id} ticket={ticket} onSelectTicket={onSelectTicket} />
+                <TicketRow key={ticket.id} ticket={ticket} epics={epics} onSelectTicket={onSelectTicket} />
               ))}
             </ul>
           )}

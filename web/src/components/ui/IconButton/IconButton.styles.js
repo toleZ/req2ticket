@@ -1,4 +1,5 @@
-export const BASE = 'grid size-8 shrink-0 place-items-center rounded-control disabled:opacity-50'
+/* 44px below lg, where a finger is the pointer; the compact 32px from lg up. */
+export const BASE = 'grid size-11 shrink-0 place-items-center rounded-control disabled:opacity-50 lg:size-8'
 
 export const VARIANT_CLASSES = {
   neutral: `text-label-secondary transition-colors duration-fast ease-out-quad

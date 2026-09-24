@@ -16,4 +16,6 @@ export const TONE_CLASSES = {
   /* Grey text from gray-text, not label-secondary: a neutral chip often sits inside a row
      that is already tinted, and on that double tint label-secondary fell to 4.3:1. */
   neutral: 'bg-fill-tertiary text-gray-text',
+  /* Neutral and struck through: a state that ended without being done (a cancelled ticket). */
+  struck: 'bg-fill-tertiary text-gray-text line-through',
 }

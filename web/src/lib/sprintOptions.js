@@ -10,7 +10,8 @@ export const SPRINT_ACTIVE = 'active'
 export const SPRINT_COMPLETED = 'completed'
 
 export const SPRINT_STATUS_OPTIONS = [
-  { value: 'planned', label: 'Planificado', tone: 'purple' },
+  /* Grey like every "not started" state — see the colour notes in lib/ticketOptions.js. */
+  { value: 'planned', label: 'Planificado', tone: 'gray' },
   { value: 'active', label: 'Activo', tone: 'blue' },
   { value: 'completed', label: 'Completado', tone: 'green' },
 ]

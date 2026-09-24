@@ -6,8 +6,9 @@
    prefix autocomplete hands you the wrong one without anything failing. */
 
 export const EPIC_PRIORITY_OPTIONS = [
-  { value: 'low', label: 'Baja', tone: 'gray' },
-  { value: 'medium', label: 'Media', tone: 'blue' },
+  /* Same urgency scale as ticket priority — see the colour notes in lib/ticketOptions.js. */
+  { value: 'low', label: 'Baja', tone: 'neutral' },
+  { value: 'medium', label: 'Media', tone: 'yellow' },
   { value: 'high', label: 'Alta', tone: 'orange' },
   { value: 'urgent', label: 'Urgente', tone: 'red' },
 ]

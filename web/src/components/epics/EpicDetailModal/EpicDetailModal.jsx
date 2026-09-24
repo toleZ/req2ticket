@@ -14,7 +14,7 @@ import { cn } from '@/lib/cn'
 import { ACCENT_COLORS, EPIC_PRIORITY_OPTIONS, EPIC_STATUS_OPTIONS } from '@/lib/epicOptions'
 import { errorMessage } from '@/lib/errors'
 import { findOption } from '@/lib/options'
-import { summarizeTickets } from '@/lib/ticketStats'
+import { cancelledNote, summarizeTickets } from '@/lib/ticketStats'
 import { validateEpicForm } from '@/lib/validate'
 import { CONTROL_TEXTAREA, FIELD_LABEL, SIDE_CAPTION } from './EpicDetailModal.styles'
 import { toDetailValues } from './EpicDetailModal.helpers'
@@ -227,7 +227,7 @@ export function EpicDetailModal({ epic, tickets, users, onClose, onUpdateEpic, o
 
           <div>
             <p className="mb-1.5 text-subheadline font-medium text-label">Avance</p>
-            {stats.total === 0 ? (
+            {stats.all === 0 ? (
               <p className="text-footnote text-label-secondary">
                 Esta épica todavía no tiene tickets.
               </p>
@@ -236,6 +236,7 @@ export function EpicDetailModal({ epic, tickets, users, onClose, onUpdateEpic, o
                 <div className="flex items-center justify-between text-footnote text-label-secondary">
                   <span>
                     {stats.completed} de {stats.total} tickets completados
+                    {cancelledNote(stats)}
                   </span>
                   <span>
                     {stats.pointsCompleted}/{stats.points} pts
@@ -258,8 +259,10 @@ export function EpicDetailModal({ epic, tickets, users, onClose, onUpdateEpic, o
           submitting={submitting}
           confirmDeleteMessage={
             <>
-              Se eliminan también sus {stats.total === 1 ? 'ticket' : 'tickets'}. No se puede
-              deshacer.
+              {/* `all`, cancelled included: the backend deletes every one of them. */}
+              {stats.all === 1 && 'Se elimina también su ticket. '}
+              {stats.all > 1 && `Se eliminan también sus ${stats.all} tickets. `}
+              No se puede deshacer.
             </>
           }
           onExitConfirm={() => setFooterMode('edit')}

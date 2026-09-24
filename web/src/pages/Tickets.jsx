@@ -161,7 +161,11 @@ export function Tickets() {
       )}
 
       {loadState === 'ready' && filteredTickets.length > 0 && (
-        <TicketList sections={sections} onSelectTicket={(ticket) => setDetailTicketId(ticket.id)} />
+        <TicketList
+          sections={sections}
+          epics={epics}
+          onSelectTicket={(ticket) => setDetailTicketId(ticket.id)}
+        />
       )}
 
       <CreateTicketModal

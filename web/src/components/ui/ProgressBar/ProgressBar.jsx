@@ -23,6 +23,8 @@ export function ProgressBar({ value, max = 100, size = 'md', label, decorative =
         className,
       )}
     >
+      {/* Width, not scaleX, on purpose: scaling would squash the rounded end at low values, and
+          the track is fixed and overflow-hidden, so this width change reflows nothing else. */}
       <div
         className="h-full rounded-full bg-blue transition-[width] duration-base ease-out-quad"
         style={{ width: `${pct}%` }}

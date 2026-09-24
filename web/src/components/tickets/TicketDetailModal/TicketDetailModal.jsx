@@ -66,6 +66,10 @@ export function TicketDetailModal({
   const [dirty, setDirty] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
+  /* A tick saves on its own (see handleChecklistToggle): which checklist is saving, and the
+     error of the last one that failed, shown under that checklist. */
+  const [savingChecklist, setSavingChecklist] = useState(null)
+  const [checklistError, setChecklistError] = useState(null)
 
   /* The footer has three faces: the normal one, the "are you sure you want to delete it?" and
      the "you have unsaved changes". All three live here and not in a ConfirmModal on top,
@@ -113,6 +117,30 @@ export function TicketDetailModal({
   function handleExtraChange(name, value) {
     setExtras({ ...extras, [name]: value })
     markDirty()
+  }
+
+  /* Ticking an item is the most frequent thing done in this sheet, so it saves right away
+     instead of waiting for "Guardar cambios" — and it does not make the form dirty.
+
+     What goes to the API is the SAVED ticket (the `ticket` prop, not the form) with only this
+     checklist replaced: whatever else is being edited stays a draft until Guardar. If the
+     save fails the tick is undone and the error appears under the checklist. */
+  async function handleChecklistToggle(name, items) {
+    const before = extras
+    setExtras({ ...extras, [name]: items })
+    setChecklistError(null)
+    setSavingChecklist(name)
+    try {
+      const saved = toFormValues(ticket.type, ticket.extraFields)
+      await onUpdateTicket(ticket, {
+        extraFields: toExtraFieldsPayload(ticket.type, { ...saved, [name]: items }),
+      })
+    } catch (err) {
+      setExtras(before)
+      setChecklistError({ name, message: errorMessage(err) })
+    } finally {
+      setSavingChecklist(null)
+    }
   }
 
   /* All three ways out go through here: the X, the click on the backdrop and Escape — all
@@ -414,6 +442,9 @@ export function TicketDetailModal({
             disabled={submitting}
             idPrefix={`ticket-${ticket.id}`}
             kinds={['text', 'textarea', 'checklist']}
+            onChecklistToggle={handleChecklistToggle}
+            savingChecklist={savingChecklist}
+            checklistError={checklistError}
           />
         </DetailLayout>
 

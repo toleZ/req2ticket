@@ -10,7 +10,7 @@ import { ProgressBar } from '@/components/ui/ProgressBar/ProgressBar'
 import { daysRemaining, formatDateRange } from '@/lib/dates'
 import { findOption } from '@/lib/options'
 import { SPRINT_ACTIVE, SPRINT_COMPLETED, SPRINT_STATUS_OPTIONS } from '@/lib/sprintOptions'
-import { summarizeTickets } from '@/lib/ticketStats'
+import { cancelledNote, summarizeTickets } from '@/lib/ticketStats'
 import { EXPAND_ROW } from './SprintCard.styles'
 
 /* Named EXPAND_ROW and not TOGGLE_BUTTON: EpicRow has a constant by that name which is a
@@ -36,6 +36,8 @@ export function SprintCard({ sprint, tickets, onUpdateSprint, onDeleteSprint, on
   // `tickets` are the tickets assigned to this sprint, already filtered by the page: the
   // card never asks the API for them again.
   const stats = summarizeTickets(tickets)
+  // How many committed points go past the sprint's capacity; 0 or less means it fits.
+  const overCapacity = stats.points - sprint.capacity
   const progressPct = stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0
 
   return (
@@ -88,6 +90,7 @@ export function SprintCard({ sprint, tickets, onUpdateSprint, onDeleteSprint, on
           <div className="flex items-center justify-between text-footnote text-label-secondary">
             <span>
               {stats.completed} de {stats.total} tickets completados
+              {cancelledNote(stats)}
             </span>
             <span>{progressPct}%</span>
           </div>
@@ -99,22 +102,28 @@ export function SprintCard({ sprint, tickets, onUpdateSprint, onDeleteSprint, on
           />
         </div>
 
+        {/* Two numbers that used to be two bare fractions side by side (0/10, 10/34) whose
+            denominators meant different things. Now each says what it counts, and going over
+            capacity is said in words, not only with a colour. */}
         <div className="flex shrink-0 gap-6">
           <div className="text-right">
             <p className="text-caption font-medium tracking-wide text-label-secondary uppercase">
-              Puntos
+              Puntos hechos
             </p>
             <p className="text-body font-semibold text-label">
-              {stats.pointsCompleted}/{stats.points}
+              {stats.pointsCompleted} de {stats.points}
             </p>
           </div>
           <div className="text-right">
             <p className="text-caption font-medium tracking-wide text-label-secondary uppercase">
-              Capacidad
+              Comprometidos
             </p>
-            <p className="text-body font-semibold text-label">
-              {stats.points}/{sprint.capacity}
+            <p className={`text-body font-semibold ${overCapacity > 0 ? 'text-orange-text' : 'text-label'}`}>
+              {stats.points} de {sprint.capacity}
             </p>
+            {overCapacity > 0 && (
+              <p className="text-caption text-orange-text">Excede por {overCapacity} pts</p>
+            )}
           </div>
         </div>
       </div>
@@ -127,11 +136,11 @@ export function SprintCard({ sprint, tickets, onUpdateSprint, onDeleteSprint, on
       >
         {isExpanded
           ? 'Ocultar tickets'
-          : `Ver ${stats.total} ${stats.total === 1 ? 'ticket' : 'tickets'}`}
+          : `Ver ${stats.all} ${stats.all === 1 ? 'ticket' : 'tickets'}`}
       </button>
 
       {isExpanded &&
-        (stats.total === 0 ? (
+        (stats.all === 0 ? (
           <p className="px-0.5 pb-0.5 text-footnote text-label-secondary">
             Todavía no hay tickets asignados a este sprint.
           </p>

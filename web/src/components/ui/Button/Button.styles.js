@@ -1,5 +1,7 @@
-export const BASE = `inline-flex shrink-0 items-center justify-center gap-1.5 rounded-control
-  font-medium disabled:opacity-50`
+/* `min-h-11` gives every button a 44px touch target below lg; from lg up the padding alone
+   sets the height, as before. */
+export const BASE = `inline-flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-control
+  font-medium disabled:opacity-50 lg:min-h-0`
 
 /* `md` is the modal footers and the auth forms; `sm` is the buttons that live in a page header
    or a card header, where the page's own title is the bigger thing on the row. */

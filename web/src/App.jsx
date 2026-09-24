@@ -36,10 +36,11 @@ export function App() {
           <Route path="/sprints" element={<Sprints />} />
           <Route path="/team" element={<Team />} />
           <Route path="/settings" element={<Settings />} />
+          {/* Inside the shell, so a wrong address keeps the sidebar and the way back. Signed
+              out, RequireAuth sends it to the login first, like any other page. */}
+          <Route path="*" element={<NotFound />} />
         </Route>
       </Route>
-
-      <Route path="*" element={<NotFound />} />
     </Routes>
   )
 }

@@ -2,6 +2,8 @@ import { TicketTypeIcon } from '@/components/tickets/TicketTypeIcon/TicketTypeIc
 import { Avatar } from '@/components/ui/Avatar/Avatar'
 import { Badge } from '@/components/ui/Badge/Badge'
 import { ProgressBar } from '@/components/ui/ProgressBar/ProgressBar'
+import { cn } from '@/lib/cn'
+import { ACCENT_COLORS } from '@/lib/epicOptions'
 import { findOption } from '@/lib/options'
 import { TICKET_PRIORITY_OPTIONS, TICKET_TYPE_OPTIONS } from '@/lib/ticketOptions'
 import { CELL, CELL_BADGE, CODE, META, ROW, TITLE } from './TicketRow.styles'
@@ -26,10 +28,14 @@ import { checklistProgress } from '@/lib/ticketStats'
  * The type is only the icon: the "UH" / "Tarea" badge next to it said the same thing twice
  * and took the room the title needs. The type still reaches screen readers through the label.
  */
-export function TicketRow({ ticket, onSelectTicket }) {
+export function TicketRow({ ticket, epics, onSelectTicket }) {
   const priority = findOption(TICKET_PRIORITY_OPTIONS, ticket.priority)
   const type = findOption(TICKET_TYPE_OPTIONS, ticket.type)
   const checklist = checklistProgress(ticket)
+  /* The ticket only carries its epic's name; the epic's colour comes from the list. That
+     colour is the one the user chose for the epic, so it marks its work everywhere. */
+  const epic = epics.find((current) => current.id === ticket.epicId)
+  const accent = epic && findOption(ACCENT_COLORS, epic.accentColor)
 
   /* A button takes its name from its content, but read in DOM order this row is a pile of
      chips ("Login  Sprint 7  2/5  Media  3 pts  JD"). The label says the same things with
@@ -61,7 +67,10 @@ export function TicketRow({ ticket, onSelectTicket }) {
         <span className={META}>
           <span className={CELL}>
             {ticket.epicName && (
-              <Badge tone="neutral" className={CELL_BADGE}>
+              <Badge tone="neutral" className={cn(CELL_BADGE, 'gap-1.5')}>
+                {accent && (
+                  <span className={cn('size-2 shrink-0 rounded-full', accent.dotClass)} aria-hidden="true" />
+                )}
                 <span className="truncate">{ticket.epicName}</span>
               </Badge>
             )}
@@ -69,7 +78,7 @@ export function TicketRow({ ticket, onSelectTicket }) {
 
           <span className={CELL}>
             {ticket.sprintName && (
-              <Badge tone="purple" className={CELL_BADGE}>
+              <Badge tone="neutral" className={CELL_BADGE}>
                 <span className="truncate">{ticket.sprintName}</span>
               </Badge>
             )}

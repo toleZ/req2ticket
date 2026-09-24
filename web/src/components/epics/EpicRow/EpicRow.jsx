@@ -9,12 +9,13 @@ import { cn } from '@/lib/cn'
 import { ACCENT_COLORS, EPIC_PRIORITY_OPTIONS, EPIC_STATUS_OPTIONS } from '@/lib/epicOptions'
 import { findOption } from '@/lib/options'
 import { springSoft } from '@/lib/motion'
-import { summarizeTickets } from '@/lib/ticketStats'
+import { cancelledNote, summarizeTickets } from '@/lib/ticketStats'
 
 /* Named EXPAND_BUTTON and not TOGGLE_BUTTON: SprintCard has a constant by that name which is
    a full-width bordered text row, and this is a size-6 chevron button. Same name, nothing else
    in common. */
-const EXPAND_BUTTON = `mt-0.5 grid size-6 shrink-0 place-items-center rounded-control
+/* The negative margin grows the tap area to 44px below lg without moving the row. */
+const EXPAND_BUTTON = `-m-2.5 -mt-2 grid size-11 shrink-0 place-items-center rounded-control lg:m-0 lg:mt-0.5 lg:size-6
   text-label-secondary transition-colors duration-fast ease-out-quad hover:bg-fill-secondary
   hover:text-label`
 
@@ -26,7 +27,7 @@ const EXPAND_BUTTON = `mt-0.5 grid size-6 shrink-0 place-items-center rounded-co
    The hover paints NO background. Painting it left a grey slab wrapping half the row —
    coloured badges included — and read as a patch, not as something clickable. What it
    announces is what a link announces: the name underlines and the code climbs a step of grey. */
-const OPEN_BUTTON = 'group flex min-w-0 flex-wrap items-center gap-2 text-left'
+const OPEN_BUTTON = 'group flex min-h-11 min-w-0 flex-wrap items-center gap-2 text-left lg:min-h-6'
 
 const OPEN_CODE = `text-caption text-label-secondary transition-colors duration-fast ease-out-quad
   group-hover:text-label`
@@ -96,7 +97,8 @@ export function EpicRow({ epic, tickets, onSelectEpic, onSelectTicket }) {
 
           <div className="mt-1.5 flex flex-wrap items-center gap-2">
             <span className="text-caption text-label-secondary">
-              {stats.completed}/{stats.total} {stats.total === 1 ? 'ticket' : 'tickets'} ·{' '}
+              {stats.completed}/{stats.total} {stats.total === 1 ? 'ticket' : 'tickets'}
+              {cancelledNote(stats)} ·{' '}
               {stats.pointsCompleted}/{stats.points} pts
             </span>
             <ProgressBar
@@ -126,7 +128,7 @@ export function EpicRow({ epic, tickets, onSelectEpic, onSelectTicket }) {
           >
             <div className="ml-8 mt-3 border-t border-separator pt-3">
               <p className="text-footnote font-medium text-label-secondary">Tickets</p>
-              {stats.total === 0 ? (
+              {stats.all === 0 ? (
                 <p className="mt-1.5 text-footnote text-label-secondary">
                   Esta épica todavía no tiene tickets.
                 </p>

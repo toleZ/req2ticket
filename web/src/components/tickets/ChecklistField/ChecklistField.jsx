@@ -22,7 +22,18 @@ import { cn } from '@/lib/cn'
  * bottom — and that is why this component exists separately: a story has three checklists and
  * each needs its own draft. Three instances, three `draft`s, no shared state.
  */
-export function ChecklistField({ id, items, disabled, addLabel = 'Añadir ítem', onItemsChange }) {
+/* `onToggle` is optional. When given, ticking an item goes there instead of to
+   `onItemsChange`: the ticket sheet uses it to save a tick on the spot, while adding,
+   editing or removing items still waits for "Guardar cambios". Without it (the create
+   modal, where there is no ticket to save yet) a tick is one more change to the form. */
+export function ChecklistField({
+  id,
+  items,
+  disabled,
+  addLabel = 'Añadir ítem',
+  onItemsChange,
+  onToggle,
+}) {
   const [draft, setDraft] = useState('')
 
   function handleAdd() {
@@ -37,7 +48,12 @@ export function ChecklistField({ id, items, disabled, addLabel = 'Añadir ítem'
      is not a preference: React compares by identity, so handing it back the same array,
      modified, would redraw nothing. */
   function handleToggle(index) {
-    onItemsChange(items.map((item, i) => (i === index ? { ...item, done: !item.done } : item)))
+    const nextItems = items.map((item, i) => (i === index ? { ...item, done: !item.done } : item))
+    if (onToggle) {
+      onToggle(nextItems)
+    } else {
+      onItemsChange(nextItems)
+    }
   }
 
   function handleRemove(index) {

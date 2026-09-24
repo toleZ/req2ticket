@@ -8,7 +8,10 @@ const POINTS_SCALE = [0, 1, 2, 3, 5, 8, 13]
 
 const GROUP = 'flex flex-wrap gap-1 rounded-control bg-fill-tertiary p-1'
 
-const CHIP = `min-w-7 rounded-control px-1.5 py-0.5 text-caption font-medium text-label-secondary
+/* 44px chips below lg so each point is tappable; from lg up the strip keeps its compact size,
+   but never under 24px tall. */
+const CHIP = `min-h-11 min-w-11 rounded-control px-1.5 py-0.5 text-caption font-medium text-label-secondary
+  lg:min-h-6 lg:min-w-7
   transition-colors duration-fast ease-out-quad hover:text-label disabled:opacity-50`
 
 /* The chosen one climbs a surface instead of turning blue. It is the same device the rest of

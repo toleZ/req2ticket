@@ -145,11 +145,20 @@
   color: var(--label-secondary);
 }
 
+/* Reduced motion keeps the feedback and drops the movement. Colour, background, border,
+   shadow and opacity changes still ease (a hover, a pressed toggle, a fade), but nothing slides,
+   grows or scales: `transition-property` is narrowed to those five, so a transform or a width
+   change lands at once.
+
+   It used to force `transition-duration: 120ms` on every element instead. That gave everything
+   `transition: all`, and a jump motion had already removed came back as a short slide — the
+   mobile drawer still slid in. Elements with no transition of their own are unaffected: their
+   duration is still 0. */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 120ms !important;
+    transition-property: color, background-color, border-color, box-shadow, opacity !important;
     scroll-behavior: auto !important;
   }
 }

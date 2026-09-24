@@ -45,6 +45,9 @@ export function TicketExtraFields({
   idPrefix,
   kinds,
   optional = false,
+  onChecklistToggle,
+  savingChecklist,
+  checklistError,
 }) {
   const all = EXTRA_FIELDS[type] || []
   const fields = kinds ? all.filter((field) => kinds.includes(field.kind)) : all
@@ -116,8 +119,10 @@ export function TicketExtraFields({
                 id={id}
                 field={field}
                 items={values[field.name]}
-                disabled={disabled}
+                disabled={disabled || savingChecklist === field.name}
                 onChange={onChange}
+                onToggle={onChecklistToggle}
+                error={checklistError?.name === field.name ? checklistError.message : ''}
               />
             )}
           </div>
@@ -130,7 +135,7 @@ export function TicketExtraFields({
 /* A checklist's header: label, "N de M" and the thin bar, as in the design. It lives in this
    file and not in ChecklistField because ChecklistField draws the list and nothing else — it
    still works without a header if that is ever needed. */
-function ChecklistBlock({ id, field, items, disabled, onChange }) {
+function ChecklistBlock({ id, field, items, disabled, onChange, onToggle, error }) {
   const done = items.filter((item) => item.done).length
 
   return (
@@ -162,7 +167,14 @@ function ChecklistBlock({ id, field, items, disabled, onChange }) {
         disabled={disabled}
         addLabel={field.addLabel}
         onItemsChange={(nextItems) => onChange(field.name, nextItems)}
+        onToggle={onToggle && ((nextItems) => onToggle(field.name, nextItems))}
       />
+
+      {error && (
+        <p role="alert" className="mt-1 text-footnote text-red-text">
+          {error}
+        </p>
+      )}
     </div>
   )
 }
