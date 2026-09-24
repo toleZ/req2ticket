@@ -1,9 +1,8 @@
-import { useState } from 'react'
-import { useOutletContext } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
+import { useOutletContext, useSearchParams } from 'react-router-dom'
 import { AnimatePresence } from 'motion/react'
-import { ArrowUpDown, Plus } from 'lucide-react'
+import { Plus, Search } from 'lucide-react'
 
-import { PageHeader } from '@/components/layout/PageHeader/PageHeader'
 import { CreateTicketModal } from '@/components/tickets/CreateTicketModal/CreateTicketModal'
 import { TicketDetailModal } from '@/components/tickets/TicketDetailModal/TicketDetailModal'
 import { TicketFilterBar } from '@/components/tickets/TicketFilterBar/TicketFilterBar'
@@ -11,14 +10,15 @@ import { TicketList } from '@/components/tickets/TicketList/TicketList'
 import { Button } from '@/components/ui/Button/Button'
 import { LoadState } from '@/components/ui/LoadState/LoadState'
 import { createTicket } from '@/lib/api'
-import { NO_SPRINT, TICKET_PRIORITY_OPTIONS, TICKET_STATUS_OPTIONS } from '@/lib/ticketOptions'
+import { readSession } from '@/lib/auth'
+import { LIST_KEYS, applyFilters, byPriority, countActive, readFilters } from '@/lib/backlogFilters'
+import { TICKET_STATUS_OPTIONS } from '@/lib/ticketOptions'
 
-/* The order comes from TICKET_PRIORITY_OPTIONS, which runs low to high, so the sort
-   subtracts the other way round. Deriving it instead of hand-writing a map keeps a newly
-   added priority from breaking the ordering silently. */
-function priorityRank(priority) {
-  return TICKET_PRIORITY_OPTIONS.findIndex((option) => option.value === priority)
-}
+const SEARCH_BOX = `flex min-h-11 w-full items-center gap-2 rounded-control bg-fill-tertiary px-2.5
+  transition-colors duration-fast hover:bg-fill-secondary focus-ring-within sm:w-72 lg:min-h-8`
+
+const KBD = `hidden h-5 min-w-5 place-items-center rounded-[5px] bg-fill-secondary px-1 text-caption2
+  font-medium text-label-secondary sm:grid`
 
 export function Tickets() {
   const {
@@ -40,26 +40,57 @@ export function Tickets() {
      returned — the new `updatedAt` included — without anyone refreshing it by hand. */
   const [detailTicketId, setDetailTicketId] = useState(null)
 
-  const [search, setSearch] = useState('')
-  const [assigneeFilter, setAssigneeFilter] = useState('')
-  const [epicFilter, setEpicFilter] = useState('')
-  const [sprintFilter, setSprintFilter] = useState('')
-  const [priorityFilter, setPriorityFilter] = useState('')
-  const [typeFilter, setTypeFilter] = useState('')
-  const [sortByPriority, setSortByPriority] = useState(false)
+  /* The filters are the URL (see lib/backlogFilters.js). Each change is a history entry, so
+     Back undoes it — except typing in the search, which replaces the entry instead of adding
+     one per key. */
+  const [params, setParams] = useSearchParams()
+  const filters = readFilters(params)
+  const activeCount = countActive(filters)
+  const searchRef = useRef(null)
 
-  const hasFilters = Boolean(
-    search || assigneeFilter || epicFilter || sprintFilter || priorityFilter || typeFilter,
-  )
+  /* The function form starts from the URL as it is now, not as it was on the last render:
+     two quick changes (a chip, then another) would otherwise overwrite each other. */
+  function updateParams(change, replace = false) {
+    setParams(
+      (current) => {
+        const next = new URLSearchParams(current)
+        change(next)
+        return next
+      },
+      { replace },
+    )
+  }
+
+  /* The search box keeps its own text and writes it to the URL as you type. Bound to the URL
+     alone, a fast typist lost letters: the box showed the URL, which lags a keystroke. */
+  const [search, setSearch] = useState(filters.q)
+
+  function handleSearchChange(text) {
+    setSearch(text)
+    updateParams((next) => (text ? next.set('q', text) : next.delete('q')), true)
+  }
+
+  function setList(key, values) {
+    updateParams((next) => (values.length ? next.set(key, values.join(',')) : next.delete(key)))
+  }
 
   function clearFilters() {
     setSearch('')
-    setAssigneeFilter('')
-    setEpicFilter('')
-    setSprintFilter('')
-    setPriorityFilter('')
-    setTypeFilter('')
+    updateParams((next) => ['q', 'mine', ...LIST_KEYS].forEach((key) => next.delete(key)))
   }
+
+  /* "/" jumps to the search from anywhere on the page, unless you are already typing. */
+  useEffect(() => {
+    function handleSlash(e) {
+      if (e.key !== '/' || e.metaKey || e.ctrlKey) return
+      if (e.target.closest('input, textarea, select, [contenteditable="true"]')) return
+      e.preventDefault()
+      searchRef.current?.focus()
+    }
+
+    window.addEventListener('keydown', handleSlash)
+    return () => window.removeEventListener('keydown', handleSlash)
+  }, [])
 
   // Appends what the POST returns, which already carries the id and code the backend assigned.
   async function handleCreate(values) {
@@ -67,28 +98,16 @@ export function Tickets() {
     setTickets((prev) => [...prev, created])
   }
 
-  /* Recomputed on every render, and that is fine: a few hundred tickets at most.
-     <select> values are always strings, which is why the ids are compared with String(). */
-  const term = search.trim().toLowerCase()
+  const filteredTickets = applyFilters(tickets, filters, readSession()?.user?.id)
+  const points = filteredTickets.reduce((sum, ticket) => sum + ticket.points, 0)
 
-  const filteredTickets = tickets.filter((ticket) => {
-    if (term && !ticket.title.toLowerCase().includes(term)) return false
-    if (assigneeFilter && String(ticket.assigneeId) !== assigneeFilter) return false
-    if (epicFilter && String(ticket.epicId) !== epicFilter) return false
-    if (sprintFilter === NO_SPRINT && ticket.sprintId !== null) return false
-    if (sprintFilter && sprintFilter !== NO_SPRINT && String(ticket.sprintId) !== sprintFilter) {
-      return false
-    }
-    if (priorityFilter && ticket.priority !== priorityFilter) return false
-    if (typeFilter && ticket.type !== typeFilter) return false
-    return true
-  })
+  const visibleStatuses = filters.status.length
+    ? TICKET_STATUS_OPTIONS.filter((status) => filters.status.includes(status.value))
+    : TICKET_STATUS_OPTIONS
 
-  const sections = TICKET_STATUS_OPTIONS.map((status) => {
+  const sections = visibleStatuses.map((status) => {
     const sectionTickets = filteredTickets.filter((ticket) => ticket.status === status.value)
-    if (sortByPriority) {
-      sectionTickets.sort((a, b) => priorityRank(b.priority) - priorityRank(a.priority))
-    }
+    if (filters.sort === 'priority') sectionTickets.sort(byPriority)
     return { status, tickets: sectionTickets }
   })
 
@@ -96,46 +115,68 @@ export function Tickets() {
      the modal unmounts on its own, with no handler having to remember to close it. */
   const detailTicket = tickets.find((ticket) => ticket.id === detailTicketId) ?? null
 
-  const subtitle =
-    loadState === 'ready'
-      ? `${filteredTickets.length} de ${tickets.length} tickets del proyecto.`
-      : null
+  const countText =
+    filteredTickets.length === tickets.length
+      ? `${tickets.length} ${tickets.length === 1 ? 'ticket' : 'tickets'}`
+      : `${filteredTickets.length} de ${tickets.length} tickets`
 
   return (
     <section>
-      <PageHeader title="Backlog" subtitle={subtitle}>
-        <Button
-          variant="neutral"
-          size="sm"
-          onClick={() => setSortByPriority(!sortByPriority)}
-          ariaPressed={sortByPriority}
-        >
-          <ArrowUpDown className="size-4" aria-hidden="true" />
-          Prioridad
-        </Button>
-        <Button size="sm" onClick={() => setIsModalOpen(true)}>
-          <Plus className="size-4" aria-hidden="true" />
-          Nuevo ticket
-        </Button>
-      </PageHeader>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+        <div className="flex min-w-0 items-baseline gap-3">
+          <h1 className="text-title1 text-label">Backlog</h1>
+          {loadState === 'ready' && (
+            <p className="mono text-caption text-label-secondary tabular-nums">
+              {countText} · {points.toLocaleString('es-AR')} pts
+            </p>
+          )}
+        </div>
+
+        <div className="flex w-full items-center gap-2 sm:ml-auto sm:w-auto">
+          <label className={SEARCH_BOX}>
+            <Search className="size-4 shrink-0 text-label-tertiary" aria-hidden="true" />
+            <input
+              ref={searchRef}
+              type="search"
+              value={search}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape' && search) {
+                  e.preventDefault()
+                  handleSearchChange('')
+                }
+              }}
+              placeholder="Buscar por texto o código"
+              aria-label="Buscar por texto o código"
+              aria-keyshortcuts="/"
+              className="min-w-0 flex-1 self-stretch bg-transparent text-footnote text-label placeholder:text-label-tertiary focus:outline-none [&::-webkit-search-cancel-button]:hidden"
+            />
+            {!search && (
+              <kbd className={KBD} aria-hidden="true">
+                /
+              </kbd>
+            )}
+          </label>
+          <Button size="sm" onClick={() => setIsModalOpen(true)} className="shrink-0">
+            <Plus className="size-4" aria-hidden="true" />
+            Crear ticket
+          </Button>
+        </div>
+      </div>
 
       {loadState === 'ready' && (
         <TicketFilterBar
-          users={users}
+          filters={filters}
+          activeCount={activeCount}
           epics={epics}
           sprints={sprints}
-          search={search}
-          onSearchChange={setSearch}
-          assigneeFilter={assigneeFilter}
-          onAssigneeFilterChange={setAssigneeFilter}
-          epicFilter={epicFilter}
-          onEpicFilterChange={setEpicFilter}
-          sprintFilter={sprintFilter}
-          onSprintFilterChange={setSprintFilter}
-          priorityFilter={priorityFilter}
-          onPriorityFilterChange={setPriorityFilter}
-          typeFilter={typeFilter}
-          onTypeFilterChange={setTypeFilter}
+          users={users}
+          onListChange={setList}
+          onMineChange={(on) => updateParams((next) => (on ? next.set('mine', '1') : next.delete('mine')))}
+          onSortChange={(sort) =>
+            updateParams((next) => (sort === 'priority' ? next.set('sort', 'priority') : next.delete('sort')))
+          }
+          onClear={clearFilters}
         />
       )}
 
@@ -153,7 +194,7 @@ export function Tickets() {
       {loadState === 'ready' && tickets.length > 0 && filteredTickets.length === 0 && (
         <div className="mt-2 flex flex-wrap items-center gap-3">
           <p className="text-body text-label-secondary">Ningún ticket coincide con los filtros.</p>
-          {hasFilters && (
+          {activeCount > 0 && (
             <Button variant="neutral" size="sm" onClick={clearFilters}>
               Limpiar filtros
             </Button>

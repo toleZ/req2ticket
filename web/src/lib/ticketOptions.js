@@ -38,14 +38,6 @@ export const TICKET_DONE = 'done'
    forever. */
 export const TICKET_CANCELLED = 'cancelled'
 
-/* Sentinel for the sprint filter's "Sin sprint" option. Not a sprint id and not a status:
-   it is a case of its own, and it never leaves this file — the filter compares against
-   sprintId, so this string never travels to the API.
-
-   It used to be called 'backlog' and was renamed: 'backlog' is now a real TicketStatus (and
-   it already was an EpicStatus). Three different things under one name is one too many. */
-export const NO_SPRINT = '__sinSprint__'
-
 /* In flow order, and that order matters: the Tickets page draws one section per status by
    reading this array (not the C# enum). Reordering here reorders the page. */
 export const TICKET_STATUS_OPTIONS = [
