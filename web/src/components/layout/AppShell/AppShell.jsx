@@ -8,6 +8,7 @@ import { useProjectData } from '@/hooks/useProjectData'
 import { useTheme } from '@/hooks/useTheme'
 import { CONTENT, MAIN, RAIL, RAIL_COLLAPSED, RAIL_EXPANDED, SHELL, SKIP_LINK } from './AppShell.styles'
 import { COLLAPSED_PREF } from './AppShell.data'
+import { navBadges } from '@/lib/navItems'
 import { readUiPref, writeUiPref } from '@/lib/uiPrefs'
 
 export function AppShell() {
@@ -23,6 +24,7 @@ export function AppShell() {
   /* Loaded here, once, because this component survives the navigation between pages while the
      thing under <Outlet /> does not. Every page below reads it with useOutletContext(). */
   const projectData = useProjectData()
+  const badges = navBadges(projectData)
 
   function closeDrawer() {
     setIsDrawerOpen(false)
@@ -51,6 +53,22 @@ export function AppShell() {
     document.getElementById('contenido')?.focus()
   }
 
+  /* ⌘\ on a Mac, Ctrl+\ elsewhere: the usual shortcut for showing or hiding a sidebar. The
+     handler reads the stored preference instead of `isCollapsed`, so the listener never needs
+     to be re-added when the state changes. */
+  useEffect(() => {
+    function handleShortcut(e) {
+      if (e.key !== '\\' || !(e.metaKey || e.ctrlKey)) return
+      e.preventDefault()
+      const next = !readUiPref(COLLAPSED_PREF, false)
+      setIsCollapsed(next)
+      writeUiPref(COLLAPSED_PREF, next)
+    }
+
+    window.addEventListener('keydown', handleShortcut)
+    return () => window.removeEventListener('keydown', handleShortcut)
+  }, [])
+
   function handleToggleCollapse() {
     const next = !isCollapsed
     setIsCollapsed(next)
@@ -67,11 +85,16 @@ export function AppShell() {
         <SidebarBody
           surface="rail"
           isCollapsed={isCollapsed}
+          badges={badges}
           onToggleCollapse={handleToggleCollapse}
         />
       </aside>
 
-      <MobileDrawer isOpen={isDrawerOpen} onClose={closeDrawer} />
+      <MobileDrawer
+        isOpen={isDrawerOpen}
+        badges={badges}
+        onClose={closeDrawer}
+      />
 
       {/* min-w-0 is load-bearing: without it wide content pushes the rail off screen. */}
       <div className={CONTENT}>

@@ -7,7 +7,7 @@ export function Board() {
     <section>
       <PageHeader title="Tablero" />
       <p className="mt-2 max-w-prose text-body text-label-secondary">
-        Esta sección está en construcción. Mientras tanto, los tickets están en la sección Tickets.
+        Esta sección está en construcción. Mientras tanto, los tickets están en el Backlog.
       </p>
     </section>
   )

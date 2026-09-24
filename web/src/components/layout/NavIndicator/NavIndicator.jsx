@@ -22,7 +22,7 @@ export function NavIndicator({ layoutId }) {
     <motion.span
       layoutId={layoutId}
       transition={springSnappy}
-      className="absolute inset-0 rounded-control bg-fill-tertiary"
+      className="absolute inset-0 rounded-control bg-blue/12"
       aria-hidden="true"
     />
   )

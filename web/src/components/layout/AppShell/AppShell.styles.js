@@ -1,5 +1,8 @@
+/* No overflow-hidden on the rail itself: the collapsed user menu opens beside it and must
+   not be cut off. What could spill while the width animates clips on its own (the card, the
+   nav's x axis, the user row). */
 export const RAIL = `material-regular hairline-r sticky top-0 z-20 hidden h-screen shrink-0
-  flex-col overflow-hidden transition-[width] duration-base ease-ios lg:flex`
+  flex-col transition-[width] duration-base ease-ios lg:flex`
 
 export const RAIL_EXPANDED = 'w-62'
 

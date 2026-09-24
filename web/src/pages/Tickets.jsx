@@ -103,7 +103,7 @@ export function Tickets() {
 
   return (
     <section>
-      <PageHeader title="Tickets" subtitle={subtitle}>
+      <PageHeader title="Backlog" subtitle={subtitle}>
         <Button
           variant="neutral"
           size="sm"

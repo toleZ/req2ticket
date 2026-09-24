@@ -7,7 +7,7 @@ import { DRAWER_PANEL, DRAWER_SCRIM } from './MobileDrawer.styles'
 import { DESKTOP_QUERY } from './MobileDrawer.data'
 import { EASE_IOS, springSoft } from '@/lib/motion'
 
-export function MobileDrawer({ isOpen, onClose }) {
+export function MobileDrawer({ isOpen, badges, onClose }) {
   const panelRef = useFocusTrap(isOpen, onClose)
 
   /* Crossing into the desktop breakpoint reveals the rail. Leaving the drawer mounted
@@ -53,7 +53,11 @@ export function MobileDrawer({ isOpen, onClose }) {
             exit={{ x: '-100%', opacity: 0 }}
             transition={springSoft}
           >
-            <SidebarBody surface="drawer" onNavigate={onClose} />
+            <SidebarBody
+              surface="drawer"
+              badges={badges}
+              onNavigate={onClose}
+            />
           </motion.aside>
         </>
       )}
