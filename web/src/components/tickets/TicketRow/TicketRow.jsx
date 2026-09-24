@@ -1,9 +1,12 @@
+import { motion } from 'motion/react'
+
 import { TicketTypeIcon } from '@/components/tickets/TicketTypeIcon/TicketTypeIcon'
 import { Avatar } from '@/components/ui/Avatar/Avatar'
 import { Badge } from '@/components/ui/Badge/Badge'
 import { ProgressBar } from '@/components/ui/ProgressBar/ProgressBar'
 import { cn } from '@/lib/cn'
 import { ACCENT_COLORS } from '@/lib/epicOptions'
+import { layoutGlide } from '@/lib/motion'
 import { findOption } from '@/lib/options'
 import { TICKET_PRIORITY_OPTIONS, TICKET_TYPE_OPTIONS } from '@/lib/ticketOptions'
 import { CELL, CELL_BADGE, CODE, META, ROW, TITLE } from './TicketRow.styles'
@@ -53,8 +56,11 @@ export function TicketRow({ ticket, epics, onSelectTicket }) {
     .filter(Boolean)
     .join(' · ')
 
+  /* `layoutId`: when a sort, a filter or a status change moves this ticket — even into
+     another status section — motion glides it from where it was instead of letting it jump.
+     `position` animates the move only, never a stretch of the row. */
   return (
-    <li>
+    <motion.li layout="position" layoutId={`ticket-${ticket.id}`} transition={layoutGlide}>
       <button type="button" onClick={() => onSelectTicket(ticket)} aria-label={label} className={ROW}>
         <TicketTypeIcon type={ticket.type} className="size-4" />
 
@@ -106,6 +112,6 @@ export function TicketRow({ ticket, epics, onSelectTicket }) {
           <Avatar name={ticket.assigneeName} size="sm" />
         </span>
       </button>
-    </li>
+    </motion.li>
   )
 }

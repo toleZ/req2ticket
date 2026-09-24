@@ -39,7 +39,6 @@ export function TicketExtraFields({
   kinds,
   optional = false,
   onChecklistToggle,
-  savingChecklist,
   checklistError,
 }) {
   const all = EXTRA_FIELDS[type] || []
@@ -77,7 +76,6 @@ export function TicketExtraFields({
                   optional={optional}
                   onChange={onChange}
                   onChecklistToggle={onChecklistToggle}
-                  saving={savingChecklist === field.name}
                   error={checklistError?.name === field.name ? checklistError.message : ''}
                 />
               ))}
@@ -101,14 +99,14 @@ function SectionHeading({ section }) {
   )
 }
 
-function FieldBlock({ field, id, value, disabled, optional, onChange, onChecklistToggle, saving, error }) {
+function FieldBlock({ field, id, value, disabled, optional, onChange, onChecklistToggle, error }) {
   if (field.kind === 'checklist') {
     return (
       <ChecklistCard
         id={id}
         field={field}
         items={value}
-        disabled={disabled || saving}
+        disabled={disabled}
         onChange={onChange}
         onToggle={onChecklistToggle}
         error={error}
@@ -221,7 +219,7 @@ function ChecklistCard({ id, field, items, disabled, onChange, onToggle, error }
       </div>
 
       {error && (
-        <p role="alert" className="mt-1 text-footnote text-red-text">
+        <p role="alert" className="mt-1 animate-fade-in text-footnote text-red-text">
           {error}
         </p>
       )}

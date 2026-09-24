@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useOutletContext } from 'react-router-dom'
+import { AnimatePresence } from 'motion/react'
 import { Plus } from 'lucide-react'
 
 import { PageHeader } from '@/components/layout/PageHeader/PageHeader'
@@ -87,30 +88,34 @@ export function Epics() {
       {/* Both modals mount only while something is chosen: that way every opening seeds its
           form from scratch. They cannot both be up at once — a ticket is not opened from an
           epic's record, precisely so two modal sheets never stack. */}
-      {detailEpic && (
-        <EpicDetailModal
-          key={detailEpic.id}
-          epic={detailEpic}
-          tickets={tickets.filter((ticket) => ticket.epicId === detailEpic.id)}
-          users={users}
-          onClose={() => setDetailEpicId(null)}
-          onUpdateEpic={handleUpdateEpic}
-          onDeleteEpic={handleDeleteEpic}
-        />
-      )}
+      <AnimatePresence>
+        {detailEpic && (
+          <EpicDetailModal
+            key={detailEpic.id}
+            epic={detailEpic}
+            tickets={tickets.filter((ticket) => ticket.epicId === detailEpic.id)}
+            users={users}
+            onClose={() => setDetailEpicId(null)}
+            onUpdateEpic={handleUpdateEpic}
+            onDeleteEpic={handleDeleteEpic}
+          />
+        )}
+      </AnimatePresence>
 
-      {detailTicket && (
-        <TicketDetailModal
-          key={detailTicket.id}
-          ticket={detailTicket}
-          epics={epics}
-          sprints={sprints}
-          users={users}
-          onClose={() => setDetailTicketId(null)}
-          onUpdateTicket={updateTicketAndStore}
-          onDeleteTicket={deleteTicketAndStore}
-        />
-      )}
+      <AnimatePresence>
+        {detailTicket && (
+          <TicketDetailModal
+            key={detailTicket.id}
+            ticket={detailTicket}
+            epics={epics}
+            sprints={sprints}
+            users={users}
+            onClose={() => setDetailTicketId(null)}
+            onUpdateTicket={updateTicketAndStore}
+            onDeleteTicket={deleteTicketAndStore}
+          />
+        )}
+      </AnimatePresence>
     </section>
   )
 }

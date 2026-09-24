@@ -1,3 +1,6 @@
+import { useId } from 'react'
+
+import { SelectionPill } from '@/components/ui/SelectionPill/SelectionPill'
 import { cn } from '@/lib/cn'
 import { handlePointsKeyDown } from './pointsKeyboard'
 
@@ -10,14 +13,14 @@ const GROUP = 'flex flex-wrap gap-1 rounded-control bg-fill-tertiary p-1'
 
 /* 44px chips below lg so each point is tappable; from lg up the strip keeps its compact size,
    but never under 24px tall. */
-const CHIP = `min-h-11 min-w-11 rounded-control px-1.5 py-0.5 text-caption font-medium text-label-secondary
+const CHIP = `relative min-h-11 min-w-11 rounded-control px-1.5 py-0.5 text-caption font-medium text-label-secondary
   lg:min-h-6 lg:min-w-7
   transition-colors duration-fast ease-out-quad hover:text-label disabled:opacity-50`
 
-/* The chosen one climbs a surface instead of turning blue. It is the same device the rest of
-   the app uses to say "this is active" without spending the accent, which here is already
-   taken by the priority and the status. */
-const CHIP_ON = 'bg-elevated text-label shadow-hairline'
+/* The chosen one climbs a surface instead of turning blue — the device the rest of the app
+   uses to say "this is active" without spending the accent. The surface is a SelectionPill,
+   so it slides from the old choice to the new one. */
+const PILL = 'absolute inset-0 rounded-control bg-elevated shadow-hairline'
 
 /**
  * A ticket's points, as the design's segmented strip.
@@ -28,6 +31,7 @@ const CHIP_ON = 'bg-elevated text-label shadow-hairline'
  */
 export function TicketPointsField({ id, value, disabled, onChange }) {
   const current = Number(value)
+  const pillId = useId()
 
   /* Points is a free integer in the API: nothing stops a 4 or a 21 loaded from somewhere else.
      If the current value is not on the scale it is appended instead of lost — a strip that
@@ -54,11 +58,12 @@ export function TicketPointsField({ id, value, disabled, onChange }) {
           aria-label={point === 0 ? 'Sin estimar' : `${point} puntos`}
           disabled={disabled}
           onClick={() => onChange(String(point))}
-          className={cn(CHIP, current === point && CHIP_ON)}
+          className={cn(CHIP, current === point && 'text-label')}
         >
+          {current === point && <SelectionPill layoutId={pillId} className={PILL} />}
           {/* The 0 is drawn as a dash: "0 puntos" and "sin estimar" mean the same thing here,
               and the dash says it without making you read a number that means nothing. */}
-          {point === 0 ? '–' : point}
+          <span className="relative">{point === 0 ? '–' : point}</span>
         </button>
       ))}
     </div>

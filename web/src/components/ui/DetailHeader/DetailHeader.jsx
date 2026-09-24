@@ -62,7 +62,7 @@ export function DetailHeader({
       >
         {code}
         {copied ? (
-          <Check className="size-3.5 text-green" aria-hidden="true" />
+          <Check className="size-3.5 animate-tick-in text-green" aria-hidden="true" />
         ) : (
           <Copy className="size-3.5" aria-hidden="true" />
         )}

@@ -15,7 +15,7 @@ const TRIGGER = `flex min-h-11 w-full min-w-0 items-center gap-2 rounded-control
   bg-elevated px-2 py-1 text-left text-footnote text-label transition-colors duration-fast
   hover:border-separator-opaque disabled:opacity-50 aria-invalid:border-red lg:min-h-0`
 
-const PANEL = 'mt-1 rounded-control bg-elevated p-1 shadow-popover ring-[0.5px] ring-separator'
+const PANEL = 'mt-1 origin-top animate-pop-in rounded-control bg-elevated p-1 shadow-popover ring-[0.5px] ring-separator'
 
 const INNER_RADIUS = 'rounded-[calc(var(--radius-control)-0.25rem)]'
 

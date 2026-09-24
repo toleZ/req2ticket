@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { AnimatePresence, motion } from 'motion/react'
 import { X } from 'lucide-react'
 
 import { SHEET_LABEL, TicketExtraFields } from '@/components/tickets/TicketExtraFields/TicketExtraFields'
@@ -24,6 +25,7 @@ import { getUsers } from '@/lib/api'
 import { cn } from '@/lib/cn'
 import { ACCENT_COLORS } from '@/lib/epicOptions'
 import { errorMessage } from '@/lib/errors'
+import { EASE_IOS, exitQuick } from '@/lib/motion'
 import { findOption } from '@/lib/options'
 import { SPRINT_STATUS_OPTIONS } from '@/lib/sprintOptions'
 import {
@@ -70,6 +72,22 @@ const CREATE_LABEL = {
 }
 
 const SIDE_LABEL = cn(SHEET_LABEL, 'text-label-secondary')
+
+/* Switching type: the old fields leave quickly, then the new ones rise in. */
+const SWAP = {
+  initial: { opacity: 0, y: 6 },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.2, ease: EASE_IOS } },
+  exit: { opacity: 0, y: -4, transition: exitQuick },
+}
+
+/* A type's own sidebar field grows in and out, so what sits below slides instead of jumping.
+   Overflow is clipped only while it moves, or it would cut the focus ring. */
+const GROW = {
+  initial: { height: 0, opacity: 0, overflow: 'hidden' },
+  animate: { height: 'auto', opacity: 1, transitionEnd: { overflow: 'visible' } },
+  exit: { height: 0, opacity: 0, overflow: 'hidden' },
+  transition: { duration: 0.22, ease: EASE_IOS },
+}
 
 const REQUIRED = (
   <>
@@ -267,40 +285,46 @@ export function CreateTicketModal({ isOpen, onClose, onCreate, epics, sprints })
                 </DetailSelect>
               </div>
 
-              {sideFields.map((field) =>
-                field.options.length <= 3 ? (
-                  <div key={field.name}>
-                    <p className={SIDE_LABEL}>{field.label}</p>
-                    <SegmentedField
-                      name={`ticket-${field.name}`}
-                      legend={field.label}
-                      options={field.options}
-                      value={extras[field.name]}
-                      disabled={submitting}
-                      onChange={(value) => handleExtraChange(field.name, value)}
-                    />
-                  </div>
-                ) : (
-                  <div key={field.name}>
-                    <label htmlFor={`ticket-${field.name}`} className={SIDE_LABEL}>
-                      {field.label}
-                    </label>
-                    <DetailSelect
-                      id={`ticket-${field.name}`}
-                      value={extras[field.name]}
-                      disabled={submitting}
-                      onChange={(e) => handleExtraChange(field.name, e.target.value)}
-                    >
-                      <option value="">Sin definir</option>
-                      {field.options.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </DetailSelect>
-                  </div>
-                ),
-              )}
+              <AnimatePresence initial={false}>
+                {sideFields.map((field) => (
+                  <motion.div key={field.name} {...GROW} className="-mt-4">
+                    <div className="pt-4">
+                      {field.options.length <= 3 ? (
+                        <div>
+                          <p className={SIDE_LABEL}>{field.label}</p>
+                          <SegmentedField
+                            name={`ticket-${field.name}`}
+                            legend={field.label}
+                            options={field.options}
+                            value={extras[field.name]}
+                            disabled={submitting}
+                            onChange={(value) => handleExtraChange(field.name, value)}
+                          />
+                        </div>
+                      ) : (
+                        <div>
+                          <label htmlFor={`ticket-${field.name}`} className={SIDE_LABEL}>
+                            {field.label}
+                          </label>
+                          <DetailSelect
+                            id={`ticket-${field.name}`}
+                            value={extras[field.name]}
+                            disabled={submitting}
+                            onChange={(e) => handleExtraChange(field.name, e.target.value)}
+                          >
+                            <option value="">Sin definir</option>
+                            {field.options.map((option) => (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </DetailSelect>
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
 
               <div>
                 <p className={SIDE_LABEL}>Puntos</p>
@@ -328,7 +352,7 @@ export function CreateTicketModal({ isOpen, onClose, onCreate, epics, sprints })
                   onChange={(value) => setField('epicId', value)}
                 />
                 {errors.epicId && (
-                  <p id="ticket-epic-error" className="mt-1 text-footnote text-red-text">
+                  <p id="ticket-epic-error" className="mt-1 animate-fade-in text-footnote text-red-text">
                     {errors.epicId}
                   </p>
                 )}
@@ -381,56 +405,70 @@ export function CreateTicketModal({ isOpen, onClose, onCreate, epics, sprints })
               error={errors.title}
               onChange={handleChange}
             />
-            <p className="mt-1 text-footnote text-label-secondary">{TYPE_INTRO[type]}</p>
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.p
+                key={type}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1, transition: { duration: 0.15 } }}
+                exit={{ opacity: 0, transition: exitQuick }}
+                className="mt-1 text-footnote text-label-secondary"
+              >
+                {TYPE_INTRO[type]}
+              </motion.p>
+            </AnimatePresence>
           </div>
 
-          {type === 'userStory' ? (
-            <div className={STORY_CALLOUT}>
-              <label htmlFor="ticket-description" className={cn(SHEET_LABEL, 'text-blue-text')}>
-                Historia
-              </label>
-              <textarea
-                id="ticket-description"
-                rows={3}
-                name="description"
-                value={values.description}
-                disabled={submitting}
-                onChange={handleChange}
-                placeholder={DESCRIPTION_PLACEHOLDER.userStory}
-                className={STORY_TEXTAREA}
-              />
-            </div>
-          ) : (
-            <div>
-              <label htmlFor="ticket-description" className={SIDE_LABEL}>
-                Descripción
-              </label>
-              <textarea
-                id="ticket-description"
-                rows={3}
-                name="description"
-                value={values.description}
-                disabled={submitting}
-                onChange={handleChange}
-                placeholder={DESCRIPTION_PLACEHOLDER[type]}
-                className={CONTROL_TEXTAREA}
-              />
-            </div>
-          )}
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div key={type} {...SWAP} className="flex flex-col gap-5">
+              {type === 'userStory' ? (
+                <div className={STORY_CALLOUT}>
+                  <label htmlFor="ticket-description" className={cn(SHEET_LABEL, 'text-blue-text')}>
+                    Historia
+                  </label>
+                  <textarea
+                    id="ticket-description"
+                    rows={3}
+                    name="description"
+                    value={values.description}
+                    disabled={submitting}
+                    onChange={handleChange}
+                    placeholder={DESCRIPTION_PLACEHOLDER.userStory}
+                    className={STORY_TEXTAREA}
+                  />
+                </div>
+              ) : (
+                <div>
+                  <label htmlFor="ticket-description" className={SIDE_LABEL}>
+                    Descripción
+                  </label>
+                  <textarea
+                    id="ticket-description"
+                    rows={3}
+                    name="description"
+                    value={values.description}
+                    disabled={submitting}
+                    onChange={handleChange}
+                    placeholder={DESCRIPTION_PLACEHOLDER[type]}
+                    className={CONTROL_TEXTAREA}
+                  />
+                </div>
+              )}
 
-          <TicketExtraFields
-            type={type}
-            values={extras}
-            onChange={handleExtraChange}
-            disabled={submitting}
-            idPrefix="ticket-nuevo"
-            kinds={['text', 'textarea', 'checklist']}
-          />
+              <TicketExtraFields
+                type={type}
+                values={extras}
+                onChange={handleExtraChange}
+                disabled={submitting}
+                idPrefix="ticket-nuevo"
+                kinds={['text', 'textarea', 'checklist']}
+              />
+            </motion.div>
+          </AnimatePresence>
         </DetailLayout>
 
         <div className={FOOTER}>
           {formError ? (
-            <p role="alert" className="mr-auto text-footnote text-red-text">
+            <p role="alert" className="mr-auto animate-fade-in text-footnote text-red-text">
               {formError}
             </p>
           ) : (

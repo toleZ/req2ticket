@@ -33,7 +33,8 @@ export function LoadState({
   let content = null
 
   if (state === 'loading') {
-    content = <p className={cn(TEXT, 'mt-2', className)}>{loadingText}</p>
+    /* Late on purpose: a load that finishes within 200ms never flashes its message. */
+    content = <p className={cn(TEXT, 'mt-2 animate-fade-in-late', className)}>{loadingText}</p>
   } else if (state === 'error') {
     content = (
       <div className={cn('mt-2 flex items-center gap-3', className)}>

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useOutletContext } from 'react-router-dom'
+import { AnimatePresence } from 'motion/react'
 import { Plus } from 'lucide-react'
 
 import { PageHeader } from '@/components/layout/PageHeader/PageHeader'
@@ -112,18 +113,20 @@ export function Sprints() {
 
       {/* Mounted only while a ticket is chosen: that way every opening seeds the form from
           scratch and no state from the previous one is left. */}
-      {detailTicket && (
-        <TicketDetailModal
-          key={detailTicket.id}
-          ticket={detailTicket}
-          epics={epics}
-          sprints={sprints}
-          users={users}
-          onClose={() => setDetailTicketId(null)}
-          onUpdateTicket={updateTicketAndStore}
-          onDeleteTicket={deleteTicketAndStore}
-        />
-      )}
+      <AnimatePresence>
+        {detailTicket && (
+          <TicketDetailModal
+            key={detailTicket.id}
+            ticket={detailTicket}
+            epics={epics}
+            sprints={sprints}
+            users={users}
+            onClose={() => setDetailTicketId(null)}
+            onUpdateTicket={updateTicketAndStore}
+            onDeleteTicket={deleteTicketAndStore}
+          />
+        )}
+      </AnimatePresence>
     </section>
   )
 }

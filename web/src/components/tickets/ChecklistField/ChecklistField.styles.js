@@ -9,7 +9,7 @@ export const CIRCLE = `grid size-4.5 shrink-0 place-items-center rounded-full bo
    hover, so the button stays visible — hiding it there meant an item could not be removed. */
 export const REMOVE_BUTTON = `-my-2.5 grid size-11 shrink-0 place-items-center rounded-control text-label-tertiary
   transition-colors duration-fast lg:my-0 lg:size-6 lg:opacity-0 lg:group-hover:opacity-100 lg:focus-visible:opacity-100
-  hover:bg-red/12 hover:text-red disabled:opacity-50`
+  hover:bg-red/12 hover:text-red disabled:opacity-50 lg:disabled:opacity-0`
 
 /* The row sets the tap height (44px below lg, 24px of input from lg up): the "+" keeps its
    18px footprint through negative margins, so the input stretches to the row, not to it. */

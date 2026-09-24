@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useOutletContext } from 'react-router-dom'
+import { AnimatePresence } from 'motion/react'
 import { ArrowUpDown, Plus } from 'lucide-react'
 
 import { PageHeader } from '@/components/layout/PageHeader/PageHeader'
@@ -181,18 +182,20 @@ export function Tickets() {
           written twice, and it is deliberate — the day you can jump from one ticket to another
           without closing, it is the only thing stopping the second appearing with the first's
           text. */}
-      {detailTicket && (
-        <TicketDetailModal
-          key={detailTicket.id}
-          ticket={detailTicket}
-          epics={epics}
-          sprints={sprints}
-          users={users}
-          onClose={() => setDetailTicketId(null)}
-          onUpdateTicket={updateTicketAndStore}
-          onDeleteTicket={deleteTicketAndStore}
-        />
-      )}
+      <AnimatePresence>
+        {detailTicket && (
+          <TicketDetailModal
+            key={detailTicket.id}
+            ticket={detailTicket}
+            epics={epics}
+            sprints={sprints}
+            users={users}
+            onClose={() => setDetailTicketId(null)}
+            onUpdateTicket={updateTicketAndStore}
+            onDeleteTicket={deleteTicketAndStore}
+          />
+        )}
+      </AnimatePresence>
     </section>
   )
 }

@@ -3,4 +3,4 @@ export const HEADING = `-mx-2 w-[calc(100%+1rem)] resize-none rounded-control bo
   ease-out-quad field-sizing-content placeholder:text-label-tertiary hover:border-separator focus:border-separator
   focus:bg-fill-tertiary disabled:opacity-50`
 
-export const FIELD_ERROR = 'mt-1 text-footnote text-red-text'
+export const FIELD_ERROR = 'mt-1 animate-fade-in text-footnote text-red-text'

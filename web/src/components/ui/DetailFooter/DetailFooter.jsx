@@ -40,7 +40,7 @@ export function DetailFooter({
   return (
     <div className={FOOTER}>
       {error && (
-        <p role="alert" className="mr-auto text-footnote text-red-text">
+        <p role="alert" className="mr-auto animate-fade-in text-footnote text-red-text">
           {error}
         </p>
       )}

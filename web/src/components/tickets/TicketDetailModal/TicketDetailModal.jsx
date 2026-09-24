@@ -46,9 +46,8 @@ import { toDetailValues } from './TicketDetailModal.helpers'
  * ticket changes, and syncing state with props from an effect is exactly what React advises
  * against and what the project's eslint rejects (react-hooks/set-state-in-effect).
  *
- * The cost: unmounting also takes away the <AnimatePresence> living inside Modal, so the sheet
- * has no exit animation. The entrance one it does have. That is the price of not having to
- * sync anything.
+ * Unmounting would also skip Modal's exit animation, so each page wraps this sheet in an
+ * <AnimatePresence> and Modal propagates that exit: the sheet closes the way it opened.
  */
 export function TicketDetailModal({
   ticket,
@@ -67,9 +66,8 @@ export function TicketDetailModal({
   const [dirty, setDirty] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
-  /* A tick saves on its own (see handleChecklistToggle): which checklist is saving, and the
-     error of the last one that failed, shown under that checklist. */
-  const [savingChecklist, setSavingChecklist] = useState(null)
+  /* A tick saves on its own (see handleChecklistToggle): the error of the last one that
+     failed, shown under that checklist. */
   const [checklistError, setChecklistError] = useState(null)
 
   /* The footer has three faces: the normal one, the "are you sure you want to delete it?" and
@@ -125,12 +123,15 @@ export function TicketDetailModal({
 
      What goes to the API is the SAVED ticket (the `ticket` prop, not the form) with only this
      checklist replaced: whatever else is being edited stays a draft until Guardar. If the
-     save fails the tick is undone and the error appears under the checklist. */
+     save fails the tick is undone and the error appears under the checklist.
+
+     The list is not disabled while it saves: every save sends the whole checklist as it is on
+     screen, so a second quick tick simply goes out in the next request. Disabling it dimmed
+     every row for the length of the request, which read as a flash. */
   async function handleChecklistToggle(name, items) {
     const before = extras
     setExtras({ ...extras, [name]: items })
     setChecklistError(null)
-    setSavingChecklist(name)
     try {
       const saved = toFormValues(ticket.type, ticket.extraFields)
       await onUpdateTicket(ticket, {
@@ -139,8 +140,6 @@ export function TicketDetailModal({
     } catch (err) {
       setExtras(before)
       setChecklistError({ name, message: errorMessage(err) })
-    } finally {
-      setSavingChecklist(null)
     }
   }
 
@@ -457,7 +456,6 @@ export function TicketDetailModal({
             idPrefix={`ticket-${ticket.id}`}
             kinds={['text', 'textarea', 'checklist']}
             onChecklistToggle={handleChecklistToggle}
-            savingChecklist={savingChecklist}
             checklistError={checklistError}
           />
         </DetailLayout>

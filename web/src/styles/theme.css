@@ -61,6 +61,33 @@
   --transition-duration-slow: 380ms;
   --transition-duration-sheet: 420ms;
 
+  /* One-shot animations, as `animate-*` utilities. Entrances only: an element that leaves
+     either unmounts at once or collapses with row-out. `row-in` fills backwards so it lets go
+     of its max-height when it ends, and a long item is never clipped. */
+  --animate-fade-in: fade-in 150ms var(--ease-out-quad) both;
+  --animate-fade-in-late: fade-in 150ms var(--ease-out-quad) 200ms both;
+  --animate-pop-in: pop-in 160ms var(--ease-ios) both;
+  --animate-tick-in: tick-in 180ms var(--ease-ios) both;
+  --animate-row-in: row-in 200ms var(--ease-ios) backwards;
+  --animate-row-out: row-out 150ms var(--ease-out-quad) forwards;
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+  }
+  @keyframes pop-in {
+    from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+  }
+  @keyframes tick-in {
+    from { opacity: 0; transform: scale(0.4); }
+  }
+  @keyframes row-in {
+    from { opacity: 0; max-height: 0; padding-block: 0; }
+    to { max-height: 8rem; }
+  }
+  @keyframes row-out {
+    from { max-height: 8rem; }
+    to { opacity: 0; max-height: 0; padding-block: 0; border-top-width: 0; }
+  }
 }
 
 /* ── Light palette (default) ───────────────────────────────────────────────

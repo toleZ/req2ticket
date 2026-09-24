@@ -35,12 +35,17 @@ export function ChecklistField({
   onToggle,
 }) {
   const [draft, setDraft] = useState('')
+  /* The item that just arrived (it grows in) and the one on its way out (it collapses
+     first, and only leaves the list when that animation ends). */
+  const [added, setAdded] = useState(null)
+  const [removing, setRemoving] = useState(null)
 
   function handleAdd() {
     const text = draft.trim()
     if (!text) return
 
     onItemsChange([...items, { text, done: false }])
+    setAdded(items.length)
     setDraft('')
   }
 
@@ -57,7 +62,19 @@ export function ChecklistField({
   }
 
   function handleRemove(index) {
-    onItemsChange(items.filter((item, i) => i !== index))
+    if (removing === null) setRemoving(index)
+  }
+
+  /* `e.target` check: the tick's own animation inside the row bubbles up here too. */
+  function handleRowAnimationEnd(e, index) {
+    if (e.target !== e.currentTarget) return
+
+    if (index === removing) {
+      setRemoving(null)
+      onItemsChange(items.filter((item, i) => i !== index))
+    } else if (index === added) {
+      setAdded(null)
+    }
   }
 
   /* Enter adds the item. The preventDefault is not optional: inside a <form>, Enter in an
@@ -75,7 +92,15 @@ export function ChecklistField({
           {/* key by index: the items have no id and the list only changes by adding and
               removing. The day they can be reordered, this needs a real id. */}
           {items.map((item, index) => (
-            <li key={index} className={ITEM}>
+            <li
+              key={index}
+              onAnimationEnd={(e) => handleRowAnimationEnd(e, index)}
+              className={cn(
+                ITEM,
+                index === added && 'animate-row-in',
+                index === removing && 'animate-row-out overflow-hidden',
+              )}
+            >
               <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-2.5">
                 <input
                   type="checkbox"
@@ -88,12 +113,14 @@ export function ChecklistField({
                   aria-hidden="true"
                   className={cn(CIRCLE, item.done && 'border-blue bg-blue')}
                 >
-                  {item.done && <Check className="size-3" strokeWidth={3.5} />}
+                  {item.done && <Check className="size-3 animate-tick-in" strokeWidth={3.5} />}
                 </span>
                 <span
                   className={cn(
-                    'min-w-0 flex-1 text-footnote',
-                    item.done ? 'text-label-secondary line-through' : 'text-label',
+                    /* Always struck through, with the line transparent until done: that
+                       way the strike fades in with the colour instead of snapping on. */
+                    'min-w-0 flex-1 text-footnote line-through transition-colors duration-fast',
+                    item.done ? 'text-label-secondary decoration-label-secondary' : 'text-label decoration-transparent',
                   )}
                 >
                   {item.text}
