@@ -7,7 +7,7 @@ import { SIDE_SELECT } from './DetailRow.styles'
  * The <option>s are children for the same reason as SelectField's — the lists are not the same
  * shape, and some of them open with an empty choice.
  */
-export function DetailSelect({ id, name, value, disabled = false, onChange, children }) {
+export function DetailSelect({ id, name, value, disabled = false, error, onChange, children }) {
   return (
     <select
       id={id}
@@ -15,6 +15,8 @@ export function DetailSelect({ id, name, value, disabled = false, onChange, chil
       value={value}
       disabled={disabled}
       onChange={onChange}
+      aria-invalid={error ? true : undefined}
+      aria-describedby={error ? `${id}-error` : undefined}
       className={SIDE_SELECT}
     >
       {children}

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-import { TicketExtraFields } from '@/components/tickets/TicketExtraFields/TicketExtraFields'
+import { SHEET_LABEL, TicketExtraFields } from '@/components/tickets/TicketExtraFields/TicketExtraFields'
 import { TicketPointsField } from '@/components/tickets/TicketPointsField/TicketPointsField'
 import { TicketTypeIcon } from '@/components/tickets/TicketTypeIcon/TicketTypeIcon'
 import { Avatar } from '@/components/ui/Avatar/Avatar'
@@ -13,6 +13,7 @@ import { DetailSelect } from '@/components/ui/DetailRow/DetailSelect'
 import { InlineTitleField } from '@/components/ui/InlineTitleField/InlineTitleField'
 import { Modal } from '@/components/ui/Modal/Modal'
 import { formatDateTime, timeAgo } from '@/lib/dates'
+import { cn } from '@/lib/cn'
 import { errorMessage } from '@/lib/errors'
 import { findOption } from '@/lib/options'
 import {
@@ -23,7 +24,7 @@ import {
 } from '@/lib/ticketExtraFields'
 import { TICKET_PRIORITY_OPTIONS, TICKET_STATUS_OPTIONS, TICKET_TYPE_OPTIONS } from '@/lib/ticketOptions'
 import { validateTicketForm } from '@/lib/validate'
-import { CONTROL_TEXTAREA, FIELD_LABEL, META, STORY_CALLOUT, STORY_TEXTAREA } from './TicketDetailModal.styles'
+import { CONTROL_TEXTAREA, META, STORY_CALLOUT, STORY_TEXTAREA } from './TicketDetailModal.styles'
 import { toDetailValues } from './TicketDetailModal.helpers'
 /**
  * A ticket's record: everything it holds, on a two-column sheet, and the only place it is
@@ -411,11 +412,16 @@ export function TicketDetailModal({
               survives where it can — in the placeholder, already drawn in label-tertiary. */}
           {ticket.type === 'userStory' ? (
             <div className={STORY_CALLOUT}>
-              <p className="eyebrow mb-2">Historia</p>
+              <label
+                htmlFor={`ticket-${ticket.id}-description`}
+                className={cn(SHEET_LABEL, 'text-blue-text')}
+              >
+                Historia
+              </label>
               <textarea
+                id={`ticket-${ticket.id}-description`}
                 rows={3}
                 name="description"
-                aria-label="Historia"
                 value={values.description}
                 disabled={submitting}
                 onChange={handleChange}
@@ -425,7 +431,10 @@ export function TicketDetailModal({
             </div>
           ) : (
             <div>
-              <label htmlFor={`ticket-${ticket.id}-description`} className={FIELD_LABEL}>
+              <label
+                htmlFor={`ticket-${ticket.id}-description`}
+                className={cn(SHEET_LABEL, 'text-label-secondary')}
+              >
                 Descripción
               </label>
               <textarea

@@ -48,6 +48,12 @@
     font-family: var(--font-mono);
   }
 
+  /* The ring's colour at rest too. Controls with `transition-colors` also animate
+     outline-color, and from its default — the text colour — the ring faded in from black. */
+  * {
+    outline-color: color-mix(in oklab, var(--sys-blue) 55%, transparent);
+  }
+
   /* Visible focus ring, keyboard only. Never remove this. */
   :focus-visible {
     outline: 3px solid color-mix(in oklab, var(--sys-blue) 55%, transparent);

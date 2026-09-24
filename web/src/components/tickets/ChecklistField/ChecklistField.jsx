@@ -69,7 +69,7 @@ export function ChecklistField({
   }
 
   return (
-    <div className="-mx-1.5">
+    <div>
       {items.length > 0 && (
         <ul className="flex flex-col">
           {/* key by index: the items have no id and the list only changes by adding and

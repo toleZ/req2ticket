@@ -1,4 +1,4 @@
-export const ITEM = `group flex items-center gap-2.5 rounded-control px-1.5 py-1.5 transition-colors
+export const ITEM = `group flex items-center gap-2.5 border-t border-separator px-3 py-2 transition-colors
   duration-fast hover:bg-fill-quaternary`
 
 export const CIRCLE = `grid size-4.5 shrink-0 place-items-center rounded-full border border-separator-opaque
@@ -13,8 +13,8 @@ export const REMOVE_BUTTON = `-my-2.5 grid size-11 shrink-0 place-items-center r
 
 /* The row sets the tap height (44px below lg, 24px of input from lg up): the "+" keeps its
    18px footprint through negative margins, so the input stretches to the row, not to it. */
-export const ADD_ROW = `flex min-h-11 items-center gap-2.5 rounded-control px-1.5 focus-ring-within
-  lg:min-h-9 lg:py-1.5`
+export const ADD_ROW = `flex min-h-11 items-center gap-2.5 rounded-b-card border-t border-separator px-3
+  focus-ring-within lg:min-h-9 lg:py-1.5`
 
 /* Drawn the size of the item circles above (18px) so the "+" lines up with them, but tappable:
    the negative margins grow the hit area to 44px (24px from lg up) without moving the row's
