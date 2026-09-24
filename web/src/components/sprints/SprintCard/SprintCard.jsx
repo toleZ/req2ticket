@@ -16,6 +16,15 @@ import { EXPAND_ROW } from './SprintCard.styles'
 /* Named EXPAND_ROW and not TOGGLE_BUTTON: EpicRow has a constant by that name which is a
    size-6 chevron button, and this is a full-width bordered text row. Same name, nothing
    else in common. */
+/* The active sprint's time badge. Past its end date it says so, in orange, instead of
+   disappearing: an overdue sprint is exactly the one the team needs to notice. */
+function remainingLabel(daysLeft) {
+  if (daysLeft === 0) return 'Termina hoy'
+  if (daysLeft === 1) return 'Queda 1 día'
+  if (daysLeft > 1) return `Quedan ${daysLeft} días`
+  return daysLeft === -1 ? 'Vencido hace 1 día' : `Vencido hace ${-daysLeft} días`
+}
+
 export function SprintCard({ sprint, tickets, onUpdateSprint, onDeleteSprint, onSelectTicket }) {
   const [isExpanded, setIsExpanded] = useState(false)
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
@@ -36,8 +45,8 @@ export function SprintCard({ sprint, tickets, onUpdateSprint, onDeleteSprint, on
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="text-title3 text-label">{sprint.name}</h3>
             {status && <Badge tone={status.tone}>{status.label}</Badge>}
-            {sprint.status === SPRINT_ACTIVE && daysLeft >= 0 && (
-              <Badge tone="neutral">Quedan {daysLeft} días</Badge>
+            {sprint.status === SPRINT_ACTIVE && (
+              <Badge tone={daysLeft < 0 ? 'orange' : 'neutral'}>{remainingLabel(daysLeft)}</Badge>
             )}
           </div>
 
@@ -48,7 +57,7 @@ export function SprintCard({ sprint, tickets, onUpdateSprint, onDeleteSprint, on
             </p>
           )}
 
-          <p className="mt-1 flex items-center gap-1.5 text-footnote text-label-tertiary">
+          <p className="mt-1 flex items-center gap-1.5 text-footnote text-label-secondary">
             <Calendar className="size-3.5 shrink-0" aria-hidden="true" />
             {formatDateRange(sprint.startDate, sprint.endDate)}
           </p>
@@ -82,12 +91,17 @@ export function SprintCard({ sprint, tickets, onUpdateSprint, onDeleteSprint, on
             </span>
             <span>{progressPct}%</span>
           </div>
-          <ProgressBar value={stats.completed} max={stats.total} className="mt-1.5" />
+          <ProgressBar
+            value={stats.completed}
+            max={stats.total}
+            label={`Tickets completados: ${stats.completed} de ${stats.total}`}
+            className="mt-1.5"
+          />
         </div>
 
         <div className="flex shrink-0 gap-6">
           <div className="text-right">
-            <p className="text-caption font-medium tracking-wide text-label-tertiary uppercase">
+            <p className="text-caption font-medium tracking-wide text-label-secondary uppercase">
               Puntos
             </p>
             <p className="text-body font-semibold text-label">
@@ -95,7 +109,7 @@ export function SprintCard({ sprint, tickets, onUpdateSprint, onDeleteSprint, on
             </p>
           </div>
           <div className="text-right">
-            <p className="text-caption font-medium tracking-wide text-label-tertiary uppercase">
+            <p className="text-caption font-medium tracking-wide text-label-secondary uppercase">
               Capacidad
             </p>
             <p className="text-body font-semibold text-label">
@@ -118,7 +132,7 @@ export function SprintCard({ sprint, tickets, onUpdateSprint, onDeleteSprint, on
 
       {isExpanded &&
         (stats.total === 0 ? (
-          <p className="px-0.5 pb-0.5 text-footnote text-label-tertiary">
+          <p className="px-0.5 pb-0.5 text-footnote text-label-secondary">
             Todavía no hay tickets asignados a este sprint.
           </p>
         ) : (

@@ -1,4 +1,5 @@
 import { cn } from '@/lib/cn'
+import { handlePointsKeyDown } from './pointsKeyboard'
 
 /* The design's scale, with 0 up front. The 0 is not an odd case to be tolerated: the create
    modal sends `Number(points) || 0`, so every ticket created without an estimate arrives at
@@ -32,13 +33,21 @@ export function TicketPointsField({ id, value, disabled, onChange }) {
   const scale = POINTS_SCALE.includes(current) ? POINTS_SCALE : [...POINTS_SCALE, current]
 
   return (
-    <div id={id} className={GROUP} role="radiogroup" aria-label="Puntos">
+    <div
+      id={id}
+      className={GROUP}
+      role="radiogroup"
+      aria-label="Puntos"
+      onKeyDown={(e) => handlePointsKeyDown(e, scale, current, onChange)}
+    >
       {scale.map((point) => (
         <button
           key={point}
           type="button"
           role="radio"
           aria-checked={current === point}
+          tabIndex={current === point ? 0 : -1}
+          data-point={point}
           aria-label={point === 0 ? 'Sin estimar' : `${point} puntos`}
           disabled={disabled}
           onClick={() => onChange(String(point))}

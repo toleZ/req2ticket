@@ -25,7 +25,7 @@ export function TicketList({ sections, onSelectTicket }) {
           </div>
 
           {tickets.length === 0 ? (
-            <p className="mt-2 text-footnote text-label-tertiary">Sin tickets en este estado.</p>
+            <p className="mt-2 text-footnote text-label-secondary">Sin tickets en este estado.</p>
           ) : (
             <ul className="mt-2 flex flex-col gap-2">
               {tickets.map((ticket) => (

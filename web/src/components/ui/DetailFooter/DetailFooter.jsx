@@ -1,4 +1,4 @@
-import { FOOTER, NOTE } from './DetailFooter.styles'
+import { DELETE_NOTE, FOOTER, NOTE } from './DetailFooter.styles'
 import { Button } from '@/components/ui/Button/Button'
 
 /**
@@ -40,7 +40,7 @@ export function DetailFooter({
   return (
     <div className={FOOTER}>
       {error && (
-        <p role="alert" className="mr-auto text-footnote text-red">
+        <p role="alert" className="mr-auto text-footnote text-red-text">
           {error}
         </p>
       )}
@@ -58,7 +58,7 @@ export function DetailFooter({
 
       {mode === 'confirmDelete' && (
         <>
-          <p className={NOTE}>{confirmDeleteMessage}</p>
+          <p className={DELETE_NOTE}>{confirmDeleteMessage}</p>
           <Button variant="ghost" onClick={onExitConfirm} disabled={submitting}>
             Cancelar
           </Button>

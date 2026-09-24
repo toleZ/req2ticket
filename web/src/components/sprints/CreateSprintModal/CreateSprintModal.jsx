@@ -8,10 +8,13 @@ import { TextField } from '@/components/ui/Field/TextField'
 import { FormError } from '@/components/ui/FormError/FormError'
 import { Modal } from '@/components/ui/Modal/Modal'
 import { errorMessage } from '@/lib/errors'
-import { SPRINT_STATUS_OPTIONS } from '@/lib/sprintOptions'
+import { SPRINT_ACTIVE, SPRINT_STATUS_OPTIONS } from '@/lib/sprintOptions'
 import { INITIAL_VALUES } from './CreateSprintModal.data'
 import { validateSprintForm } from '@/lib/validate'
-export function CreateSprintModal({ isOpen, onClose, onCreate }) {
+/* `activeSprint` is the project's active sprint, or undefined. The API allows only one, so
+   while there is one the "Activo" option is disabled and says which sprint holds it, instead
+   of letting the user pick it and then fail on submit. */
+export function CreateSprintModal({ isOpen, activeSprint, onClose, onCreate }) {
   const [values, setValues] = useState(INITIAL_VALUES)
   const [errors, setErrors] = useState({})
   const [submitting, setSubmitting] = useState(false)
@@ -137,11 +140,14 @@ export function CreateSprintModal({ isOpen, onClose, onCreate }) {
             disabled={submitting}
             onChange={handleChange}
           >
-            {SPRINT_STATUS_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
+            {SPRINT_STATUS_OPTIONS.map((option) => {
+              const taken = option.value === SPRINT_ACTIVE && activeSprint
+              return (
+                <option key={option.value} value={option.value} disabled={taken}>
+                  {taken ? `${option.label} (ya está ${activeSprint.name})` : option.label}
+                </option>
+              )
+            })}
           </SelectField>
         </div>
 

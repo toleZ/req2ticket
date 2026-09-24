@@ -6,7 +6,7 @@ export function Avatar({ name, size = 'sm', className }) {
     <span
       title={name}
       className={cn(
-        'inline-flex shrink-0 items-center justify-center rounded-full bg-fill-tertiary font-semibold text-label-secondary',
+        'inline-flex shrink-0 items-center justify-center rounded-full bg-fill-tertiary font-semibold text-gray-text',
         SIZE_CLASSES[size],
         className,
       )}

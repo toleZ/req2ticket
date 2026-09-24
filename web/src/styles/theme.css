@@ -83,6 +83,22 @@
   --sys-indigo: #5856d6;
   --sys-mint: #00c7be;
 
+  /* Text versions of the accents, for badges, links and error messages only. The accents
+     above stay Apple's exact colours for fills and buttons; these start from Apple's
+     "Increase Contrast" variants and only move in lightness until they reach 4.5:1 on every
+     surface a badge sits on (including its own 12% tint over a row fill). */
+  --sys-blue-text: #0040dd;
+  --sys-green-text: #006a1d;
+  --sys-red-text: #b20000;
+  --sys-orange-text: #b41a00;
+  --sys-yellow-text: #a14100;
+  --sys-purple-text: #7d389e;
+  --sys-pink-text: #b1002b;
+  --sys-teal-text: #006379;
+  --sys-indigo-text: #3634a3;
+  --sys-mint-text: #006661;
+  --sys-gray-text: #5a5a5e;
+
   /* Grays */
   --sys-gray: #8e8e93;
   --sys-gray2: #aeaeb2;
@@ -93,7 +109,8 @@
 
   /* Labels (text) */
   --label: #000000;
-  --label-secondary: rgb(60 60 67 / 0.62);
+  /* 0.76, not Apple's 0.6: at 0.62 secondary text measured 3.3:1 on a row fill. */
+  --label-secondary: rgb(60 60 67 / 0.76);
   --label-tertiary: rgb(60 60 67 / 0.4);
   --label-quaternary: rgb(60 60 67 / 0.22);
 
@@ -157,6 +174,18 @@
   --sys-teal: #40cbe0;
   --sys-indigo: #5e5ce6;
   --sys-mint: #63e6e2;
+
+  --sys-blue-text: #53aeff;
+  --sys-green-text: #30db5b;
+  --sys-red-text: #ff8278;
+  --sys-orange-text: #ffb340;
+  --sys-yellow-text: #ffd426;
+  --sys-purple-text: #da8fff;
+  --sys-pink-text: #ff7b97;
+  --sys-teal-text: #5de6ff;
+  --sys-indigo-text: #9b9cff;
+  --sys-mint-text: #66d4cf;
+  --sys-gray-text: #aeaeb2;
 
   /* Greys with a hint of blue (the B channel sits a few points above R). A perfectly neutral
      grey over a cool background reads as dirty, leaning brown. */
@@ -223,6 +252,18 @@
   --color-teal: var(--sys-teal);
   --color-indigo: var(--sys-indigo);
   --color-mint: var(--sys-mint);
+
+  --color-blue-text: var(--sys-blue-text);
+  --color-green-text: var(--sys-green-text);
+  --color-red-text: var(--sys-red-text);
+  --color-orange-text: var(--sys-orange-text);
+  --color-yellow-text: var(--sys-yellow-text);
+  --color-purple-text: var(--sys-purple-text);
+  --color-pink-text: var(--sys-pink-text);
+  --color-teal-text: var(--sys-teal-text);
+  --color-indigo-text: var(--sys-indigo-text);
+  --color-mint-text: var(--sys-mint-text);
+  --color-gray-text: var(--sys-gray-text);
 
   --color-gray: var(--sys-gray);
   --color-gray2: var(--sys-gray2);

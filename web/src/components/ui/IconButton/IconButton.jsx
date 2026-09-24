@@ -4,9 +4,9 @@ import { cn } from '@/lib/cn'
  * A square button whose only content is an icon: close, delete, collapse the rail, open the
  * drawer, switch the theme.
  *
- * `label` is required and becomes the aria-label. It is not optional decoration — to ARIA the
- * children of a <button> are decorative, so without it a screen reader announces "button" and
- * nothing else. `title` is separate because it shows a tooltip to sighted users, and only some
+ * `label` is required and becomes the aria-label. It is not optional decoration: a button
+ * takes its name from its text, and this one has none — only an icon marked aria-hidden — so
+ * without it a screen reader announces "button" and nothing else. `title` is separate because it shows a tooltip to sighted users, and only some
  * of these want one.
  *
  * The icon is passed as children so the caller picks its own lucide component and size, which

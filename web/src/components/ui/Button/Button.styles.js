@@ -16,6 +16,8 @@ export const VARIANT_CLASSES = {
   success: 'bg-green text-white transition-[filter] duration-fast hover:brightness-110',
   ghost: `text-label-secondary transition-colors duration-fast ease-out-quad
     hover:bg-fill-tertiary hover:text-label`,
+  /* `aria-pressed:` is for the toggles (the "Prioridad" sort): without it a pressed toggle
+     looked exactly like an unpressed one. */
   neutral: `bg-fill-tertiary text-label transition-colors duration-fast ease-out-quad
-    hover:bg-fill-secondary`,
+    hover:bg-fill-secondary aria-pressed:bg-blue/12 aria-pressed:text-blue-text`,
 }

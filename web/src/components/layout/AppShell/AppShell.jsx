@@ -6,7 +6,7 @@ import { SidebarBody } from '@/components/layout/SidebarBody/SidebarBody'
 import { TopBar } from '@/components/layout/TopBar/TopBar'
 import { useProjectData } from '@/hooks/useProjectData'
 import { useTheme } from '@/hooks/useTheme'
-import { CONTENT, MAIN, RAIL, RAIL_COLLAPSED, RAIL_EXPANDED, SHELL } from './AppShell.styles'
+import { CONTENT, MAIN, RAIL, RAIL_COLLAPSED, RAIL_EXPANDED, SHELL, SKIP_LINK } from './AppShell.styles'
 import { COLLAPSED_PREF } from './AppShell.data'
 import { readUiPref, writeUiPref } from '@/lib/uiPrefs'
 
@@ -44,6 +44,13 @@ export function AppShell() {
     return () => window.removeEventListener('popstate', handlePopState)
   }, [])
 
+  /* Moves the focus by hand instead of following the #contenido link: a hash navigation
+     would change the URL and fire the popstate listener above. */
+  function handleSkipToContent(e) {
+    e.preventDefault()
+    document.getElementById('contenido')?.focus()
+  }
+
   function handleToggleCollapse() {
     const next = !isCollapsed
     setIsCollapsed(next)
@@ -52,6 +59,10 @@ export function AppShell() {
 
   return (
     <div className={SHELL}>
+      <a href="#contenido" onClick={handleSkipToContent} className={SKIP_LINK}>
+        Saltar al contenido
+      </a>
+
       <aside className={`${RAIL} ${isCollapsed ? RAIL_COLLAPSED : RAIL_EXPANDED}`}>
         <SidebarBody
           surface="rail"
@@ -69,7 +80,7 @@ export function AppShell() {
           isDark={isDark}
           onToggleTheme={toggleTheme}
         />
-        <main className={MAIN}>
+        <main id="contenido" tabIndex={-1} className={MAIN}>
           <Outlet context={projectData} />
         </main>
       </div>

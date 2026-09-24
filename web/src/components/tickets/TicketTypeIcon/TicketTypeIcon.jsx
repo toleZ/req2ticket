@@ -6,8 +6,8 @@ import { TYPE_ICONS } from './TicketTypeIcon.data'
 /**
  * A ticket type's icon, already painted in the colour it gets.
  *
- * `aria-hidden`: there is always a badge or a piece of text next to it naming the type in
- * words, so announcing it twice only gets in the way of anyone using a screen reader.
+ * `aria-hidden`: every place that draws it names the type in words somewhere a screen reader
+ * reads — the rows put it in their button's label, the detail sheet shows it as text.
  */
 export function TicketTypeIcon({ type, className }) {
   const option = findOption(TICKET_TYPE_OPTIONS, type)

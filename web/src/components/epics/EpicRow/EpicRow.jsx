@@ -28,8 +28,8 @@ const EXPAND_BUTTON = `mt-0.5 grid size-6 shrink-0 place-items-center rounded-co
    announces is what a link announces: the name underlines and the code climbs a step of grey. */
 const OPEN_BUTTON = 'group flex min-w-0 flex-wrap items-center gap-2 text-left'
 
-const OPEN_CODE = `text-caption text-label-tertiary transition-colors duration-fast ease-out-quad
-  group-hover:text-label-secondary`
+const OPEN_CODE = `text-caption text-label-secondary transition-colors duration-fast ease-out-quad
+  group-hover:text-label`
 
 /* `decoration-label-tertiary`: that line inherits the text colour unless told otherwise, and
    a black rule beneath a black name is far too heavy for a hover. */
@@ -78,7 +78,9 @@ export function EpicRow({ epic, tickets, onSelectEpic, onSelectTicket }) {
           <button
             type="button"
             onClick={() => onSelectEpic(epic)}
-            aria-label={`Abrir ${epic.code}: ${epic.name}`}
+            aria-label={[`Abrir ${epic.code}: ${epic.name}`, status?.label, priority && `prioridad ${priority.label}`, epic.ownerName]
+              .filter(Boolean)
+              .join(' · ')}
             className={OPEN_BUTTON}
           >
             <span className={OPEN_CODE}>{epic.code}</span>
@@ -93,11 +95,17 @@ export function EpicRow({ epic, tickets, onSelectEpic, onSelectTicket }) {
           </button>
 
           <div className="mt-1.5 flex flex-wrap items-center gap-2">
-            <span className="text-caption text-label-tertiary">
+            <span className="text-caption text-label-secondary">
               {stats.completed}/{stats.total} {stats.total === 1 ? 'ticket' : 'tickets'} ·{' '}
               {stats.pointsCompleted}/{stats.points} pts
             </span>
-            <ProgressBar value={stats.completed} max={stats.total} size="sm" className="w-20" />
+            <ProgressBar
+              value={stats.completed}
+              max={stats.total}
+              size="sm"
+              label={`Tickets completados: ${stats.completed} de ${stats.total}`}
+              className="w-20"
+            />
           </div>
 
           {epic.description && (
@@ -119,7 +127,7 @@ export function EpicRow({ epic, tickets, onSelectEpic, onSelectTicket }) {
             <div className="ml-8 mt-3 border-t border-separator pt-3">
               <p className="text-footnote font-medium text-label-secondary">Tickets</p>
               {stats.total === 0 ? (
-                <p className="mt-1.5 text-footnote text-label-tertiary">
+                <p className="mt-1.5 text-footnote text-label-secondary">
                   Esta épica todavía no tiene tickets.
                 </p>
               ) : (

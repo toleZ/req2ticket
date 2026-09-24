@@ -25,17 +25,21 @@ export function TicketSummaryList({ tickets, onSelectTicket }) {
 
         return (
           <li key={ticket.id}>
-            {/* Same as in TicketRow: to ARIA whatever is inside a <button> is decorative, so
-                the accessible name has to be here. */}
+            {/* Same as in TicketRow: the label reads the row in order, saying what each
+                piece is, instead of the chips run together. */}
             <button
               type="button"
               onClick={() => onSelectTicket(ticket)}
-              aria-label={`Abrir ${ticket.code}: ${ticket.title}`}
+              aria-label={[`Abrir ${ticket.code}: ${ticket.title}`, status?.label, `${ticket.points} pts`]
+                .filter(Boolean)
+                .join(' · ')}
               className={ROW}
             >
               <TicketTypeIcon type={ticket.type} className="size-3.5" />
               <span className={CODE}>{ticket.code}</span>
-              <span className={TITLE}>{ticket.title}</span>
+              <span className={TITLE} title={ticket.title}>
+                {ticket.title}
+              </span>
               {status && <Badge tone={status.tone}>{status.label}</Badge>}
               <span className="shrink-0 text-caption font-medium text-label-secondary">
                 {ticket.points} pts

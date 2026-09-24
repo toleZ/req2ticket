@@ -36,7 +36,7 @@ export function AuthLayout() {
 
         <p className="mt-6 text-center text-footnote text-label-secondary">
           {footer.text}{' '}
-          <Link to={footer.to} className="font-medium text-blue hover:underline">
+          <Link to={footer.to} className="font-medium text-blue-text hover:underline">
             {footer.cta}
           </Link>
         </p>

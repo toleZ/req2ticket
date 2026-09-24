@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Hash, Type } from 'lucide-react'
-
 import { TicketExtraFields } from '@/components/tickets/TicketExtraFields/TicketExtraFields'
+import { TicketPointsField } from '@/components/tickets/TicketPointsField/TicketPointsField'
 import { Button } from '@/components/ui/Button/Button'
 import { SelectField } from '@/components/ui/Field/SelectField'
 import { TextAreaField } from '@/components/ui/Field/TextAreaField'
@@ -22,6 +21,10 @@ import { validateTicketForm } from '@/lib/validate'
    `e.target.name` to know what to update. If they do not match, the field silently stops
    accepting input and nothing raises an error. */
 const INITIAL_TYPE = 'userStory'
+
+/* Where each validation error lives, so a failed submit can put the focus on the first one
+   instead of leaving it on the button. The keys are validateTicketForm's, in form order. */
+const FIELD_IDS = { title: 'ticket-title', epicId: 'ticket-epic' }
 
 const INITIAL_VALUES = {
   type: INITIAL_TYPE,
@@ -98,7 +101,11 @@ export function CreateTicketModal({ isOpen, onClose, onCreate, epics, sprints })
     e.preventDefault()
     const found = validateTicketForm(values)
     setErrors(found)
-    if (Object.keys(found).length) return
+    const firstInvalid = Object.keys(found)[0]
+    if (firstInvalid) {
+      document.getElementById(FIELD_IDS[firstInvalid])?.focus()
+      return
+    }
 
     setFormError('')
     setSubmitting(true)
@@ -146,10 +153,10 @@ export function CreateTicketModal({ isOpen, onClose, onCreate, epics, sprints })
           id="ticket-title"
           name="title"
           label="Título"
-          icon={Type}
           value={values.title}
           disabled={submitting}
           error={errors.title}
+          reserveError
           onChange={handleChange}
         />
 
@@ -174,6 +181,7 @@ export function CreateTicketModal({ isOpen, onClose, onCreate, epics, sprints })
           value={values.epicId}
           disabled={submitting}
           error={errors.epicId}
+          reserveError
           onChange={handleChange}
         >
           <option value="">Elegí una épica</option>
@@ -216,18 +224,17 @@ export function CreateTicketModal({ isOpen, onClose, onCreate, epics, sprints })
           </SelectField>
         </div>
 
-        <TextField
-          id="ticket-points"
-          name="points"
-          label="Puntos"
-          icon={Hash}
-          type="number"
-          min="0"
-          placeholder="0"
-          value={values.points}
-          disabled={submitting}
-          onChange={handleChange}
-        />
+        {/* The same strip as the detail sheet, so a ticket's points are picked the same way
+            when it is created and when it is edited. */}
+        <div>
+          <p className="mb-1 block text-subheadline font-medium text-label">Puntos</p>
+          <TicketPointsField
+            id="ticket-points"
+            value={values.points}
+            disabled={submitting}
+            onChange={(points) => setValues({ ...values, points })}
+          />
+        </div>
 
         <SelectField
           id="ticket-assignee"

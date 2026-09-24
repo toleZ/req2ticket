@@ -6,7 +6,7 @@ const CHECKLIST_LABEL = 'text-subheadline font-medium text-label'
 
 const LABEL = 'mb-1 block text-subheadline font-medium text-label'
 
-const OPTIONAL = 'font-normal text-label-tertiary'
+const OPTIONAL = 'font-normal text-label-secondary'
 
 const CONTROL = `w-full rounded-control border border-separator bg-fill-tertiary px-3 py-2
   text-body text-label transition-colors duration-fast placeholder:text-label-tertiary
@@ -142,13 +142,14 @@ function ChecklistBlock({ id, field, items, disabled, onChange }) {
 
         {items.length > 0 && (
           <>
-            <span className="shrink-0 text-caption text-label-tertiary">
+            <span className="shrink-0 text-caption text-label-secondary">
               {done} de {items.length}
             </span>
             <ProgressBar
               value={done}
               max={items.length}
               size="sm"
+              label={`${field.label}: ${done} de ${items.length}`}
               className="w-24 max-w-[40%]"
             />
           </>

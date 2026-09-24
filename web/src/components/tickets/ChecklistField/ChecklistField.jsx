@@ -77,7 +77,7 @@ export function ChecklistField({ id, items, disabled, addLabel = 'Añadir ítem'
                 <span
                   className={cn(
                     'min-w-0 flex-1 text-footnote',
-                    item.done ? 'text-label-tertiary line-through' : 'text-label',
+                    item.done ? 'text-label-secondary line-through' : 'text-label',
                   )}
                 >
                   {item.text}

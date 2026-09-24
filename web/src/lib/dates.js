@@ -11,8 +11,10 @@ function parseDateOnly(value) {
   return new Date(year, month - 1, day)
 }
 
+// "5 ago", or "5 ago 2025" when the date is not in the current year.
 function formatShort(date) {
-  return `${date.getDate()} ${SHORT_MONTHS[date.getMonth()]}`
+  const dayMonth = `${date.getDate()} ${SHORT_MONTHS[date.getMonth()]}`
+  return date.getFullYear() === new Date().getFullYear() ? dayMonth : `${dayMonth} ${date.getFullYear()}`
 }
 
 export function formatDateRange(startDate, endDate) {

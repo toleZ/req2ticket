@@ -21,6 +21,7 @@ export function TextField({
   value,
   disabled = false,
   error,
+  reserveError = false,
   onChange,
 }) {
   const input = (
@@ -41,7 +42,7 @@ export function TextField({
   )
 
   return (
-    <Field id={id} label={label} optional={optional} error={error}>
+    <Field id={id} label={label} optional={optional} error={error} reserveError={reserveError}>
       {Icon ? (
         <div className="relative">
           <span className={ICON_WRAP} aria-hidden="true">

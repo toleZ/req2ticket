@@ -103,7 +103,12 @@ export function Sprints() {
         <SprintBacklog tickets={backlogTickets} onSelectTicket={handleSelectTicket} />
       )}
 
-      <CreateSprintModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onCreate={handleCreate} />
+      <CreateSprintModal
+        isOpen={isModalOpen}
+        activeSprint={activeSprint}
+        onClose={() => setIsModalOpen(false)}
+        onCreate={handleCreate}
+      />
 
       {/* Mounted only while a ticket is chosen: that way every opening seeds the form from
           scratch and no state from the previous one is left. */}

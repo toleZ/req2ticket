@@ -47,6 +47,19 @@ export function Tickets() {
   const [typeFilter, setTypeFilter] = useState('')
   const [sortByPriority, setSortByPriority] = useState(false)
 
+  const hasFilters = Boolean(
+    search || assigneeFilter || epicFilter || sprintFilter || priorityFilter || typeFilter,
+  )
+
+  function clearFilters() {
+    setSearch('')
+    setAssigneeFilter('')
+    setEpicFilter('')
+    setSprintFilter('')
+    setPriorityFilter('')
+    setTypeFilter('')
+  }
+
   // Appends what the POST returns, which already carries the id and code the backend assigned.
   async function handleCreate(values) {
     const created = await createTicket(values)
@@ -137,9 +150,14 @@ export function Tickets() {
       {/* There are tickets loaded but the filters left none. Different from the empty list
           above: here what needs changing are the filters. */}
       {loadState === 'ready' && tickets.length > 0 && filteredTickets.length === 0 && (
-        <p className="mt-2 max-w-prose text-body text-label-secondary">
-          Ningún ticket coincide con los filtros.
-        </p>
+        <div className="mt-2 flex flex-wrap items-center gap-3">
+          <p className="text-body text-label-secondary">Ningún ticket coincide con los filtros.</p>
+          {hasFilters && (
+            <Button variant="neutral" size="sm" onClick={clearFilters}>
+              Limpiar filtros
+            </Button>
+          )}
+        </div>
       )}
 
       {loadState === 'ready' && filteredTickets.length > 0 && (

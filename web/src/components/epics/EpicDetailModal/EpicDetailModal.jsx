@@ -228,7 +228,7 @@ export function EpicDetailModal({ epic, tickets, users, onClose, onUpdateEpic, o
           <div>
             <p className="mb-1.5 text-subheadline font-medium text-label">Avance</p>
             {stats.total === 0 ? (
-              <p className="text-footnote text-label-tertiary">
+              <p className="text-footnote text-label-secondary">
                 Esta épica todavía no tiene tickets.
               </p>
             ) : (
@@ -241,7 +241,12 @@ export function EpicDetailModal({ epic, tickets, users, onClose, onUpdateEpic, o
                     {stats.pointsCompleted}/{stats.points} pts
                   </span>
                 </div>
-                <ProgressBar value={stats.completed} max={stats.total} className="mt-1.5" />
+                <ProgressBar
+                  value={stats.completed}
+                  max={stats.total}
+                  label={`Tickets completados: ${stats.completed} de ${stats.total}`}
+                  className="mt-1.5"
+                />
               </>
             )}
           </div>

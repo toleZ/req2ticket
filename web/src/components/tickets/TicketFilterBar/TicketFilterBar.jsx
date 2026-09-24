@@ -38,7 +38,7 @@ export function TicketFilterBar({
   onTypeFilterChange,
 }) {
   return (
-    <div className="mt-4 flex flex-wrap items-center gap-2">
+    <div className="mt-4 flex flex-col gap-2">
       <div className={SEARCH_BOX}>
         <Search className="size-4 shrink-0 text-label-tertiary" aria-hidden="true" />
         <input
@@ -50,76 +50,80 @@ export function TicketFilterBar({
         />
       </div>
 
-      <select
-        value={typeFilter}
-        onChange={(e) => onTypeFilterChange(e.target.value)}
-        aria-label="Tipo"
-        className={FILTER_SELECT}
-      >
-        <option value="">Tipo</option>
-        {TICKET_TYPE_OPTIONS.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
+      {/* The search gets its own line and the selects wrap below it: six controls in one
+          line broke into two ragged rows at laptop widths. */}
+      <div className="flex flex-wrap items-center gap-2">
+        <select
+          value={typeFilter}
+          onChange={(e) => onTypeFilterChange(e.target.value)}
+          aria-label="Tipo"
+          className={FILTER_SELECT}
+        >
+          <option value="">Tipo</option>
+          {TICKET_TYPE_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
 
-      <select
-        value={assigneeFilter}
-        onChange={(e) => onAssigneeFilterChange(e.target.value)}
-        aria-label="Asignado"
-        className={FILTER_SELECT}
-      >
-        <option value="">Asignado</option>
-        {users.map((user) => (
-          <option key={user.id} value={user.id}>
-            {user.name}
-          </option>
-        ))}
-      </select>
+        <select
+          value={assigneeFilter}
+          onChange={(e) => onAssigneeFilterChange(e.target.value)}
+          aria-label="Asignado"
+          className={FILTER_SELECT}
+        >
+          <option value="">Asignado</option>
+          {users.map((user) => (
+            <option key={user.id} value={user.id}>
+              {user.name}
+            </option>
+          ))}
+        </select>
 
-      <select
-        value={epicFilter}
-        onChange={(e) => onEpicFilterChange(e.target.value)}
-        aria-label="Épica"
-        className={FILTER_SELECT}
-      >
-        <option value="">Épica</option>
-        {epics.map((epic) => (
-          <option key={epic.id} value={epic.id}>
-            {epic.name}
-          </option>
-        ))}
-      </select>
+        <select
+          value={epicFilter}
+          onChange={(e) => onEpicFilterChange(e.target.value)}
+          aria-label="Épica"
+          className={FILTER_SELECT}
+        >
+          <option value="">Épica</option>
+          {epics.map((epic) => (
+            <option key={epic.id} value={epic.id}>
+              {epic.name}
+            </option>
+          ))}
+        </select>
 
-      <select
-        value={sprintFilter}
-        onChange={(e) => onSprintFilterChange(e.target.value)}
-        aria-label="Sprint"
-        className={FILTER_SELECT}
-      >
-        <option value="">Sprint</option>
-        <option value={NO_SPRINT}>Sin sprint</option>
-        {sprints.map((sprint) => (
-          <option key={sprint.id} value={sprint.id}>
-            {sprint.name}
-          </option>
-        ))}
-      </select>
+        <select
+          value={sprintFilter}
+          onChange={(e) => onSprintFilterChange(e.target.value)}
+          aria-label="Sprint"
+          className={FILTER_SELECT}
+        >
+          <option value="">Sprint</option>
+          <option value={NO_SPRINT}>Sin sprint</option>
+          {sprints.map((sprint) => (
+            <option key={sprint.id} value={sprint.id}>
+              {sprint.name}
+            </option>
+          ))}
+        </select>
 
-      <select
-        value={priorityFilter}
-        onChange={(e) => onPriorityFilterChange(e.target.value)}
-        aria-label="Prioridad"
-        className={FILTER_SELECT}
-      >
-        <option value="">Prioridad</option>
-        {TICKET_PRIORITY_OPTIONS.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
+        <select
+          value={priorityFilter}
+          onChange={(e) => onPriorityFilterChange(e.target.value)}
+          aria-label="Prioridad"
+          className={FILTER_SELECT}
+        >
+          <option value="">Prioridad</option>
+          {TICKET_PRIORITY_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </div>
     </div>
   )
 }

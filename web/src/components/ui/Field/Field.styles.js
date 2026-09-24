@@ -3,9 +3,9 @@ export const ICON_WRAP =
 
 export const LABEL = 'mb-1 block text-subheadline font-medium text-label'
 
-export const OPTIONAL = 'font-normal text-label-tertiary'
+export const OPTIONAL = 'font-normal text-label-secondary'
 
-export const FIELD_ERROR = 'mt-1 text-footnote text-red'
+export const FIELD_ERROR = 'mt-1 text-footnote text-red-text'
 
 /* No horizontal padding in the base on purpose. Each variant sets its own, because a base
    `px-3` plus a variant `pl-9` would put both classes in the DOM and the CSS order — not the
