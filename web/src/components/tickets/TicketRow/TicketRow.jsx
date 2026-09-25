@@ -10,7 +10,7 @@ import { layoutGlide } from '@/lib/motion'
 import { revealProps } from '@/lib/reveal'
 import { findOption } from '@/lib/options'
 import { TICKET_PRIORITY_OPTIONS, TICKET_TYPE_OPTIONS } from '@/lib/ticketOptions'
-import { CELL, CELL_BADGE, CODE, META, ROW, TITLE } from './TicketRow.styles'
+import { CELL, CELL_BADGE, CODE, META, POINTS, ROW, TITLE } from './TicketRow.styles'
 import { checklistProgress } from '@/lib/ticketStats'
 
 /* No background change on hover: the row is already a grey block, and darkening the whole of
@@ -111,7 +111,7 @@ export function TicketRow({ ticket, epics, index, revealFrom = null, onSelectTic
             {priority && <Badge tone={priority.tone}>{priority.label}</Badge>}
           </span>
 
-          <span className="text-caption font-medium text-label-secondary xl:text-right">
+          <span className={POINTS}>
             {ticket.points} pts
           </span>
 

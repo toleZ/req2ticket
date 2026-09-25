@@ -2,6 +2,7 @@ import { ArrowUpDown } from 'lucide-react'
 
 import { FilterChip } from '@/components/ui/FilterChip/FilterChip'
 import { Switch } from '@/components/ui/Switch/Switch'
+import { BAR, CHIP_GROUP, CLEAR_BUTTON, END_GROUP } from './FilterBar.styles'
 
 /**
  * A list page's filter row: one multi-select chip per filter and a link to clear them all on
@@ -17,8 +18,8 @@ import { Switch } from '@/components/ui/Switch/Switch'
  */
 export function FilterBar({ chips, filters, activeCount, onListChange, onClear, sort, mine }) {
   return (
-    <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-      <div className="flex min-w-0 flex-wrap items-center gap-2">
+    <div className={BAR}>
+      <div className={CHIP_GROUP}>
         {chips.map((chip) => (
           <FilterChip
             key={chip.key}
@@ -35,14 +36,14 @@ export function FilterBar({ chips, filters, activeCount, onListChange, onClear, 
           <button
             type="button"
             onClick={onClear}
-            className="min-h-11 px-1.5 text-footnote font-medium text-blue-text hover:underline lg:min-h-8"
+            className={CLEAR_BUTTON}
           >
             Limpiar {activeCount === 1 ? '1 filtro' : `${activeCount} filtros`}
           </button>
         )}
       </div>
 
-      <div className="flex shrink-0 items-center gap-3 self-end sm:self-start">
+      <div className={END_GROUP}>
         <FilterChip
           label="Ordenar"
           icon={ArrowUpDown}

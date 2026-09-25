@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Check, Plus, X } from 'lucide-react'
-import { ADD_BUTTON, ADD_INPUT, ADD_ROW, CIRCLE, ITEM, REMOVE_BUTTON } from './ChecklistField.styles'
+import { ADD_BUTTON, ADD_INPUT, ADD_ROW, CIRCLE, ITEM, ITEM_LABEL, REMOVE_BUTTON } from './ChecklistField.styles'
 
 import { cn } from '@/lib/cn'
 
@@ -101,7 +101,7 @@ export function ChecklistField({
                 index === removing && 'animate-row-out overflow-hidden',
               )}
             >
-              <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-2.5">
+              <label className={ITEM_LABEL}>
                 <input
                   type="checkbox"
                   checked={item.done}

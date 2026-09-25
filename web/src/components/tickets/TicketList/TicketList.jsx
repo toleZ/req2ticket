@@ -1,15 +1,13 @@
 import { useState } from 'react'
 import { ChevronRight } from 'lucide-react'
 
-import { COUNT_PILL } from './TicketList.styles'
 import { TicketRow } from '@/components/tickets/TicketRow/TicketRow'
-import { LoadMore, PAGE } from '@/components/ui/LoadMore/LoadMore'
+import { LoadMore } from '@/components/ui/LoadMore/LoadMore'
+import { PAGE } from '@/components/ui/LoadMore/LoadMore.data'
 import { cn } from '@/lib/cn'
 import { readUiPref, writeUiPref } from '@/lib/uiPrefs'
-
-/* Finished work is most of a real backlog and rarely what you came for: those sections start
-   folded. Whatever you fold or unfold afterwards is remembered, per status. */
-const FOLDED_BY_DEFAULT = ['done', 'cancelled']
+import { FOLDED_BY_DEFAULT } from './TicketList.data'
+import { COUNT_PILL, SECTION_TITLE, SECTION_TOGGLE } from './TicketList.styles'
 
 /**
  * The ticket list, grouped into one block per status.
@@ -68,7 +66,7 @@ function TicketSection({ status, tickets, epics, onSelectTicket }) {
           onClick={toggle}
           aria-expanded={!folded}
           aria-controls={listId}
-          className="group flex min-h-11 items-center gap-2 rounded-control text-left lg:min-h-7"
+          className={SECTION_TOGGLE}
         >
           <ChevronRight
             className={cn(
@@ -77,7 +75,7 @@ function TicketSection({ status, tickets, epics, onSelectTicket }) {
             )}
             aria-hidden="true"
           />
-          <span className="text-subheadline font-medium text-label group-hover:underline group-hover:decoration-label-tertiary group-hover:underline-offset-2">
+          <span className={SECTION_TITLE}>
             {status.label}
           </span>
           <span className={COUNT_PILL}>{tickets.length}</span>

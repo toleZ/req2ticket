@@ -8,6 +8,7 @@ import { readSession } from '@/lib/auth'
 import { cn } from '@/lib/cn'
 import { NAV_ITEMS } from '@/lib/navItems'
 import { ROLE_LABELS } from '@/lib/roleLabels'
+import { SHORTCUT } from './SidebarBody.data'
 import {
   BRAND_TILE,
   CARD,
@@ -20,8 +21,6 @@ import {
   NAV_LIST,
   USER_ROW,
 } from './SidebarBody.styles'
-
-const SHORTCUT = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘\\' : 'Ctrl+\\'
 
 /**
  * What the rail and the mobile drawer both show: the project card, the nav with its counts,

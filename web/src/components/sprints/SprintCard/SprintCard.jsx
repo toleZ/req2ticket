@@ -11,19 +11,8 @@ import { daysRemaining, formatDateRange } from '@/lib/dates'
 import { findOption } from '@/lib/options'
 import { SPRINT_ACTIVE, SPRINT_COMPLETED, SPRINT_STATUS_OPTIONS } from '@/lib/sprintOptions'
 import { cancelledNote, summarizeTickets } from '@/lib/ticketStats'
-import { EXPAND_ROW } from './SprintCard.styles'
-
-/* Named EXPAND_ROW and not TOGGLE_BUTTON: EpicRow has a constant by that name which is a
-   size-6 chevron button, and this is a full-width bordered text row. Same name, nothing
-   else in common. */
-/* The active sprint's time badge. Past its end date it says so, in orange, instead of
-   disappearing: an overdue sprint is exactly the one the team needs to notice. */
-function remainingLabel(daysLeft) {
-  if (daysLeft === 0) return 'Termina hoy'
-  if (daysLeft === 1) return 'Queda 1 día'
-  if (daysLeft > 1) return `Quedan ${daysLeft} días`
-  return daysLeft === -1 ? 'Vencido hace 1 día' : `Vencido hace ${-daysLeft} días`
-}
+import { remainingLabel } from './SprintCard.helpers'
+import { CARD, DATES, EMPTY_NOTE, EXPAND_ROW, GOAL, PROGRESS_META, STAT_LABEL } from './SprintCard.styles'
 
 export function SprintCard({ sprint, tickets, onUpdateSprint, onDeleteSprint, onSelectTicket }) {
   const [isExpanded, setIsExpanded] = useState(false)
@@ -41,7 +30,7 @@ export function SprintCard({ sprint, tickets, onUpdateSprint, onDeleteSprint, on
   const progressPct = stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0
 
   return (
-    <li className="rounded-card bg-elevated p-5 shadow-card ring-[0.5px] ring-separator">
+    <li className={CARD}>
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
@@ -53,13 +42,13 @@ export function SprintCard({ sprint, tickets, onUpdateSprint, onDeleteSprint, on
           </div>
 
           {sprint.goal && (
-            <p className="mt-1.5 flex max-w-prose items-start gap-1.5 text-body text-label-secondary">
+            <p className={GOAL}>
               <Flag className="mt-0.5 size-3.5 shrink-0 text-label-tertiary" aria-hidden="true" />
               {sprint.goal}
             </p>
           )}
 
-          <p className="mt-1 flex items-center gap-1.5 text-footnote text-label-secondary">
+          <p className={DATES}>
             <Calendar className="size-3.5 shrink-0" aria-hidden="true" />
             {formatDateRange(sprint.startDate, sprint.endDate)}
           </p>
@@ -87,7 +76,7 @@ export function SprintCard({ sprint, tickets, onUpdateSprint, onDeleteSprint, on
 
       <div className="mt-4 flex flex-wrap items-end gap-6">
         <div className="min-w-48 flex-1">
-          <div className="flex items-center justify-between text-footnote text-label-secondary">
+          <div className={PROGRESS_META}>
             <span>
               {stats.completed} de {stats.total} tickets completados
               {cancelledNote(stats)}
@@ -107,7 +96,7 @@ export function SprintCard({ sprint, tickets, onUpdateSprint, onDeleteSprint, on
             capacity is said in words, not only with a colour. */}
         <div className="flex shrink-0 gap-6">
           <div className="text-right">
-            <p className="text-caption font-medium tracking-wide text-label-secondary uppercase">
+            <p className={STAT_LABEL}>
               Puntos hechos
             </p>
             <p className="text-body font-semibold text-label">
@@ -115,7 +104,7 @@ export function SprintCard({ sprint, tickets, onUpdateSprint, onDeleteSprint, on
             </p>
           </div>
           <div className="text-right">
-            <p className="text-caption font-medium tracking-wide text-label-secondary uppercase">
+            <p className={STAT_LABEL}>
               Comprometidos
             </p>
             <p className={`text-body font-semibold ${overCapacity > 0 ? 'text-orange-text' : 'text-label'}`}>
@@ -141,7 +130,7 @@ export function SprintCard({ sprint, tickets, onUpdateSprint, onDeleteSprint, on
 
       {isExpanded &&
         (stats.all === 0 ? (
-          <p className="px-0.5 pb-0.5 text-footnote text-label-secondary">
+          <p className={EMPTY_NOTE}>
             Todavía no hay tickets asignados a este sprint.
           </p>
         ) : (

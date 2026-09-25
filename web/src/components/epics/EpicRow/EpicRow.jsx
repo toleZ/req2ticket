@@ -10,32 +10,15 @@ import { ACCENT_COLORS, EPIC_PRIORITY_OPTIONS, EPIC_STATUS_OPTIONS } from '@/lib
 import { findOption } from '@/lib/options'
 import { springSoft } from '@/lib/motion'
 import { cancelledNote, summarizeTickets } from '@/lib/ticketStats'
-
-/* Named EXPAND_BUTTON and not TOGGLE_BUTTON: SprintCard has a constant by that name which is
-   a full-width bordered text row, and this is a size-6 chevron button. Same name, nothing else
-   in common. */
-/* The negative margin grows the tap area to 44px below lg without moving the row. */
-const EXPAND_BUTTON = `-m-2.5 -mt-2 grid size-11 shrink-0 place-items-center rounded-control lg:m-0 lg:mt-0.5 lg:size-6
-  text-label-secondary transition-colors duration-fast ease-out-quad hover:bg-fill-secondary
-  hover:text-label`
-
-/* The clickable area is only the code and the name, not the whole row. Deliberately: the
-   chevron sits next to it, and below, once expanded, is the ticket list, which are buttons
-   too. If the click lived on the <li>, every one of those would need its own
-   e.stopPropagation(), and forgetting one looks like "opening a ticket also opens the epic".
-
-   The hover paints NO background. Painting it left a grey slab wrapping half the row —
-   coloured badges included — and read as a patch, not as something clickable. What it
-   announces is what a link announces: the name underlines and the code climbs a step of grey. */
-const OPEN_BUTTON = 'group flex min-h-11 min-w-0 flex-wrap items-center gap-2 text-left lg:min-h-6'
-
-const OPEN_CODE = `text-caption text-label-secondary transition-colors duration-fast ease-out-quad
-  group-hover:text-label`
-
-/* `decoration-label-tertiary`: that line inherits the text colour unless told otherwise, and
-   a black rule beneath a black name is far too heavy for a hover. */
-const OPEN_NAME = `text-body font-medium text-label underline-offset-2
-  group-hover:underline group-hover:decoration-label-tertiary`
+import {
+  CHEVRON,
+  EXPAND_BUTTON,
+  OPEN_BUTTON,
+  OPEN_CODE,
+  OPEN_NAME,
+  OWNER_NAME,
+  PANEL_LABEL,
+} from './EpicRow.styles'
 
 /**
  * An epic in the list: read-only, apart from the disclosure that shows its tickets.
@@ -66,7 +49,7 @@ export function EpicRow({ epic, tickets, onSelectEpic, onSelectTicket }) {
           className={EXPAND_BUTTON}
         >
           <ChevronRight
-            className={cn('size-4 transition-transform duration-fast ease-out-quad', isExpanded && 'rotate-90')}
+            className={cn(CHEVRON, isExpanded && 'rotate-90')}
             aria-hidden="true"
           />
         </button>
@@ -99,7 +82,7 @@ export function EpicRow({ epic, tickets, onSelectEpic, onSelectTicket }) {
               {status && <Badge tone={status.tone}>{status.label}</Badge>}
               {priority && <Badge tone={priority.tone}>{priority.label}</Badge>}
               {epic.ownerName && (
-                <span className="text-footnote font-normal text-label-secondary">{epic.ownerName}</span>
+                <span className={OWNER_NAME}>{epic.ownerName}</span>
               )}
             </button>
           </h2>
@@ -136,7 +119,7 @@ export function EpicRow({ epic, tickets, onSelectEpic, onSelectTicket }) {
             className="overflow-hidden"
           >
             <div className="ml-8 mt-3 border-t border-separator pt-3">
-              <p className="text-footnote font-medium text-label-secondary">Tickets</p>
+              <p className={PANEL_LABEL}>Tickets</p>
               {stats.all === 0 ? (
                 <p className="mt-1.5 text-footnote text-label-secondary">
                   Esta épica todavía no tiene tickets.

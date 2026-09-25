@@ -8,3 +8,5 @@ export const META = 'hairline-t mt-4 flex flex-col gap-0.5 pt-3 text-caption tex
 export const CONTROL_TEXTAREA = `w-full resize-none rounded-control border border-separator
   bg-fill-tertiary px-3 py-2 text-body text-label transition-colors duration-fast
   placeholder:text-label-tertiary hover:border-separator-opaque disabled:opacity-50`
+
+export const TYPE_VALUE = 'flex items-center gap-1.5 text-footnote text-label'

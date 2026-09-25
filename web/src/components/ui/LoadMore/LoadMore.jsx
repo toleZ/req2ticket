@@ -1,7 +1,6 @@
 import { Button } from '@/components/ui/Button/Button'
-
-/* How many rows a long list shows at first, and how many each "Mostrar más" adds. */
-export const PAGE = 25
+import { PAGE } from './LoadMore.data'
+import { SHOW_ALL } from './LoadMore.styles'
 
 /**
  * The foot of a long list that shows it a page at a time: "Mostrar 25 más", how many are shown
@@ -24,7 +23,7 @@ export function LoadMore({ shown, total, onMore, onAll }) {
         <button
           type="button"
           onClick={onAll}
-          className="min-h-11 text-footnote font-medium text-blue-text hover:underline lg:min-h-0"
+          className={SHOW_ALL}
         >
           Mostrar todos
         </button>

@@ -1,4 +1,4 @@
-import { DELETE_NOTE, FOOTER, NOTE } from './DetailFooter.styles'
+import { DELETE_NOTE, ERROR, FOOTER, NOTE } from './DetailFooter.styles'
 import { Button } from '@/components/ui/Button/Button'
 
 /**
@@ -40,7 +40,7 @@ export function DetailFooter({
   return (
     <div className={FOOTER}>
       {error && (
-        <p role="alert" className="mr-auto animate-fade-in text-footnote text-red-text">
+        <p role="alert" className={ERROR}>
           {error}
         </p>
       )}

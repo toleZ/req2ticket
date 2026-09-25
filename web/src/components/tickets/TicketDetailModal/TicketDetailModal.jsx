@@ -1,6 +1,7 @@
 import { useState } from 'react'
 
-import { SHEET_LABEL, TicketExtraFields } from '@/components/tickets/TicketExtraFields/TicketExtraFields'
+import { TicketExtraFields } from '@/components/tickets/TicketExtraFields/TicketExtraFields'
+import { SHEET_LABEL } from '@/components/tickets/TicketExtraFields/TicketExtraFields.styles'
 import { TicketPointsField } from '@/components/tickets/TicketPointsField/TicketPointsField'
 import { TicketTypeIcon } from '@/components/tickets/TicketTypeIcon/TicketTypeIcon'
 import { Badge } from '@/components/ui/Badge/Badge'
@@ -25,7 +26,7 @@ import {
 } from '@/lib/ticketExtraFields'
 import { TICKET_PRIORITY_OPTIONS, TICKET_STATUS_OPTIONS, TICKET_TYPE_OPTIONS } from '@/lib/ticketOptions'
 import { validateTicketForm } from '@/lib/validate'
-import { CONTROL_TEXTAREA, META, STORY_CALLOUT, STORY_TEXTAREA } from './TicketDetailModal.styles'
+import { CONTROL_TEXTAREA, META, STORY_CALLOUT, STORY_TEXTAREA, TYPE_VALUE } from './TicketDetailModal.styles'
 import { toDetailValues } from './TicketDetailModal.helpers'
 /**
  * A ticket's record: everything it holds, on a two-column sheet, and the only place it is
@@ -246,7 +247,7 @@ export function TicketDetailModal({
               <DetailRow label="Tipo">
                 <span
                   title="El tipo se define al crear el ticket y no se puede cambiar."
-                  className="flex items-center gap-1.5 text-footnote text-label"
+                  className={TYPE_VALUE}
                 >
                   <TicketTypeIcon type={ticket.type} className="size-4" />
                   {type && type.label}

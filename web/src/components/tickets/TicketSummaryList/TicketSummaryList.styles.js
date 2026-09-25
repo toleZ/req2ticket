@@ -6,3 +6,5 @@ export const CODE = `shrink-0 text-caption text-label-secondary transition-color
 
 export const TITLE = `min-w-0 flex-1 truncate text-footnote text-label underline-offset-2
   group-hover:underline group-hover:decoration-label-tertiary`
+
+export const POINTS = 'shrink-0 text-caption font-medium text-label-secondary'

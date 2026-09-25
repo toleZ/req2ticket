@@ -2,25 +2,9 @@ import { useId } from 'react'
 
 import { SelectionPill } from '@/components/ui/SelectionPill/SelectionPill'
 import { cn } from '@/lib/cn'
-import { handlePointsKeyDown } from './pointsKeyboard'
-
-/* The design's scale, with 0 up front. The 0 is not an odd case to be tolerated: the create
-   modal sends `Number(points) || 0`, so every ticket created without an estimate arrives at
-   zero. It has to be a selectable value, not something the control cannot draw. */
-const POINTS_SCALE = [0, 1, 2, 3, 5, 8, 13]
-
-const GROUP = 'flex flex-wrap gap-1 rounded-control bg-fill-tertiary p-1'
-
-/* 44px chips below lg so each point is tappable; from lg up the strip keeps its compact size,
-   but never under 24px tall. */
-const CHIP = `relative min-h-11 min-w-11 rounded-control px-1.5 py-0.5 text-caption font-medium text-label-secondary
-  lg:min-h-6 lg:min-w-7
-  transition-colors duration-fast ease-out-quad hover:text-label disabled:opacity-50`
-
-/* The chosen one climbs a surface instead of turning blue — the device the rest of the app
-   uses to say "this is active" without spending the accent. The surface is a SelectionPill,
-   so it slides from the old choice to the new one. */
-const PILL = 'absolute inset-0 rounded-control bg-elevated shadow-hairline'
+import { POINTS_SCALE } from './TicketPointsField.data'
+import { handlePointsKeyDown } from './TicketPointsField.helpers'
+import { CHIP, GROUP, PILL } from './TicketPointsField.styles'
 
 /**
  * A ticket's points, as the design's segmented strip.

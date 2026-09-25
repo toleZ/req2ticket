@@ -2,23 +2,17 @@ import { ChecklistField } from '@/components/tickets/ChecklistField/ChecklistFie
 import { ProgressBar } from '@/components/ui/ProgressBar/ProgressBar'
 import { cn } from '@/lib/cn'
 import { EXTRA_FIELDS, FIELD_SECTIONS } from '@/lib/ticketExtraFields'
-
-export const SHEET_LABEL = 'mb-1.5 block text-caption font-semibold tracking-[0.06em] uppercase'
-
-const LABEL_TONE = {
-  green: 'text-green-text',
-  red: 'text-red-text',
-}
-
-const OPTIONAL = 'font-normal tracking-normal normal-case text-label-secondary'
-
-const CONTROL = `w-full rounded-control border border-separator bg-fill-tertiary px-3 py-2
-  text-body text-label transition-colors duration-fast placeholder:text-label-tertiary
-  hover:border-separator-opaque disabled:opacity-50`
-
-const CARD = 'rounded-card bg-elevated ring-[0.5px] ring-separator'
-
-const CARD_HEAD = `flex min-h-11 items-center gap-2.5 bg-fill-quaternary px-3 lg:min-h-10`
+import {
+  CARD,
+  CARD_HEAD,
+  CARD_TITLE,
+  CONTROL,
+  ERROR_TEXT,
+  LABEL_TONE,
+  OPTIONAL,
+  SECTION_TITLE,
+  SHEET_LABEL,
+} from './TicketExtraFields.styles'
 
 /**
  * The extra fields of a ticket type, laid out the way its sheet reads: the fields come from
@@ -90,7 +84,7 @@ export function TicketExtraFields({
 function SectionHeading({ section }) {
   return (
     <div className="flex items-center gap-3 pt-1">
-      <h3 className="text-caption font-semibold tracking-[0.06em] text-label uppercase">
+      <h3 className={SECTION_TITLE}>
         {section.title}
       </h3>
       <span className="h-px flex-1 bg-separator" aria-hidden="true" />
@@ -180,7 +174,7 @@ function ChecklistCard({ id, field, items, disabled, onChange, onToggle, error }
 
   const head = (
     <>
-      <span className="text-caption font-semibold tracking-[0.06em] text-label-secondary uppercase">
+      <span className={CARD_TITLE}>
         {field.label}
       </span>
       {items.length > 0 && (
@@ -219,7 +213,7 @@ function ChecklistCard({ id, field, items, disabled, onChange, onToggle, error }
       </div>
 
       {error && (
-        <p role="alert" className="mt-1 animate-fade-in text-footnote text-red-text">
+        <p role="alert" className={ERROR_TEXT}>
           {error}
         </p>
       )}

@@ -1,3 +1,5 @@
+export const BASE = 'inline-flex items-center whitespace-nowrap rounded-control px-2 py-0.5 text-caption font-medium'
+
 /* Flat accent tokens only — see "Accents" in styles/README.md. The tint is the accent itself;
    the text uses its `-text` version, which is darker (light) or lighter (dark) so it reads at
    4.5:1. `neutral` covers statuses and priorities that don't warrant an accent. */

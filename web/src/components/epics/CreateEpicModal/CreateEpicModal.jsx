@@ -12,20 +12,8 @@ import { getUsers } from '@/lib/api'
 import { EPIC_PRIORITY_OPTIONS, EPIC_STATUS_OPTIONS } from '@/lib/epicOptions'
 import { errorMessage } from '@/lib/errors'
 import { validateEpicForm } from '@/lib/validate'
-
-/* Every key here has to match the field's `name` in the form exactly: handleChange uses
-   `e.target.name` to know what to update. If they do not match, the field silently stops
-   accepting input and nothing raises an error. */
-const INITIAL_VALUES = {
-  name: '',
-  description: '',
-  accentColor: 'blue',
-  priority: 'medium',
-  status: 'backlog',
-  ownerId: '',
-}
-
-const LABEL = 'mb-1 block text-subheadline font-medium text-label'
+import { INITIAL_VALUES } from './CreateEpicModal.data'
+import { LABEL } from './CreateEpicModal.styles'
 
 export function CreateEpicModal({ isOpen, onClose, onCreate }) {
   const [values, setValues] = useState(INITIAL_VALUES)

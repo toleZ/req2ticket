@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { X } from 'lucide-react'
 
-import { SHEET_LABEL, TicketExtraFields } from '@/components/tickets/TicketExtraFields/TicketExtraFields'
+import { TicketExtraFields } from '@/components/tickets/TicketExtraFields/TicketExtraFields'
+import { SHEET_LABEL } from '@/components/tickets/TicketExtraFields/TicketExtraFields.styles'
 import { TicketPointsField } from '@/components/tickets/TicketPointsField/TicketPointsField'
-import { TYPE_ICONS } from '@/components/tickets/TicketTypeIcon/TicketTypeIcon.data'
 import {
   CONTROL_TEXTAREA,
   STORY_CALLOUT,
@@ -23,7 +23,7 @@ import { SegmentedField } from '@/components/ui/SegmentedField/SegmentedField'
 import { getUsers } from '@/lib/api'
 import { cn } from '@/lib/cn'
 import { errorMessage } from '@/lib/errors'
-import { EASE_IOS, exitQuick } from '@/lib/motion'
+import { exitQuick } from '@/lib/motion'
 import { epicPickerOptions, sprintPickerOptions, userPickerOptions } from '@/lib/pickerOptions'
 import {
   DESCRIPTION_PLACEHOLDER,
@@ -32,68 +32,10 @@ import {
   emptyExtras,
   toExtraFieldsPayload,
 } from '@/lib/ticketExtraFields'
-import {
-  TICKET_PRIORITY_OPTIONS,
-  TICKET_STATUS_OPTIONS,
-  TICKET_TYPE_OPTIONS,
-} from '@/lib/ticketOptions'
+import { TICKET_PRIORITY_OPTIONS, TICKET_STATUS_OPTIONS } from '@/lib/ticketOptions'
 import { validateTicketForm } from '@/lib/validate'
-
-const INITIAL_TYPE = 'userStory'
-
-const INITIAL_VALUES = {
-  type: INITIAL_TYPE,
-  title: '',
-  description: '',
-  epicId: '',
-  priority: 'medium',
-  status: 'todo',
-  points: '',
-  assigneeId: '',
-  sprintId: '',
-}
-
-const FIELD_IDS = { title: 'ticket-title', epicId: 'ticket-epic' }
-
-const TYPE_SEGMENTS = TICKET_TYPE_OPTIONS.map((option) => ({
-  value: option.value,
-  label: option.value === 'userStory' ? 'Historia' : option.label,
-  icon: TYPE_ICONS[option.value],
-}))
-
-const CREATE_LABEL = {
-  userStory: 'Crear historia',
-  task: 'Crear tarea',
-  bug: 'Crear bug',
-  fix: 'Crear fix',
-}
-
-const SIDE_LABEL = cn(SHEET_LABEL, 'text-label-secondary')
-
-/* Switching type: the old fields leave quickly, then the new ones rise in. */
-const SWAP = {
-  initial: { opacity: 0, y: 6 },
-  animate: { opacity: 1, y: 0, transition: { duration: 0.2, ease: EASE_IOS } },
-  exit: { opacity: 0, y: -4, transition: exitQuick },
-}
-
-/* A type's own sidebar field grows in and out, so what sits below slides instead of jumping.
-   Overflow is clipped only while it moves, or it would cut the focus ring. */
-const GROW = {
-  initial: { height: 0, opacity: 0, overflow: 'hidden' },
-  animate: { height: 'auto', opacity: 1, transitionEnd: { overflow: 'visible' } },
-  exit: { height: 0, opacity: 0, overflow: 'hidden' },
-  transition: { duration: 0.22, ease: EASE_IOS },
-}
-
-const REQUIRED = (
-  <>
-    <span className="text-red-text" aria-hidden="true">
-      {' *'}
-    </span>
-    <span className="sr-only"> (obligatorio)</span>
-  </>
-)
+import { CREATE_LABEL, FIELD_IDS, GROW, INITIAL_TYPE, INITIAL_VALUES, SWAP, TYPE_SEGMENTS } from './CreateTicketModal.data'
+import { FIELD_ERROR, FORM, FORM_ERROR, SIDE_LABEL } from './CreateTicketModal.styles'
 
 /**
  * The create sheet. It has the detail sheet's shape — content on the left, metadata on the
@@ -191,7 +133,7 @@ export function CreateTicketModal({ isOpen, onClose, onCreate, epics, sprints })
     <Modal isOpen={isOpen} onClose={handleClose} size="lg" ariaLabel="Nuevo ticket">
       <form
         onSubmit={handleSubmit}
-        className="flex min-h-0 flex-1 flex-col md:h-[min(44rem,calc(100dvh_-_2rem))] md:flex-none"
+        className={FORM}
         noValidate
       >
         <h2 className="sr-only">Nuevo ticket</h2>
@@ -307,7 +249,7 @@ export function CreateTicketModal({ isOpen, onClose, onCreate, epics, sprints })
 
               <div className="hairline-t pt-4">
                 <label htmlFor="ticket-epic" className={SIDE_LABEL}>
-                  Épica{REQUIRED}
+                  Épica<RequiredMark />
                 </label>
                 <SearchSelect
                   id="ticket-epic"
@@ -321,7 +263,7 @@ export function CreateTicketModal({ isOpen, onClose, onCreate, epics, sprints })
                   onChange={(value) => setField('epicId', value)}
                 />
                 {errors.epicId && (
-                  <p id="ticket-epic-error" className="mt-1 animate-fade-in text-footnote text-red-text">
+                  <p id="ticket-epic-error" className={FIELD_ERROR}>
                     {errors.epicId}
                   </p>
                 )}
@@ -361,7 +303,7 @@ export function CreateTicketModal({ isOpen, onClose, onCreate, epics, sprints })
         >
           <div>
             <label htmlFor="ticket-title" className={SIDE_LABEL}>
-              Título{REQUIRED}
+              Título<RequiredMark />
             </label>
             <InlineTitleField
               id="ticket-title"
@@ -437,7 +379,7 @@ export function CreateTicketModal({ isOpen, onClose, onCreate, epics, sprints })
 
         <div className={FOOTER}>
           {formError ? (
-            <p role="alert" className="mr-auto animate-fade-in text-footnote text-red-text">
+            <p role="alert" className={FORM_ERROR}>
               {formError}
             </p>
           ) : (
@@ -457,5 +399,16 @@ export function CreateTicketModal({ isOpen, onClose, onCreate, epics, sprints })
         </div>
       </form>
     </Modal>
+  )
+}
+
+function RequiredMark() {
+  return (
+    <>
+      <span className="text-red-text" aria-hidden="true">
+        {' *'}
+      </span>
+      <span className="sr-only"> (obligatorio)</span>
+    </>
   )
 }

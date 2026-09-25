@@ -9,6 +9,7 @@ import { ACCENT_COLORS } from '@/lib/epicOptions'
 import { findOption } from '@/lib/options'
 import { SPRINT_STATUS_OPTIONS } from '@/lib/sprintOptions'
 import { TICKET_PRIORITY_OPTIONS, TICKET_STATUS_OPTIONS, TICKET_TYPE_OPTIONS } from '@/lib/ticketOptions'
+import { DOT } from './TicketFilterBar.styles'
 
 /**
  * The Backlog's chips for FilterBar (components/ui/FilterBar): what each filter offers. The page
@@ -101,18 +102,4 @@ export function TicketFilterBar({ filters, activeCount, epics, sprints, users, o
       mine={{ label: 'Solo lo mío', checked: filters.mine, onChange: onMineChange }}
     />
   )
-}
-
-/* Tones to solid dots, written out in full for Tailwind (see TicketTypeIcon's note on why). */
-const DOT = {
-  neutral: 'bg-gray3',
-  gray: 'bg-gray',
-  blue: 'bg-blue',
-  indigo: 'bg-indigo',
-  purple: 'bg-purple',
-  green: 'bg-green',
-  yellow: 'bg-yellow',
-  orange: 'bg-orange',
-  red: 'bg-red',
-  struck: 'bg-gray3',
 }

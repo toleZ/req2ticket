@@ -1,4 +1,4 @@
-import { TEXT } from './LoadState.styles'
+import { RETRY, TEXT } from './LoadState.styles'
 import { cn } from '@/lib/cn'
 
 /**
@@ -39,11 +39,7 @@ export function LoadState({
     content = (
       <div className={cn('mt-2 flex items-center gap-3', className)}>
         <p className={TEXT}>{errorText}</p>
-        <button
-          type="button"
-          onClick={onRetry}
-          className="text-subheadline font-medium text-blue-text hover:underline"
-        >
+        <button type="button" onClick={onRetry} className={RETRY}>
           Reintentar
         </button>
       </div>

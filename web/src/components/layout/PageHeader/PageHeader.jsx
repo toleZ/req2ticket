@@ -1,3 +1,5 @@
+import { HEADER } from './PageHeader.styles'
+
 /**
  * The title row every page starts with: the `<h1>`, an optional line of context under it,
  * and the page's action buttons on the right.
@@ -13,7 +15,7 @@
  */
 export function PageHeader({ title, subtitle, children }) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-4">
+    <div className={HEADER}>
       <div>
         <h1 className="text-title1 text-label">{title}</h1>
         {subtitle && <p className="mt-1 text-footnote text-label-secondary">{subtitle}</p>}

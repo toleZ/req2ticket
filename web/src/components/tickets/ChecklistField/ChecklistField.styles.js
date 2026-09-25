@@ -26,3 +26,5 @@ export const ADD_BUTTON = `-m-3.25 grid size-11 shrink-0 place-items-center roun
 /* `self-stretch`: as tall as the row (44px below lg), so it is as easy to tap as the button. */
 export const ADD_INPUT = `min-w-0 flex-1 self-stretch border-0 bg-transparent p-0 text-footnote text-label
   placeholder:text-label-tertiary focus:outline-none disabled:opacity-50`
+
+export const ITEM_LABEL = 'flex min-w-0 flex-1 cursor-pointer items-center gap-2.5'

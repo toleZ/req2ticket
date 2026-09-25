@@ -25,3 +25,5 @@ export const CELL = 'flex min-w-0 items-center empty:hidden xl:empty:flex'
 
 /* A badge inside a fixed column: it can shrink, and its text truncates instead of overflowing. */
 export const CELL_BADGE = 'max-w-full'
+
+export const POINTS = 'text-caption font-medium text-label-secondary xl:text-right'

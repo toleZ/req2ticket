@@ -2,7 +2,9 @@ import { useState } from 'react'
 
 import { TicketSummaryList } from '@/components/tickets/TicketSummaryList/TicketSummaryList'
 import { Badge } from '@/components/ui/Badge/Badge'
-import { LoadMore, PAGE } from '@/components/ui/LoadMore/LoadMore'
+import { LoadMore } from '@/components/ui/LoadMore/LoadMore'
+import { PAGE } from '@/components/ui/LoadMore/LoadMore.data'
+import { INTRO } from './SprintBacklog.styles'
 
 /**
  * The Backlog block at the foot of the Sprints page: the tickets nobody has put in a
@@ -31,7 +33,7 @@ export function SprintBacklog({ tickets, onSelectTicket }) {
         <h2 className="text-headline text-label">Backlog</h2>
         <Badge tone="neutral">{tickets.length}</Badge>
       </div>
-      <p className="mt-1 max-w-prose text-footnote text-label-secondary">
+      <p className={INTRO}>
         Tickets sin sprint asignado. Hacé clic en uno para asignarle un sprint.
       </p>
 

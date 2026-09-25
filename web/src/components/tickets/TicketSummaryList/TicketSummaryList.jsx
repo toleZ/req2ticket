@@ -3,7 +3,7 @@ import { Badge } from '@/components/ui/Badge/Badge'
 import { findOption } from '@/lib/options'
 import { revealProps } from '@/lib/reveal'
 import { TICKET_STATUS_OPTIONS } from '@/lib/ticketOptions'
-import { CODE, ROW, TITLE } from './TicketSummaryList.styles'
+import { CODE, POINTS, ROW, TITLE } from './TicketSummaryList.styles'
 
 /* Same rule as TicketRow: no background on hover. Here the row also reaches the panel's right
    edge, so the grey band crossed the full width to point at something you read on the left. */
@@ -42,7 +42,7 @@ export function TicketSummaryList({ tickets, revealFrom = null, onSelectTicket }
                 {ticket.title}
               </span>
               {status && <Badge tone={status.tone}>{status.label}</Badge>}
-              <span className="shrink-0 text-caption font-medium text-label-secondary">
+              <span className={POINTS}>
                 {ticket.points} pts
               </span>
             </button>

@@ -11,31 +11,9 @@ import { useEffect, useId, useRef, useState } from 'react'
 import { Check, ChevronsUpDown, Search } from 'lucide-react'
 
 import { cn } from '@/lib/cn'
-
-const TRIGGER = `flex min-h-11 w-full min-w-0 items-center gap-2 rounded-control border border-separator
-  bg-elevated px-2 py-1 text-left text-footnote text-label transition-colors duration-fast
-  hover:border-separator-opaque disabled:opacity-50 aria-invalid:border-red lg:min-h-8 lg:py-0.5`
-
-const PANEL = `absolute inset-x-0 z-20 animate-pop-in rounded-control bg-elevated p-1 shadow-popover
-  ring-[0.5px] ring-separator`
-
-// Search box plus the list at its tallest (max-h-56) and the panel's padding.
-const PANEL_HEIGHT = 280
-
-// The nearest ancestor that scrolls: the room the panel has is measured inside it.
-function scrollParent(element) {
-  let parent = element.parentElement
-  while (parent && !/auto|scroll/.test(getComputedStyle(parent).overflowY)) parent = parent.parentElement
-  return parent || document.documentElement
-}
-
-const INNER_RADIUS = 'rounded-[calc(var(--radius-control)-0.25rem)]'
-
-const OPTION = `flex min-h-11 cursor-pointer items-center gap-2 px-2 text-footnote text-label lg:min-h-8`
-
-function normalize(text) {
-  return text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
-}
+import { PANEL_HEIGHT } from './SearchSelect.data'
+import { normalize, scrollParent } from './SearchSelect.helpers'
+import { INNER_RADIUS, OPTION, PANEL, SEARCH_INPUT, SEARCH_ROW, TRIGGER } from './SearchSelect.styles'
 
 export function SearchSelect({
   id,
@@ -145,7 +123,7 @@ export function SearchSelect({
 
       {open && (
         <div ref={panelRef} className={cn(PANEL, openUp ? 'bottom-full mb-1 origin-bottom' : 'top-full mt-1 origin-top')}>
-          <div className={cn('flex min-h-11 items-center gap-2 bg-fill-tertiary px-2 lg:min-h-8', INNER_RADIUS)}>
+          <div className={cn(SEARCH_ROW, INNER_RADIUS)}>
             <Search className="size-3.5 shrink-0 text-label-secondary" aria-hidden="true" />
             <input
               autoFocus
@@ -163,7 +141,7 @@ export function SearchSelect({
                 setActive(0)
               }}
               onKeyDown={handleSearchKeyDown}
-              className="min-w-0 flex-1 self-stretch bg-transparent text-footnote text-label placeholder:text-label-tertiary focus:outline-none"
+              className={SEARCH_INPUT}
             />
           </div>
 

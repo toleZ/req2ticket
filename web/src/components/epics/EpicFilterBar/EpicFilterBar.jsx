@@ -2,27 +2,9 @@ import { ListFilter } from 'lucide-react'
 
 import { Avatar } from '@/components/ui/Avatar/Avatar'
 import { FilterBar } from '@/components/ui/FilterBar/FilterBar'
-import { cn } from '@/lib/cn'
 import { NONE, SORT_OPTIONS } from '@/lib/epicFilters'
 import { EPIC_PRIORITY_OPTIONS, EPIC_STATUS_OPTIONS } from '@/lib/epicOptions'
-
-/* Tones to solid dots, written out in full for Tailwind. */
-const DOT = {
-  neutral: 'bg-gray3',
-  gray: 'bg-gray',
-  blue: 'bg-blue',
-  green: 'bg-green',
-  yellow: 'bg-yellow',
-  orange: 'bg-orange',
-  red: 'bg-red',
-}
-
-const withDot = (options) =>
-  options.map((option) => ({
-    value: option.value,
-    label: option.label,
-    leading: <span className={cn('size-2 shrink-0 rounded-full', DOT[option.tone])} aria-hidden="true" />,
-  }))
+import { withDot } from './EpicFilterBar.helpers'
 
 /**
  * The Épicas page's chips for FilterBar (components/ui/FilterBar), the same row the Backlog

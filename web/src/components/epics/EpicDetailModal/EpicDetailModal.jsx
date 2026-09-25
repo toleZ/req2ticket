@@ -18,7 +18,13 @@ import { findOption } from '@/lib/options'
 import { userPickerOptions } from '@/lib/pickerOptions'
 import { cancelledNote, summarizeTickets } from '@/lib/ticketStats'
 import { validateEpicForm } from '@/lib/validate'
-import { CONTROL_TEXTAREA, FIELD_LABEL, SIDE_CAPTION } from './EpicDetailModal.styles'
+import {
+  CONTROL_TEXTAREA,
+  FIELD_LABEL,
+  PROGRESS_META,
+  SECTION_LABEL,
+  SIDE_CAPTION,
+} from './EpicDetailModal.styles'
 import { toDetailValues } from './EpicDetailModal.helpers'
 /**
  * An epic's record. Same skeleton as TicketDetailModal — `lg` sheet, two columns, a footer
@@ -233,14 +239,14 @@ export function EpicDetailModal({ epic, tickets, users, onClose, onUpdateEpic, o
           </div>
 
           <div>
-            <p className="mb-1.5 text-subheadline font-medium text-label">Avance</p>
+            <p className={SECTION_LABEL}>Avance</p>
             {stats.all === 0 ? (
               <p className="text-footnote text-label-secondary">
                 Esta épica todavía no tiene tickets.
               </p>
             ) : (
               <>
-                <div className="flex items-center justify-between text-footnote text-label-secondary">
+                <div className={PROGRESS_META}>
                   <span>
                     {stats.completed} de {stats.total} tickets completados
                     {cancelledNote(stats)}

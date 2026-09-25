@@ -1,11 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { Search } from 'lucide-react'
 
-const BOX = `flex min-h-11 w-full items-center gap-2 rounded-control bg-fill-tertiary px-2.5
-  transition-colors duration-fast hover:bg-fill-secondary focus-ring-within sm:w-72 lg:min-h-8`
-
-const KBD = `hidden h-5 min-w-5 place-items-center rounded-[5px] bg-fill-secondary px-1 text-caption2
-  font-medium text-label-secondary sm:grid`
+import { BOX, INPUT, KBD } from './SearchBox.styles'
 
 /**
  * A list page's search box. Controlled by the page, which keeps the text in its own state (a
@@ -46,7 +42,7 @@ export function SearchBox({ value, placeholder, onChange }) {
         placeholder={placeholder}
         aria-label={placeholder}
         aria-keyshortcuts="/"
-        className="min-w-0 flex-1 self-stretch bg-transparent text-footnote text-label placeholder:text-label-tertiary focus:outline-none [&::-webkit-search-cancel-button]:hidden"
+        className={INPUT}
       />
       {!value && (
         <kbd className={KBD} aria-hidden="true">

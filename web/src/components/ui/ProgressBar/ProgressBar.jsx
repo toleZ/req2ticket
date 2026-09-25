@@ -1,4 +1,4 @@
-import { SIZE_CLASSES } from './ProgressBar.styles'
+import { FILL, SIZE_CLASSES, TRACK } from './ProgressBar.styles'
 import { cn } from '@/lib/cn'
 /**
  * `label` names the bar for screen readers ("Checklist 2 de 5"): a progressbar without a name
@@ -17,18 +17,9 @@ export function ProgressBar({ value, max = 100, size = 'md', label, decorative =
       aria-valuenow={decorative ? undefined : value}
       aria-valuemin={decorative ? undefined : 0}
       aria-valuemax={decorative ? undefined : max}
-      className={cn(
-        'w-full overflow-hidden rounded-full bg-fill-tertiary',
-        SIZE_CLASSES[size],
-        className,
-      )}
+      className={cn(TRACK, SIZE_CLASSES[size], className)}
     >
-      {/* Width, not scaleX, on purpose: scaling would squash the rounded end at low values, and
-          the track is fixed and overflow-hidden, so this width change reflows nothing else. */}
-      <div
-        className="h-full rounded-full bg-blue transition-[width] duration-base ease-out-quad"
-        style={{ width: `${pct}%` }}
-      />
+      <div className={FILL} style={{ width: `${pct}%` }} />
     </div>
   )
 }

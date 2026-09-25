@@ -4,3 +4,5 @@ export const NOTE = 'mr-auto text-footnote text-label-secondary'
 
 /* What a delete takes with it is the one note that must not read as a footnote. */
 export const DELETE_NOTE = 'mr-auto text-footnote text-red-text'
+
+export const ERROR = 'mr-auto animate-fade-in text-footnote text-red-text'
