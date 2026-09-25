@@ -61,10 +61,9 @@ export function Sprints() {
   const backlogTickets = tickets.filter((ticket) => ticket.sprintId === null)
   const detailTicket = tickets.find((ticket) => ticket.id === detailTicketId) ?? null
 
-  const activeText = activeSprint ? `${activeSprint.name} en curso · ` : ''
-  const countText =
-    sprints.length === 1 ? '1 sprint en total' : `${sprints.length} sprints en total`
-  const subtitle = loadState === 'ready' ? `${activeText}${countText}.` : null
+  const countText = sprints.length === 1 ? '1 sprint' : `${sprints.length} sprints`
+  const activeText = activeSprint ? ` · ${activeSprint.name} en curso` : ''
+  const meta = loadState === 'ready' ? `${countText}${activeText}` : null
 
   function handleSelectTicket(ticket) {
     setDetailTicketId(ticket.id)
@@ -72,14 +71,13 @@ export function Sprints() {
 
   return (
     <section>
-      <PageHeader title="Sprints" subtitle={subtitle}>
-        <Button size="sm" onClick={() => setIsModalOpen(true)}>
+      <PageHeader title="Sprints" meta={meta}>
+        <Button size="sm" onClick={() => setIsModalOpen(true)} className="shrink-0">
           <Plus className="size-4" aria-hidden="true" />
-          Nuevo sprint
+          Crear sprint
         </Button>
       </PageHeader>
 
-      {/* mt-4 rather than the default mt-2: the card list below it needs more room to breathe. */}
       <LoadState
         state={loadState}
         isEmpty={sprints.length === 0}

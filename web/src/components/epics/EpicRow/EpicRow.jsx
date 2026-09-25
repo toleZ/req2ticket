@@ -4,21 +4,14 @@ import { ChevronRight } from 'lucide-react'
 
 import { TicketSummaryList } from '@/components/tickets/TicketSummaryList/TicketSummaryList'
 import { Badge } from '@/components/ui/Badge/Badge'
+import { CHEVRON, EXPAND_BUTTON, META, PANEL, PANEL_LABEL, ROW } from '@/components/ui/ListRow/ListRow.styles'
 import { ProgressBar } from '@/components/ui/ProgressBar/ProgressBar'
 import { cn } from '@/lib/cn'
 import { ACCENT_COLORS, EPIC_PRIORITY_OPTIONS, EPIC_STATUS_OPTIONS } from '@/lib/epicOptions'
 import { findOption } from '@/lib/options'
 import { springSoft } from '@/lib/motion'
 import { cancelledNote, summarizeTickets } from '@/lib/ticketStats'
-import {
-  CHEVRON,
-  EXPAND_BUTTON,
-  OPEN_BUTTON,
-  OPEN_CODE,
-  OPEN_NAME,
-  OWNER_NAME,
-  PANEL_LABEL,
-} from './EpicRow.styles'
+import { OPEN_BUTTON, OPEN_CODE, OPEN_NAME, OWNER_NAME } from './EpicRow.styles'
 
 /**
  * An epic in the list: read-only, apart from the disclosure that shows its tickets.
@@ -36,13 +29,11 @@ export function EpicRow({ epic, tickets, onSelectEpic, onSelectTicket }) {
   const stats = summarizeTickets(tickets)
 
   return (
-    <li className="rounded-control bg-fill-tertiary px-3 py-2.5">
+    <li className={ROW}>
       <div className="flex items-start gap-2">
-        {/* The row is already bg-fill-tertiary, so EXPAND_BUTTON hovers to fill-secondary
-            instead: the usual fill-tertiary hover would be invisible here. */}
         <button
           type="button"
-          aria-label={isExpanded ? 'Ocultar tickets' : 'Ver tickets'}
+          aria-label={isExpanded ? `Ocultar tickets de ${epic.name}` : `Ver tickets de ${epic.name}`}
           onClick={() => setIsExpanded(!isExpanded)}
           aria-expanded={isExpanded}
           aria-controls={panelId}
@@ -88,7 +79,7 @@ export function EpicRow({ epic, tickets, onSelectEpic, onSelectTicket }) {
           </h2>
 
           <div className="mt-1.5 flex flex-wrap items-center gap-2">
-            <span className="text-caption text-label-secondary">
+            <span className={META}>
               {stats.completed}/{stats.total} {stats.total === 1 ? 'ticket' : 'tickets'}
               {cancelledNote(stats)} ·{' '}
               {stats.pointsCompleted}/{stats.points} pts
@@ -118,7 +109,7 @@ export function EpicRow({ epic, tickets, onSelectEpic, onSelectTicket }) {
             transition={springSoft}
             className="overflow-hidden"
           >
-            <div className="ml-8 mt-3 border-t border-separator pt-3">
+            <div className={PANEL}>
               <p className={PANEL_LABEL}>Tickets</p>
               {stats.all === 0 ? (
                 <p className="mt-1.5 text-footnote text-label-secondary">

@@ -7,6 +7,7 @@ import { CreateEpicModal } from '@/components/epics/CreateEpicModal/CreateEpicMo
 import { EpicDetailModal } from '@/components/epics/EpicDetailModal/EpicDetailModal'
 import { EpicFilterBar } from '@/components/epics/EpicFilterBar/EpicFilterBar'
 import { EpicList } from '@/components/epics/EpicList/EpicList'
+import { PageHeader } from '@/components/layout/PageHeader/PageHeader'
 import { TicketDetailModal } from '@/components/tickets/TicketDetailModal/TicketDetailModal'
 import { Button } from '@/components/ui/Button/Button'
 import { LoadState } from '@/components/ui/LoadState/LoadState'
@@ -87,26 +88,17 @@ export function Epics() {
   const detailEpic = epics.find((epic) => epic.id === detailEpicId) ?? null
   const detailTicket = tickets.find((ticket) => ticket.id === detailTicketId) ?? null
 
+  const meta = loadState === 'ready' ? `${countText} · ${activeEpics} ${activeEpics === 1 ? 'activa' : 'activas'}` : null
+
   return (
     <section>
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
-        <div className="flex min-w-0 items-baseline gap-3">
-          <h1 className="text-title1 text-label">Épicas</h1>
-          {loadState === 'ready' && (
-            <p className="mono text-caption text-label-secondary tabular-nums">
-              {countText} · {activeEpics} {activeEpics === 1 ? 'activa' : 'activas'}
-            </p>
-          )}
-        </div>
-
-        <div className="flex w-full items-center gap-2 sm:ml-auto sm:w-auto">
-          <SearchBox value={search} placeholder="Buscar por nombre o código" onChange={handleSearchChange} />
-          <Button size="sm" onClick={() => setIsModalOpen(true)} className="shrink-0">
-            <Plus className="size-4" aria-hidden="true" />
-            Crear épica
-          </Button>
-        </div>
-      </div>
+      <PageHeader title="Épicas" meta={meta}>
+        <SearchBox value={search} placeholder="Buscar por nombre o código" onChange={handleSearchChange} />
+        <Button size="sm" onClick={() => setIsModalOpen(true)} className="shrink-0">
+          <Plus className="size-4" aria-hidden="true" />
+          Crear épica
+        </Button>
+      </PageHeader>
 
       {loadState === 'ready' && (
         <EpicFilterBar

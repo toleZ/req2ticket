@@ -3,6 +3,7 @@ import { useOutletContext, useSearchParams } from 'react-router-dom'
 import { AnimatePresence } from 'motion/react'
 import { Plus } from 'lucide-react'
 
+import { PageHeader } from '@/components/layout/PageHeader/PageHeader'
 import { CreateTicketModal } from '@/components/tickets/CreateTicketModal/CreateTicketModal'
 import { TicketDetailModal } from '@/components/tickets/TicketDetailModal/TicketDetailModal'
 import { TicketFilterBar } from '@/components/tickets/TicketFilterBar/TicketFilterBar'
@@ -92,26 +93,17 @@ export function Tickets() {
       ? `${tickets.length} ${tickets.length === 1 ? 'ticket' : 'tickets'}`
       : `${filteredTickets.length} de ${tickets.length} tickets`
 
+  const meta = loadState === 'ready' ? `${countText} · ${points.toLocaleString('es-AR')} pts` : null
+
   return (
     <section>
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
-        <div className="flex min-w-0 items-baseline gap-3">
-          <h1 className="text-title1 text-label">Backlog</h1>
-          {loadState === 'ready' && (
-            <p className="mono text-caption text-label-secondary tabular-nums">
-              {countText} · {points.toLocaleString('es-AR')} pts
-            </p>
-          )}
-        </div>
-
-        <div className="flex w-full items-center gap-2 sm:ml-auto sm:w-auto">
-          <SearchBox value={search} placeholder="Buscar por texto o código" onChange={handleSearchChange} />
-          <Button size="sm" onClick={() => setIsModalOpen(true)} className="shrink-0">
-            <Plus className="size-4" aria-hidden="true" />
-            Crear ticket
-          </Button>
-        </div>
-      </div>
+      <PageHeader title="Backlog" meta={meta}>
+        <SearchBox value={search} placeholder="Buscar por texto o código" onChange={handleSearchChange} />
+        <Button size="sm" onClick={() => setIsModalOpen(true)} className="shrink-0">
+          <Plus className="size-4" aria-hidden="true" />
+          Crear ticket
+        </Button>
+      </PageHeader>
 
       {loadState === 'ready' && (
         <TicketFilterBar
