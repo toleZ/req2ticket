@@ -167,4 +167,9 @@
     transition-property: color, background-color, border-color, box-shadow, opacity !important;
     scroll-behavior: auto !important;
   }
+
+  /* Revealed rows appear together instead of one after another. */
+  .animate-reveal {
+    animation-delay: 0ms !important;
+  }
 }

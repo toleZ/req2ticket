@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import { useOutletContext, useSearchParams } from 'react-router-dom'
 import { AnimatePresence } from 'motion/react'
-import { Plus, Search } from 'lucide-react'
+import { Plus } from 'lucide-react'
 
 import { CreateTicketModal } from '@/components/tickets/CreateTicketModal/CreateTicketModal'
 import { TicketDetailModal } from '@/components/tickets/TicketDetailModal/TicketDetailModal'
@@ -9,16 +9,12 @@ import { TicketFilterBar } from '@/components/tickets/TicketFilterBar/TicketFilt
 import { TicketList } from '@/components/tickets/TicketList/TicketList'
 import { Button } from '@/components/ui/Button/Button'
 import { LoadState } from '@/components/ui/LoadState/LoadState'
+import { SearchBox } from '@/components/ui/SearchBox/SearchBox'
 import { createTicket } from '@/lib/api'
 import { readSession } from '@/lib/auth'
 import { LIST_KEYS, applyFilters, byPriority, countActive, readFilters } from '@/lib/backlogFilters'
 import { TICKET_STATUS_OPTIONS } from '@/lib/ticketOptions'
-
-const SEARCH_BOX = `flex min-h-11 w-full items-center gap-2 rounded-control bg-fill-tertiary px-2.5
-  transition-colors duration-fast hover:bg-fill-secondary focus-ring-within sm:w-72 lg:min-h-8`
-
-const KBD = `hidden h-5 min-w-5 place-items-center rounded-[5px] bg-fill-secondary px-1 text-caption2
-  font-medium text-label-secondary sm:grid`
+import { changeParams, setListParam } from '@/lib/urlFilters'
 
 export function Tickets() {
   const {
@@ -46,23 +42,12 @@ export function Tickets() {
   const [params, setParams] = useSearchParams()
   const filters = readFilters(params)
   const activeCount = countActive(filters)
-  const searchRef = useRef(null)
 
-  /* The function form starts from the URL as it is now, not as it was on the last render:
-     two quick changes (a chip, then another) would otherwise overwrite each other. */
   function updateParams(change, replace = false) {
-    setParams(
-      (current) => {
-        const next = new URLSearchParams(current)
-        change(next)
-        return next
-      },
-      { replace },
-    )
+    changeParams(setParams, change, replace)
   }
 
-  /* The search box keeps its own text and writes it to the URL as you type. Bound to the URL
-     alone, a fast typist lost letters: the box showed the URL, which lags a keystroke. */
+  /* The search box's text lives here (see SearchBox) and is written to the URL as you type. */
   const [search, setSearch] = useState(filters.q)
 
   function handleSearchChange(text) {
@@ -71,26 +56,13 @@ export function Tickets() {
   }
 
   function setList(key, values) {
-    updateParams((next) => (values.length ? next.set(key, values.join(',')) : next.delete(key)))
+    updateParams((next) => setListParam(next, key, values))
   }
 
   function clearFilters() {
     setSearch('')
     updateParams((next) => ['q', 'mine', ...LIST_KEYS].forEach((key) => next.delete(key)))
   }
-
-  /* "/" jumps to the search from anywhere on the page, unless you are already typing. */
-  useEffect(() => {
-    function handleSlash(e) {
-      if (e.key !== '/' || e.metaKey || e.ctrlKey) return
-      if (e.target.closest('input, textarea, select, [contenteditable="true"]')) return
-      e.preventDefault()
-      searchRef.current?.focus()
-    }
-
-    window.addEventListener('keydown', handleSlash)
-    return () => window.removeEventListener('keydown', handleSlash)
-  }, [])
 
   // Appends what the POST returns, which already carries the id and code the backend assigned.
   async function handleCreate(values) {
@@ -133,30 +105,7 @@ export function Tickets() {
         </div>
 
         <div className="flex w-full items-center gap-2 sm:ml-auto sm:w-auto">
-          <label className={SEARCH_BOX}>
-            <Search className="size-4 shrink-0 text-label-tertiary" aria-hidden="true" />
-            <input
-              ref={searchRef}
-              type="search"
-              value={search}
-              onChange={(e) => handleSearchChange(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Escape' && search) {
-                  e.preventDefault()
-                  handleSearchChange('')
-                }
-              }}
-              placeholder="Buscar por texto o código"
-              aria-label="Buscar por texto o código"
-              aria-keyshortcuts="/"
-              className="min-w-0 flex-1 self-stretch bg-transparent text-footnote text-label placeholder:text-label-tertiary focus:outline-none [&::-webkit-search-cancel-button]:hidden"
-            />
-            {!search && (
-              <kbd className={KBD} aria-hidden="true">
-                /
-              </kbd>
-            )}
-          </label>
+          <SearchBox value={search} placeholder="Buscar por texto o código" onChange={handleSearchChange} />
           <Button size="sm" onClick={() => setIsModalOpen(true)} className="shrink-0">
             <Plus className="size-4" aria-hidden="true" />
             Crear ticket
@@ -204,6 +153,7 @@ export function Tickets() {
 
       {loadState === 'ready' && filteredTickets.length > 0 && (
         <TicketList
+          key={params.toString()}
           sections={sections}
           epics={epics}
           onSelectTicket={(ticket) => setDetailTicketId(ticket.id)}

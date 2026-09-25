@@ -1,4 +1,5 @@
 import { TICKET_PRIORITY_OPTIONS } from '@/lib/ticketOptions'
+import { readList } from '@/lib/urlFilters'
 
 /* The Backlog's filters live in the URL (?priority=high,critical&epic=3&mine=1), so a reload
    keeps them, a link shares the exact view and Back undoes a change. This file turns the URL
@@ -19,7 +20,7 @@ export const SORT_OPTIONS = [
 export function readFilters(params) {
   const filters = { q: params.get('q') ?? '', mine: params.get('mine') === '1' }
   LIST_KEYS.forEach((key) => {
-    filters[key] = (params.get(key) ?? '').split(',').filter(Boolean)
+    filters[key] = readList(params, key)
   })
   filters.sort = params.get('sort') === 'priority' ? 'priority' : 'status'
   return filters

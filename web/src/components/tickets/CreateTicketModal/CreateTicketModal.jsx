@@ -10,7 +10,6 @@ import {
   STORY_CALLOUT,
   STORY_TEXTAREA,
 } from '@/components/tickets/TicketDetailModal/TicketDetailModal.styles'
-import { Avatar } from '@/components/ui/Avatar/Avatar'
 import { Button } from '@/components/ui/Button/Button'
 import { FOOTER } from '@/components/ui/DetailFooter/DetailFooter.styles'
 import { HEADER } from '@/components/ui/DetailHeader/DetailHeader.styles'
@@ -23,11 +22,9 @@ import { SearchSelect } from '@/components/ui/SearchSelect/SearchSelect'
 import { SegmentedField } from '@/components/ui/SegmentedField/SegmentedField'
 import { getUsers } from '@/lib/api'
 import { cn } from '@/lib/cn'
-import { ACCENT_COLORS } from '@/lib/epicOptions'
 import { errorMessage } from '@/lib/errors'
 import { EASE_IOS, exitQuick } from '@/lib/motion'
-import { findOption } from '@/lib/options'
-import { SPRINT_STATUS_OPTIONS } from '@/lib/sprintOptions'
+import { epicPickerOptions, sprintPickerOptions, userPickerOptions } from '@/lib/pickerOptions'
 import {
   DESCRIPTION_PLACEHOLDER,
   EXTRA_FIELDS,
@@ -122,37 +119,9 @@ export function CreateTicketModal({ isOpen, onClose, onCreate, epics, sprints })
   const type = values.type
   const sideFields = EXTRA_FIELDS[type].filter((field) => field.kind === 'select')
 
-  const epicOptions = epics.map((epic) => {
-    const accent = findOption(ACCENT_COLORS, epic.accentColor)
-    return {
-      value: String(epic.id),
-      label: epic.name,
-      leading: (
-        <span
-          className={cn('size-2 shrink-0 rounded-full', accent ? accent.dotClass : 'bg-gray')}
-          aria-hidden="true"
-        />
-      ),
-    }
-  })
-
-  const sprintOptions = [
-    { value: '', label: 'Sin sprint (backlog)' },
-    ...sprints.map((sprint) => ({
-      value: String(sprint.id),
-      label: sprint.name,
-      hint: findOption(SPRINT_STATUS_OPTIONS, sprint.status)?.label,
-    })),
-  ]
-
-  const assigneeOptions = [
-    { value: '', label: 'Sin asignar' },
-    ...users.map((user) => ({
-      value: String(user.id),
-      label: user.name,
-      leading: <Avatar name={user.name} size="sm" />,
-    })),
-  ]
+  const epicOptions = epicPickerOptions(epics)
+  const sprintOptions = sprintPickerOptions(sprints, 'Sin sprint (backlog)')
+  const assigneeOptions = userPickerOptions(users, 'Sin asignar')
 
   function setField(name, value) {
     const nextValues = { ...values, [name]: value }

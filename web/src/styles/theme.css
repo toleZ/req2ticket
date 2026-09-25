@@ -70,6 +70,10 @@
   --animate-tick-in: tick-in 180ms var(--ease-ios) both;
   --animate-row-in: row-in 200ms var(--ease-ios) backwards;
   --animate-row-out: row-out 150ms var(--ease-out-quad) forwards;
+  /* Rows revealed by "Mostrar más" or by unfolding a section: they rise into place one after
+     another. Each row sets its own animation-delay for the stagger (lib/reveal.js) — a var()
+     in here would resolve on :root, not on the row. */
+  --animate-reveal: reveal 240ms var(--ease-ios) backwards;
 
   @keyframes fade-in {
     from { opacity: 0; }
@@ -83,6 +87,9 @@
   @keyframes row-in {
     from { opacity: 0; max-height: 0; padding-block: 0; }
     to { max-height: 8rem; }
+  }
+  @keyframes reveal {
+    from { opacity: 0; transform: translateY(6px); }
   }
   @keyframes row-out {
     from { max-height: 8rem; }

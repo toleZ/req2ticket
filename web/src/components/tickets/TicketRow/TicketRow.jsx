@@ -7,6 +7,7 @@ import { ProgressBar } from '@/components/ui/ProgressBar/ProgressBar'
 import { cn } from '@/lib/cn'
 import { ACCENT_COLORS } from '@/lib/epicOptions'
 import { layoutGlide } from '@/lib/motion'
+import { revealProps } from '@/lib/reveal'
 import { findOption } from '@/lib/options'
 import { TICKET_PRIORITY_OPTIONS, TICKET_TYPE_OPTIONS } from '@/lib/ticketOptions'
 import { CELL, CELL_BADGE, CODE, META, ROW, TITLE } from './TicketRow.styles'
@@ -31,7 +32,7 @@ import { checklistProgress } from '@/lib/ticketStats'
  * The type is only the icon: the "UH" / "Tarea" badge next to it said the same thing twice
  * and took the room the title needs. The type still reaches screen readers through the label.
  */
-export function TicketRow({ ticket, epics, onSelectTicket }) {
+export function TicketRow({ ticket, epics, index, revealFrom = null, onSelectTicket }) {
   const priority = findOption(TICKET_PRIORITY_OPTIONS, ticket.priority)
   const type = findOption(TICKET_TYPE_OPTIONS, ticket.type)
   const checklist = checklistProgress(ticket)
@@ -60,7 +61,12 @@ export function TicketRow({ ticket, epics, onSelectTicket }) {
      another status section — motion glides it from where it was instead of letting it jump.
      `position` animates the move only, never a stretch of the row. */
   return (
-    <motion.li layout="position" layoutId={`ticket-${ticket.id}`} transition={layoutGlide}>
+    <motion.li
+      layout="position"
+      layoutId={`ticket-${ticket.id}`}
+      transition={layoutGlide}
+      {...revealProps(index, revealFrom)}
+    >
       <button type="button" onClick={() => onSelectTicket(ticket)} aria-label={label} className={ROW}>
         <TicketTypeIcon type={ticket.type} className="size-4" />
 

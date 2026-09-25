@@ -5,7 +5,8 @@
    Inside it is a combobox: the button opens a panel with a search box and the matching
    options. The arrows move through them, Enter picks, Escape closes (without closing the modal
    around it), and leaving the panel with Tab or a click elsewhere closes it too. The panel
-   opens in the page flow, below the button, so a scrolling column never cuts it off. */
+   floats over what is below it instead of pushing it down, and opens upwards when the
+   scrolling column it lives in has more room above the button than below. */
 import { useEffect, useId, useRef, useState } from 'react'
 import { Check, ChevronsUpDown, Search } from 'lucide-react'
 
@@ -13,9 +14,20 @@ import { cn } from '@/lib/cn'
 
 const TRIGGER = `flex min-h-11 w-full min-w-0 items-center gap-2 rounded-control border border-separator
   bg-elevated px-2 py-1 text-left text-footnote text-label transition-colors duration-fast
-  hover:border-separator-opaque disabled:opacity-50 aria-invalid:border-red lg:min-h-0`
+  hover:border-separator-opaque disabled:opacity-50 aria-invalid:border-red lg:min-h-8 lg:py-0.5`
 
-const PANEL = 'mt-1 origin-top animate-pop-in rounded-control bg-elevated p-1 shadow-popover ring-[0.5px] ring-separator'
+const PANEL = `absolute inset-x-0 z-20 animate-pop-in rounded-control bg-elevated p-1 shadow-popover
+  ring-[0.5px] ring-separator`
+
+// Search box plus the list at its tallest (max-h-56) and the panel's padding.
+const PANEL_HEIGHT = 280
+
+// The nearest ancestor that scrolls: the room the panel has is measured inside it.
+function scrollParent(element) {
+  let parent = element.parentElement
+  while (parent && !/auto|scroll/.test(getComputedStyle(parent).overflowY)) parent = parent.parentElement
+  return parent || document.documentElement
+}
 
 const INNER_RADIUS = 'rounded-[calc(var(--radius-control)-0.25rem)]'
 
@@ -39,6 +51,7 @@ export function SearchSelect({
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [active, setActive] = useState(0)
+  const [openUp, setOpenUp] = useState(false)
   const triggerRef = useRef(null)
   const panelRef = useRef(null)
   const listId = useId()
@@ -56,6 +69,11 @@ export function SearchSelect({
   })
 
   function openPanel() {
+    const box = scrollParent(triggerRef.current).getBoundingClientRect()
+    const trigger = triggerRef.current.getBoundingClientRect()
+    const below = Math.min(box.bottom, window.innerHeight) - trigger.bottom
+    const above = trigger.top - Math.max(box.top, 0)
+    setOpenUp(below < PANEL_HEIGHT && above > below)
     setQuery('')
     setActive(Math.max(0, options.indexOf(selected)))
     setOpen(true)
@@ -100,7 +118,7 @@ export function SearchSelect({
   }
 
   return (
-    <div onBlur={handleBlur}>
+    <div className="relative" onBlur={handleBlur}>
       <button
         ref={triggerRef}
         id={id}
@@ -126,7 +144,7 @@ export function SearchSelect({
       </button>
 
       {open && (
-        <div ref={panelRef} className={PANEL}>
+        <div ref={panelRef} className={cn(PANEL, openUp ? 'bottom-full mb-1 origin-bottom' : 'top-full mt-1 origin-top')}>
           <div className={cn('flex min-h-11 items-center gap-2 bg-fill-tertiary px-2 lg:min-h-8', INNER_RADIUS)}>
             <Search className="size-3.5 shrink-0 text-label-secondary" aria-hidden="true" />
             <input

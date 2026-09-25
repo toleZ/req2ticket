@@ -1,6 +1,7 @@
 import { TicketTypeIcon } from '@/components/tickets/TicketTypeIcon/TicketTypeIcon'
 import { Badge } from '@/components/ui/Badge/Badge'
 import { findOption } from '@/lib/options'
+import { revealProps } from '@/lib/reveal'
 import { TICKET_STATUS_OPTIONS } from '@/lib/ticketOptions'
 import { CODE, ROW, TITLE } from './TicketSummaryList.styles'
 
@@ -17,14 +18,14 @@ import { CODE, ROW, TITLE } from './TicketSummaryList.styles'
  * The rows carry no padding of their own: the hover paints nothing, so there is no box that
  * needs air inside it and the text stays aligned with the rest of the panel.
  */
-export function TicketSummaryList({ tickets, onSelectTicket }) {
+export function TicketSummaryList({ tickets, revealFrom = null, onSelectTicket }) {
   return (
     <ul className="flex flex-col gap-1.5">
-      {tickets.map((ticket) => {
+      {tickets.map((ticket, index) => {
         const status = findOption(TICKET_STATUS_OPTIONS, ticket.status)
 
         return (
-          <li key={ticket.id}>
+          <li key={ticket.id} {...revealProps(index, revealFrom)}>
             {/* Same as in TicketRow: the label reads the row in order, saying what each
                 piece is, instead of the chips run together. */}
             <button

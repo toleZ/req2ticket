@@ -1,16 +1,20 @@
 import { useState } from 'react'
-import { useOutletContext } from 'react-router-dom'
+import { useOutletContext, useSearchParams } from 'react-router-dom'
 import { AnimatePresence } from 'motion/react'
 import { Plus } from 'lucide-react'
 
-import { PageHeader } from '@/components/layout/PageHeader/PageHeader'
 import { CreateEpicModal } from '@/components/epics/CreateEpicModal/CreateEpicModal'
 import { EpicDetailModal } from '@/components/epics/EpicDetailModal/EpicDetailModal'
+import { EpicFilterBar } from '@/components/epics/EpicFilterBar/EpicFilterBar'
 import { EpicList } from '@/components/epics/EpicList/EpicList'
 import { TicketDetailModal } from '@/components/tickets/TicketDetailModal/TicketDetailModal'
 import { Button } from '@/components/ui/Button/Button'
 import { LoadState } from '@/components/ui/LoadState/LoadState'
+import { SearchBox } from '@/components/ui/SearchBox/SearchBox'
 import { createEpic, deleteEpic, updateEpic } from '@/lib/api'
+import { readSession } from '@/lib/auth'
+import { LIST_KEYS, applyFilters, countActive, readFilters } from '@/lib/epicFilters'
+import { changeParams, setListParam } from '@/lib/urlFilters'
 
 export function Epics() {
   const {
@@ -33,6 +37,33 @@ export function Epics() {
      deleted this becomes null and the modal unmounts on its own. */
   const [detailEpicId, setDetailEpicId] = useState(null)
   const [detailTicketId, setDetailTicketId] = useState(null)
+
+  /* Filters in the URL, like the Backlog's (see lib/epicFilters.js and lib/urlFilters.js). */
+  const [params, setParams] = useSearchParams()
+  const filters = readFilters(params)
+  const activeCount = countActive(filters)
+  const [search, setSearch] = useState(filters.q)
+
+  function updateParams(change, replace = false) {
+    changeParams(setParams, change, replace)
+  }
+
+  function handleSearchChange(text) {
+    setSearch(text)
+    updateParams((next) => (text ? next.set('q', text) : next.delete('q')), true)
+  }
+
+  function clearFilters() {
+    setSearch('')
+    updateParams((next) => ['q', 'mine', ...LIST_KEYS].forEach((key) => next.delete(key)))
+  }
+
+  const visibleEpics = applyFilters(epics, filters, readSession()?.user?.id)
+  const activeEpics = visibleEpics.filter((epic) => epic.status === 'active').length
+  const countText =
+    visibleEpics.length === epics.length
+      ? `${epics.length} ${epics.length === 1 ? 'épica' : 'épicas'}`
+      : `${visibleEpics.length} de ${epics.length} épicas`
 
   // Appends what the POST returns, which already carries the id and code the backend assigned.
   async function handleCreate(values) {
@@ -58,12 +89,36 @@ export function Epics() {
 
   return (
     <section>
-      <PageHeader title="Épicas">
-        <Button size="sm" onClick={() => setIsModalOpen(true)}>
-          <Plus className="size-4" aria-hidden="true" />
-          Nueva épica
-        </Button>
-      </PageHeader>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+        <div className="flex min-w-0 items-baseline gap-3">
+          <h1 className="text-title1 text-label">Épicas</h1>
+          {loadState === 'ready' && (
+            <p className="mono text-caption text-label-secondary tabular-nums">
+              {countText} · {activeEpics} {activeEpics === 1 ? 'activa' : 'activas'}
+            </p>
+          )}
+        </div>
+
+        <div className="flex w-full items-center gap-2 sm:ml-auto sm:w-auto">
+          <SearchBox value={search} placeholder="Buscar por nombre o código" onChange={handleSearchChange} />
+          <Button size="sm" onClick={() => setIsModalOpen(true)} className="shrink-0">
+            <Plus className="size-4" aria-hidden="true" />
+            Crear épica
+          </Button>
+        </div>
+      </div>
+
+      {loadState === 'ready' && (
+        <EpicFilterBar
+          filters={filters}
+          activeCount={activeCount}
+          users={users}
+          onListChange={(key, values) => updateParams((next) => setListParam(next, key, values))}
+          onMineChange={(on) => updateParams((next) => (on ? next.set('mine', '1') : next.delete('mine')))}
+          onSortChange={(sort) => updateParams((next) => (sort === 'status' ? next.delete('sort') : next.set('sort', sort)))}
+          onClear={clearFilters}
+        />
+      )}
 
       <LoadState
         state={loadState}
@@ -74,9 +129,20 @@ export function Epics() {
         onRetry={reload}
       />
 
-      {loadState === 'ready' && epics.length > 0 && (
+      {loadState === 'ready' && epics.length > 0 && visibleEpics.length === 0 && (
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <p className="text-body text-label-secondary">Ninguna épica coincide con los filtros.</p>
+          {activeCount > 0 && (
+            <Button variant="neutral" size="sm" onClick={clearFilters}>
+              Limpiar filtros
+            </Button>
+          )}
+        </div>
+      )}
+
+      {loadState === 'ready' && visibleEpics.length > 0 && (
         <EpicList
-          epics={epics}
+          epics={visibleEpics}
           tickets={tickets}
           onSelectEpic={(epic) => setDetailEpicId(epic.id)}
           onSelectTicket={(ticket) => setDetailTicketId(ticket.id)}

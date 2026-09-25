@@ -10,10 +10,12 @@ import { DetailSelect } from '@/components/ui/DetailRow/DetailSelect'
 import { InlineTitleField } from '@/components/ui/InlineTitleField/InlineTitleField'
 import { Modal } from '@/components/ui/Modal/Modal'
 import { ProgressBar } from '@/components/ui/ProgressBar/ProgressBar'
+import { SearchSelect } from '@/components/ui/SearchSelect/SearchSelect'
 import { cn } from '@/lib/cn'
 import { ACCENT_COLORS, EPIC_PRIORITY_OPTIONS, EPIC_STATUS_OPTIONS } from '@/lib/epicOptions'
 import { errorMessage } from '@/lib/errors'
 import { findOption } from '@/lib/options'
+import { userPickerOptions } from '@/lib/pickerOptions'
 import { cancelledNote, summarizeTickets } from '@/lib/ticketStats'
 import { validateEpicForm } from '@/lib/validate'
 import { CONTROL_TEXTAREA, FIELD_LABEL, SIDE_CAPTION } from './EpicDetailModal.styles'
@@ -40,12 +42,16 @@ export function EpicDetailModal({ epic, tickets, users, onClose, onUpdateEpic, o
   const stats = summarizeTickets(tickets)
 
   function handleChange(e) {
-    const nextValues = { ...values, [e.target.name]: e.target.value }
+    handleFieldChange(e.target.name, e.target.value)
+  }
+
+  function handleFieldChange(name, value) {
+    const nextValues = { ...values, [name]: value }
     setValues(nextValues)
     setDirty(true)
 
-    if (errors[e.target.name]) {
-      setErrors({ ...errors, [e.target.name]: validateEpicForm(nextValues)[e.target.name] })
+    if (errors[name]) {
+      setErrors({ ...errors, [name]: validateEpicForm(nextValues)[name] })
     }
   }
 
@@ -172,20 +178,17 @@ export function EpicDetailModal({ epic, tickets, users, onClose, onUpdateEpic, o
               </DetailRow>
 
               <DetailRow label="Responsable" htmlFor={`epic-${epic.id}-owner`}>
-                <DetailSelect
-                  id={`epic-${epic.id}-owner`}
-                  name="ownerId"
-                  value={values.ownerId}
-                  disabled={submitting}
-                  onChange={handleChange}
-                >
-                  <option value="">Sin asignar</option>
-                  {users.map((user) => (
-                    <option key={user.id} value={user.id}>
-                      {user.name}
-                    </option>
-                  ))}
-                </DetailSelect>
+                <div className="w-full min-w-0">
+                  <SearchSelect
+                    id={`epic-${epic.id}-owner`}
+                    value={values.ownerId}
+                    options={userPickerOptions(users, 'Sin asignar')}
+                    searchLabel="Buscar persona"
+                    noResults="Nadie coincide"
+                    disabled={submitting}
+                    onChange={(value) => handleFieldChange('ownerId', value)}
+                  />
+                </div>
               </DetailRow>
 
               {/* Stacked and not in a detail row: ten swatches do not fit beside the label. */}
