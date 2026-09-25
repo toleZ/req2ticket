@@ -3,13 +3,8 @@ import { AnimatePresence, motion } from 'motion/react'
 import { X } from 'lucide-react'
 
 import { TicketExtraFields } from '@/components/tickets/TicketExtraFields/TicketExtraFields'
-import { SHEET_LABEL } from '@/components/tickets/TicketExtraFields/TicketExtraFields.styles'
 import { TicketPointsField } from '@/components/tickets/TicketPointsField/TicketPointsField'
-import {
-  CONTROL_TEXTAREA,
-  STORY_CALLOUT,
-  STORY_TEXTAREA,
-} from '@/components/tickets/TicketDetailModal/TicketDetailModal.styles'
+import { STORY_CALLOUT, STORY_TEXTAREA } from '@/components/tickets/TicketDetailModal/TicketDetailModal.styles'
 import { Button } from '@/components/ui/Button/Button'
 import { FOOTER } from '@/components/ui/DetailFooter/DetailFooter.styles'
 import { HEADER } from '@/components/ui/DetailHeader/DetailHeader.styles'
@@ -20,6 +15,8 @@ import { InlineTitleField } from '@/components/ui/InlineTitleField/InlineTitleFi
 import { Modal } from '@/components/ui/Modal/Modal'
 import { SearchSelect } from '@/components/ui/SearchSelect/SearchSelect'
 import { SegmentedField } from '@/components/ui/SegmentedField/SegmentedField'
+import { RequiredMark, RequiredNote } from '@/components/ui/SheetField/SheetField'
+import { FIELD_ERROR, SHEET_LABEL, SHEET_TEXTAREA, SIDE_LABEL } from '@/components/ui/SheetField/SheetField.styles'
 import { getUsers } from '@/lib/api'
 import { cn } from '@/lib/cn'
 import { errorMessage } from '@/lib/errors'
@@ -35,7 +32,7 @@ import {
 import { TICKET_PRIORITY_OPTIONS, TICKET_STATUS_OPTIONS } from '@/lib/ticketOptions'
 import { validateTicketForm } from '@/lib/validate'
 import { CREATE_LABEL, FIELD_IDS, GROW, INITIAL_TYPE, INITIAL_VALUES, SWAP, TYPE_SEGMENTS } from './CreateTicketModal.data'
-import { FIELD_ERROR, FORM, FORM_ERROR, SIDE_LABEL } from './CreateTicketModal.styles'
+import { FORM, FORM_ERROR } from './CreateTicketModal.styles'
 
 /**
  * The create sheet. It has the detail sheet's shape — content on the left, metadata on the
@@ -360,7 +357,7 @@ export function CreateTicketModal({ isOpen, onClose, onCreate, epics, sprints })
                     disabled={submitting}
                     onChange={handleChange}
                     placeholder={DESCRIPTION_PLACEHOLDER[type]}
-                    className={CONTROL_TEXTAREA}
+                    className={SHEET_TEXTAREA}
                   />
                 </div>
               )}
@@ -383,12 +380,7 @@ export function CreateTicketModal({ isOpen, onClose, onCreate, epics, sprints })
               {formError}
             </p>
           ) : (
-            <p className="mr-auto text-caption text-label-secondary">
-              <span className="text-red-text" aria-hidden="true">
-                *
-              </span>{' '}
-              Obligatorio
-            </p>
+            <RequiredNote />
           )}
           <Button variant="ghost" onClick={handleClose} disabled={submitting}>
             Cancelar
@@ -399,16 +391,5 @@ export function CreateTicketModal({ isOpen, onClose, onCreate, epics, sprints })
         </div>
       </form>
     </Modal>
-  )
-}
-
-function RequiredMark() {
-  return (
-    <>
-      <span className="text-red-text" aria-hidden="true">
-        {' *'}
-      </span>
-      <span className="sr-only"> (obligatorio)</span>
-    </>
   )
 }

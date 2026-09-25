@@ -12,13 +12,13 @@ export const CHIP_MAIN = 'flex items-center gap-1.5 px-2.5 font-medium'
 export const CHIP_CLEAR = `grid w-9 place-items-center rounded-r-control transition-colors duration-fast
   hover:bg-blue/12 lg:w-7`
 
-export const COUNT = `grid h-4.5 min-w-4.5 place-items-center rounded-[5px] bg-blue px-1 text-caption2
+export const COUNT = `grid h-4.5 min-w-4.5 place-items-center rounded-mini bg-blue px-1 text-caption2
   font-semibold text-white`
 
 export const PANEL = `absolute top-full z-30 mt-1 w-64 origin-top animate-pop-in rounded-control bg-elevated p-1
   shadow-popover ring-[0.5px] ring-separator`
 
-export const INNER = 'rounded-[calc(var(--radius-control)-0.25rem)]'
+export const INNER = 'rounded-control-inner'
 
 export const OPTION = `flex min-h-11 cursor-pointer items-center gap-2.5 px-2.5 text-footnote text-label
   hover:bg-fill-tertiary has-focus-visible:bg-fill-tertiary lg:min-h-8`

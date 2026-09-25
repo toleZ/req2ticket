@@ -1,6 +1,6 @@
 export const GROUP = 'flex rounded-control bg-fill-tertiary p-1'
 
-export const INNER_RADIUS = 'rounded-[calc(var(--radius-control)-0.25rem)]'
+export const INNER_RADIUS = 'rounded-control-inner'
 
 export const OPTION = `relative flex min-h-11 flex-1 cursor-pointer items-center justify-center gap-1.5 ${INNER_RADIUS}
   px-2.5 text-footnote font-medium text-label-secondary transition-colors duration-fast ease-out-quad

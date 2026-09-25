@@ -14,7 +14,7 @@ export const AVATAR_RING = `transition-shadow duration-fast group-hover/user:rin
 export const MENU = `absolute z-30 w-56 animate-fade-in rounded-control bg-elevated p-1 shadow-popover
   ring-[0.5px] ring-separator`
 
-export const ITEM = `flex min-h-11 w-full items-center gap-2.5 rounded-[calc(var(--radius-control)-0.25rem)] px-2.5
+export const ITEM = `flex min-h-11 w-full items-center gap-2.5 rounded-control-inner px-2.5
   text-left text-subheadline text-label transition-colors duration-fast hover:bg-fill-tertiary
   focus-visible:bg-fill-tertiary focus-visible:outline-none lg:min-h-8`
 

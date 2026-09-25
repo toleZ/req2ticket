@@ -22,14 +22,14 @@ export const EPIC_STATUS_OPTIONS = [
 /* Tailwind needs each class name written out literally somewhere to keep it in the
    build — a template string like `bg-${color}` is invisible to its scanner. */
 export const ACCENT_COLORS = [
-  { value: 'blue', dotClass: 'bg-blue' },
-  { value: 'purple', dotClass: 'bg-purple' },
-  { value: 'indigo', dotClass: 'bg-indigo' },
-  { value: 'teal', dotClass: 'bg-teal' },
-  { value: 'green', dotClass: 'bg-green' },
-  { value: 'orange', dotClass: 'bg-orange' },
-  { value: 'red', dotClass: 'bg-red' },
-  { value: 'pink', dotClass: 'bg-pink' },
-  { value: 'mint', dotClass: 'bg-mint' },
-  { value: 'yellow', dotClass: 'bg-yellow' },
+  { value: 'blue', label: 'Azul', dotClass: 'bg-blue' },
+  { value: 'purple', label: 'Violeta', dotClass: 'bg-purple' },
+  { value: 'indigo', label: 'Índigo', dotClass: 'bg-indigo' },
+  { value: 'teal', label: 'Verde azulado', dotClass: 'bg-teal' },
+  { value: 'green', label: 'Verde', dotClass: 'bg-green' },
+  { value: 'orange', label: 'Naranja', dotClass: 'bg-orange' },
+  { value: 'red', label: 'Rojo', dotClass: 'bg-red' },
+  { value: 'pink', label: 'Rosa', dotClass: 'bg-pink' },
+  { value: 'mint', label: 'Menta', dotClass: 'bg-mint' },
+  { value: 'yellow', label: 'Amarillo', dotClass: 'bg-yellow' },
 ]

@@ -1,7 +1,6 @@
 import { useState } from 'react'
 
 import { TicketExtraFields } from '@/components/tickets/TicketExtraFields/TicketExtraFields'
-import { SHEET_LABEL } from '@/components/tickets/TicketExtraFields/TicketExtraFields.styles'
 import { TicketPointsField } from '@/components/tickets/TicketPointsField/TicketPointsField'
 import { TicketTypeIcon } from '@/components/tickets/TicketTypeIcon/TicketTypeIcon'
 import { Badge } from '@/components/ui/Badge/Badge'
@@ -13,6 +12,7 @@ import { DetailSelect } from '@/components/ui/DetailRow/DetailSelect'
 import { InlineTitleField } from '@/components/ui/InlineTitleField/InlineTitleField'
 import { Modal } from '@/components/ui/Modal/Modal'
 import { SearchSelect } from '@/components/ui/SearchSelect/SearchSelect'
+import { SHEET_LABEL, SHEET_TEXTAREA } from '@/components/ui/SheetField/SheetField.styles'
 import { formatDateTime, timeAgo } from '@/lib/dates'
 import { cn } from '@/lib/cn'
 import { errorMessage } from '@/lib/errors'
@@ -26,7 +26,7 @@ import {
 } from '@/lib/ticketExtraFields'
 import { TICKET_PRIORITY_OPTIONS, TICKET_STATUS_OPTIONS, TICKET_TYPE_OPTIONS } from '@/lib/ticketOptions'
 import { validateTicketForm } from '@/lib/validate'
-import { CONTROL_TEXTAREA, META, STORY_CALLOUT, STORY_TEXTAREA, TYPE_VALUE } from './TicketDetailModal.styles'
+import { META, STORY_CALLOUT, STORY_TEXTAREA, TYPE_VALUE } from './TicketDetailModal.styles'
 import { toDetailValues } from './TicketDetailModal.helpers'
 /**
  * A ticket's record: everything it holds, on a two-column sheet, and the only place it is
@@ -432,7 +432,7 @@ export function TicketDetailModal({
                 value={values.description}
                 disabled={submitting}
                 onChange={handleChange}
-                className={CONTROL_TEXTAREA}
+                className={SHEET_TEXTAREA}
               />
             </div>
           )}

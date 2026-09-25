@@ -1,3 +1,5 @@
+/* Every key here has to match the field it feeds: the inputs send `e.target.name`, the
+   status control calls setField with the key written out. */
 export const INITIAL_VALUES = {
   name: '',
   goal: '',
@@ -5,8 +7,12 @@ export const INITIAL_VALUES = {
   endDate: '',
   capacity: '',
   status: 'planned',
-/* Every key here has to match the field's `name` in the form exactly: handleChange uses
-   `e.target.name` to know what to update. If they do not match, the field silently stops
-   accepting input and nothing raises an error. */
+}
 
+/* Where the focus goes when submit finds an error, keyed like validateSprintForm's result. */
+export const FIELD_IDS = {
+  name: 'sprint-name',
+  startDate: 'sprint-start',
+  endDate: 'sprint-end',
+  capacity: 'sprint-capacity',
 }

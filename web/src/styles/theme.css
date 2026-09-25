@@ -44,9 +44,14 @@
 
   /* ── Radii ─────────────────────────────────────────────────────────────── */
   --radius-control: 0.625rem;  /* 10 — buttons, inputs */
+  --radius-control-inner: 0.375rem; /* 6 — pills and options inside a control: its radius minus its 4px padding */
+  --radius-mini: 0.3125rem;    /* 5 — keycaps and count pills */
   --radius-card: 0.875rem;     /* 14 — cards */
   --radius-group: 1.125rem;    /* 18 — list groups */
   --radius-sheet: 1.25rem;     /* 20 — sheets, modals */
+
+  /* ── Tracking ──────────────────────────────────────────────────────────── */
+  --tracking-label: 0.06em;    /* small uppercase labels: sheet labels, section titles */
 
   /* ── Motion ────────────────────────────────────────────────────────────── */
   --ease-ios: cubic-bezier(0.32, 0.72, 0, 1);

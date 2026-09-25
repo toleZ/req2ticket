@@ -4,7 +4,8 @@ import { SelectionPill } from '@/components/ui/SelectionPill/SelectionPill'
 import { cn } from '@/lib/cn'
 import { GROUP, INNER_RADIUS, OPTION } from './SegmentedField.styles'
 
-/* Native radios under the hood, so Tab reaches the group once and the arrows move the choice. */
+/* Native radios under the hood, so Tab reaches the group once and the arrows move the choice.
+   An option with `disabled: true` stays visible but cannot be picked (the arrows skip it). */
 export function SegmentedField({ name, legend, options, value, disabled = false, onChange, className }) {
   const pillId = useId()
 
@@ -26,6 +27,7 @@ export function SegmentedField({ name, legend, options, value, disabled = false,
               name={name}
               value={option.value}
               checked={value === option.value}
+              disabled={option.disabled}
               onChange={() => onChange(option.value)}
               className="peer sr-only"
             />

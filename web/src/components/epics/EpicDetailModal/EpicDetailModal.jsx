@@ -11,6 +11,7 @@ import { InlineTitleField } from '@/components/ui/InlineTitleField/InlineTitleFi
 import { Modal } from '@/components/ui/Modal/Modal'
 import { ProgressBar } from '@/components/ui/ProgressBar/ProgressBar'
 import { SearchSelect } from '@/components/ui/SearchSelect/SearchSelect'
+import { SHEET_TEXTAREA } from '@/components/ui/SheetField/SheetField.styles'
 import { cn } from '@/lib/cn'
 import { ACCENT_COLORS, EPIC_PRIORITY_OPTIONS, EPIC_STATUS_OPTIONS } from '@/lib/epicOptions'
 import { errorMessage } from '@/lib/errors'
@@ -19,7 +20,6 @@ import { userPickerOptions } from '@/lib/pickerOptions'
 import { cancelledNote, summarizeTickets } from '@/lib/ticketStats'
 import { validateEpicForm } from '@/lib/validate'
 import {
-  CONTROL_TEXTAREA,
   FIELD_LABEL,
   PROGRESS_META,
   SECTION_LABEL,
@@ -234,7 +234,7 @@ export function EpicDetailModal({ epic, tickets, users, onClose, onUpdateEpic, o
               value={values.description}
               disabled={submitting}
               onChange={handleChange}
-              className={CONTROL_TEXTAREA}
+              className={SHEET_TEXTAREA}
             />
           </div>
 

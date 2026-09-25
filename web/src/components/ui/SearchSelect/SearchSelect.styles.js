@@ -5,7 +5,7 @@ export const TRIGGER = `flex min-h-11 w-full min-w-0 items-center gap-2 rounded-
 export const PANEL = `absolute inset-x-0 z-20 animate-pop-in rounded-control bg-elevated p-1 shadow-popover
   ring-[0.5px] ring-separator`
 
-export const INNER_RADIUS = 'rounded-[calc(var(--radius-control)-0.25rem)]'
+export const INNER_RADIUS = 'rounded-control-inner'
 
 export const SEARCH_ROW = 'flex min-h-11 items-center gap-2 bg-fill-tertiary px-2 lg:min-h-8'
 

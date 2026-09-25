@@ -1,5 +1,6 @@
 import { ChecklistField } from '@/components/tickets/ChecklistField/ChecklistField'
 import { ProgressBar } from '@/components/ui/ProgressBar/ProgressBar'
+import { SHEET_LABEL } from '@/components/ui/SheetField/SheetField.styles'
 import { cn } from '@/lib/cn'
 import { EXTRA_FIELDS, FIELD_SECTIONS } from '@/lib/ticketExtraFields'
 import {
@@ -11,7 +12,6 @@ import {
   LABEL_TONE,
   OPTIONAL,
   SECTION_TITLE,
-  SHEET_LABEL,
 } from './TicketExtraFields.styles'
 
 /**
