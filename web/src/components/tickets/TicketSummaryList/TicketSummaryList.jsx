@@ -1,8 +1,7 @@
 import { TicketTypeIcon } from '@/components/tickets/TicketTypeIcon/TicketTypeIcon'
 import { Badge } from '@/components/ui/Badge/Badge'
-import { findOption } from '@/lib/options'
+import { findOption, TICKET_STATUS_OPTIONS } from '@/lib/options'
 import { revealProps } from '@/lib/reveal'
-import { TICKET_STATUS_OPTIONS } from '@/lib/ticketOptions'
 import { CODE, POINTS, ROW, TITLE } from './TicketSummaryList.styles'
 
 /* Same rule as TicketRow: no background on hover. Here the row also reaches the panel's right

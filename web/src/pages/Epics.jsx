@@ -14,8 +14,8 @@ import { LoadState } from '@/components/ui/LoadState/LoadState'
 import { SearchBox } from '@/components/ui/SearchBox/SearchBox'
 import { createEpic, deleteEpic, updateEpic } from '@/lib/api'
 import { readSession } from '@/lib/auth'
-import { LIST_KEYS, applyFilters, countActive, readFilters } from '@/lib/epicFilters'
-import { changeParams, setListParam } from '@/lib/urlFilters'
+import { LIST_KEYS, SORT_OPTIONS, applyFilters } from '@/lib/epicFilters'
+import { changeParams, countActive, readFilters, setListParam } from '@/lib/urlFilters'
 
 export function Epics() {
   const {
@@ -41,8 +41,8 @@ export function Epics() {
 
   /* Filters in the URL, like the Backlog's (see lib/epicFilters.js and lib/urlFilters.js). */
   const [params, setParams] = useSearchParams()
-  const filters = readFilters(params)
-  const activeCount = countActive(filters)
+  const filters = readFilters(params, LIST_KEYS, SORT_OPTIONS)
+  const activeCount = countActive(filters, LIST_KEYS)
   const [search, setSearch] = useState(filters.q)
 
   function updateParams(change, replace = false) {

@@ -87,7 +87,7 @@ them are under 4.5:1 as text; the `-text` ones are darker in light and lighter i
 read. Fills, buttons and icons keep the plain accent (`bg-blue`, an icon's `text-blue`).
 
 All ten accents are in play: `Badge` maps each one to a tone (`bg-blue/12 text-blue-text` and so on),
-`ACCENT_COLORS` in `lib/epicOptions.js` uses them for the epic swatches, and the buttons written
+`ACCENT_COLORS` in `lib/options.js` uses them for the epic swatches, and the buttons written
 inline across the app use `bg-blue` for the primary action, `bg-red` for a destructive one and
 `bg-green` for confirming something (`ConfirmModal`).
 

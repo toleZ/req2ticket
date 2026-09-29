@@ -1,5 +1,5 @@
 import { CHECKLIST_KEY } from '@/lib/ticketExtraFields'
-import { TICKET_CANCELLED, TICKET_DONE } from '@/lib/ticketOptions'
+import { TICKET_CANCELLED, TICKET_DONE } from '@/lib/options'
 
 /* Summary of a set of tickets. The sprint card and the epic row share it: both show the
    same numbers over different slices of the backlog. */

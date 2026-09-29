@@ -11,7 +11,7 @@ import { TicketDetailModal } from '@/components/tickets/TicketDetailModal/Ticket
 import { Button } from '@/components/ui/Button/Button'
 import { LoadState } from '@/components/ui/LoadState/LoadState'
 import { createSprint, deleteSprint, updateSprint } from '@/lib/api'
-import { SPRINT_ACTIVE } from '@/lib/sprintOptions'
+import { SPRINT_ACTIVE } from '@/lib/options'
 
 export function Sprints() {
   const {

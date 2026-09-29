@@ -21,7 +21,7 @@ import { getUsers } from '@/lib/api'
 import { cn } from '@/lib/cn'
 import { errorMessage } from '@/lib/errors'
 import { exitQuick } from '@/lib/motion'
-import { epicPickerOptions, sprintPickerOptions, userPickerOptions } from '@/lib/pickerOptions'
+import { epicPickerOptions, sprintPickerOptions, userPickerOptions } from '@/components/ui/SearchSelect/SearchSelect.options'
 import {
   DESCRIPTION_PLACEHOLDER,
   EXTRA_FIELDS,
@@ -29,7 +29,7 @@ import {
   emptyExtras,
   toExtraFieldsPayload,
 } from '@/lib/ticketExtraFields'
-import { TICKET_PRIORITY_OPTIONS, TICKET_STATUS_OPTIONS } from '@/lib/ticketOptions'
+import { TICKET_PRIORITY_OPTIONS, TICKET_STATUS_OPTIONS } from '@/lib/options'
 import { validateTicketForm } from '@/lib/validate'
 import { CREATE_LABEL, FIELD_IDS, GROW, INITIAL_TYPE, INITIAL_VALUES, SWAP, TYPE_SEGMENTS } from './CreateTicketModal.data'
 import { FORM, FORM_ERROR } from './CreateTicketModal.styles'

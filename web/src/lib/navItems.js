@@ -1,6 +1,6 @@
 import { Diamond, LayoutGrid, List, RotateCw, Settings, SquareKanban, User } from 'lucide-react'
 
-import { SPRINT_ACTIVE } from '@/lib/sprintOptions'
+import { SPRINT_ACTIVE } from '@/lib/options'
 
 /* Add a nav item here and it shows up in the sidebar, in the mobile drawer and in the
    breadcrumb — all three read this file. The other two steps are the route in App.jsx

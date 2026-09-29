@@ -7,7 +7,7 @@ import { IconButton } from '@/components/ui/IconButton/IconButton'
 import { readSession } from '@/lib/auth'
 import { cn } from '@/lib/cn'
 import { NAV_ITEMS } from '@/lib/navItems'
-import { ROLE_LABELS } from '@/lib/roleLabels'
+import { ROLE_LABELS } from '@/lib/options'
 import { SHORTCUT } from './SidebarBody.data'
 import {
   BRAND_TILE,

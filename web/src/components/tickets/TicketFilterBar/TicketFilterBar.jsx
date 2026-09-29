@@ -3,17 +3,22 @@ import { ListFilter } from 'lucide-react'
 import { TicketTypeIcon } from '@/components/tickets/TicketTypeIcon/TicketTypeIcon'
 import { Avatar } from '@/components/ui/Avatar/Avatar'
 import { FilterBar } from '@/components/ui/FilterBar/FilterBar'
-import { NONE, SORT_OPTIONS } from '@/lib/backlogFilters'
+import { SORT_OPTIONS } from '@/lib/backlogFilters'
 import { cn } from '@/lib/cn'
-import { ACCENT_COLORS } from '@/lib/epicOptions'
-import { findOption } from '@/lib/options'
-import { SPRINT_STATUS_OPTIONS } from '@/lib/sprintOptions'
-import { TICKET_PRIORITY_OPTIONS, TICKET_STATUS_OPTIONS, TICKET_TYPE_OPTIONS } from '@/lib/ticketOptions'
+import {
+  ACCENT_COLORS,
+  findOption,
+  SPRINT_STATUS_OPTIONS,
+  TICKET_PRIORITY_OPTIONS,
+  TICKET_STATUS_OPTIONS,
+  TICKET_TYPE_OPTIONS,
+} from '@/lib/options'
+import { NONE } from '@/lib/urlFilters'
 import { DOT } from './TicketFilterBar.styles'
 
 /**
  * The Backlog's chips for FilterBar (components/ui/FilterBar): what each filter offers. The page
- * reads and writes the filters in the URL (lib/backlogFilters.js).
+ * reads and writes the filters in the URL (lib/urlFilters.js, lib/backlogFilters.js).
  *
  * Every option shows what it means at a glance: statuses and priorities as their badge, types
  * with their icon, epics with their colour, sprints with their state, people with initials.

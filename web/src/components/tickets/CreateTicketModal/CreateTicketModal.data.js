@@ -1,6 +1,6 @@
 import { TYPE_ICONS } from '@/components/tickets/TicketTypeIcon/TicketTypeIcon.data'
 import { EASE_IOS, exitQuick } from '@/lib/motion'
-import { TICKET_TYPE_OPTIONS } from '@/lib/ticketOptions'
+import { TICKET_TYPE_OPTIONS } from '@/lib/options'
 
 export const INITIAL_TYPE = 'userStory'
 

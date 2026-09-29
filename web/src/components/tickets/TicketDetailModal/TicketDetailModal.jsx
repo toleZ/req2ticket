@@ -16,15 +16,14 @@ import { SHEET_LABEL, SHEET_TEXTAREA } from '@/components/ui/SheetField/SheetFie
 import { formatDateTime, timeAgo } from '@/lib/dates'
 import { cn } from '@/lib/cn'
 import { errorMessage } from '@/lib/errors'
-import { findOption } from '@/lib/options'
-import { epicPickerOptions, sprintPickerOptions, userPickerOptions } from '@/lib/pickerOptions'
+import { findOption, TICKET_PRIORITY_OPTIONS, TICKET_STATUS_OPTIONS, TICKET_TYPE_OPTIONS } from '@/lib/options'
+import { epicPickerOptions, sprintPickerOptions, userPickerOptions } from '@/components/ui/SearchSelect/SearchSelect.options'
 import {
   DESCRIPTION_PLACEHOLDER,
   EXTRA_FIELDS,
   toExtraFieldsPayload,
   toFormValues,
 } from '@/lib/ticketExtraFields'
-import { TICKET_PRIORITY_OPTIONS, TICKET_STATUS_OPTIONS, TICKET_TYPE_OPTIONS } from '@/lib/ticketOptions'
 import { validateTicketForm } from '@/lib/validate'
 import { META, STORY_CALLOUT, STORY_TEXTAREA, TYPE_VALUE } from './TicketDetailModal.styles'
 import { toDetailValues } from './TicketDetailModal.helpers'

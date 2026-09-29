@@ -1,8 +1,6 @@
 import { Avatar } from '@/components/ui/Avatar/Avatar'
 import { cn } from '@/lib/cn'
-import { ACCENT_COLORS } from '@/lib/epicOptions'
-import { findOption } from '@/lib/options'
-import { SPRINT_STATUS_OPTIONS } from '@/lib/sprintOptions'
+import { ACCENT_COLORS, findOption, SPRINT_STATUS_OPTIONS } from '@/lib/options'
 
 /* The option lists for SearchSelect, shared by the create modals and the detail sheets so an
    epic, a sprint or a person looks the same in every picker. The values are strings, like a

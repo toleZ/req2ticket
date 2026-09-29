@@ -13,9 +13,9 @@ import { LoadState } from '@/components/ui/LoadState/LoadState'
 import { SearchBox } from '@/components/ui/SearchBox/SearchBox'
 import { createTicket } from '@/lib/api'
 import { readSession } from '@/lib/auth'
-import { LIST_KEYS, applyFilters, byPriority, countActive, readFilters } from '@/lib/backlogFilters'
-import { TICKET_STATUS_OPTIONS } from '@/lib/ticketOptions'
-import { changeParams, setListParam } from '@/lib/urlFilters'
+import { LIST_KEYS, SORT_OPTIONS, applyFilters, byPriority } from '@/lib/backlogFilters'
+import { TICKET_STATUS_OPTIONS } from '@/lib/options'
+import { changeParams, countActive, readFilters, setListParam } from '@/lib/urlFilters'
 
 export function Tickets() {
   const {
@@ -41,8 +41,8 @@ export function Tickets() {
      Back undoes it — except typing in the search, which replaces the entry instead of adding
      one per key. */
   const [params, setParams] = useSearchParams()
-  const filters = readFilters(params)
-  const activeCount = countActive(filters)
+  const filters = readFilters(params, LIST_KEYS, SORT_OPTIONS)
+  const activeCount = countActive(filters, LIST_KEYS)
 
   function updateParams(change, replace = false) {
     changeParams(setParams, change, replace)

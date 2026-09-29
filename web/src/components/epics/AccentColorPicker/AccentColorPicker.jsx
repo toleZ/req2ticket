@@ -1,5 +1,5 @@
 import { cn } from '@/lib/cn'
-import { ACCENT_COLORS } from '@/lib/epicOptions'
+import { ACCENT_COLORS } from '@/lib/options'
 import { HIT_AREA, ROW, SELECTED, SIZE_CLASSES, SWATCH } from './AccentColorPicker.styles'
 /**
  * The epic's accent colour, as the row of swatches from the design.
@@ -12,7 +12,7 @@ import { HIT_AREA, ROW, SELECTED, SIZE_CLASSES, SWATCH } from './AccentColorPick
  * modal a smaller side-column caption.
  *
  * The classes come from ACCENT_COLORS' `dotClass` and not from a `bg-${color}` template, for
- * the reason lib/epicOptions.js spells out: Tailwind reads the code as text.
+ * the reason lib/options.js spells out: Tailwind reads the code as text.
  */
 export function AccentColorPicker({ value, onChange, disabled = false, size = 'md' }) {
   return (
