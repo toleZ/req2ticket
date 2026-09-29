@@ -10,9 +10,9 @@
    alignment. META turns into `contents` there, which hands its children to the row's grid. */
 export const ROW = `group grid w-full grid-cols-[1rem_auto_minmax(0,1fr)] items-center gap-x-2 gap-y-1.5
   rounded-control bg-fill-tertiary px-2.5 py-2 text-left
-  xl:grid-cols-[1rem_6rem_minmax(0,1fr)_8rem_5.5rem_5rem_4.5rem_3rem_1.5rem]`
+  xl:grid-cols-[1rem_7rem_minmax(0,1fr)_8rem_5.5rem_5rem_4.5rem_3rem_1.5rem]`
 
-export const CODE = `text-caption text-label-secondary transition-colors duration-fast
+export const CODE = `whitespace-nowrap text-caption text-label-secondary transition-colors duration-fast
   ease-out-quad group-hover:text-label`
 
 export const TITLE = `truncate text-subheadline text-label underline-offset-2
