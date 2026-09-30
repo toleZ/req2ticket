@@ -6,7 +6,7 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000
 
 // Avoids the off-by-one day that `new Date('2026-08-05')` produces: that constructor
 // reads the date as UTC, and here we always want the date exactly as the backend sent it.
-function parseDateOnly(value) {
+export function parseDateOnly(value) {
   const [year, month, day] = value.split('-').map(Number)
   return new Date(year, month - 1, day)
 }

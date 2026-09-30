@@ -15,6 +15,8 @@ import { IconButton } from '@/components/ui/IconButton/IconButton'
  * `leading` is a node because the two callers put different things there: the ticket shows its
  * type icon, the epic its accent dot.
  *
+ * `code` is optional: a sprint has none, so its sheet shows just the badge.
+ *
  * Note `disabled` reaches the delete button only. The close button is never disabled — while a
  * save is in flight you must still be able to give up on the sheet.
  */
@@ -54,19 +56,21 @@ export function DetailHeader({
     <div className={HEADER}>
       {leading}
 
-      <button
-        type="button"
-        onClick={handleCopyCode}
-        aria-label={copied ? 'Código copiado' : `Copiar ${code}`}
-        className={CODE_BUTTON}
-      >
-        {code}
-        {copied ? (
-          <Check className="size-3.5 animate-tick-in text-green" aria-hidden="true" />
-        ) : (
-          <Copy className="size-3.5" aria-hidden="true" />
-        )}
-      </button>
+      {code && (
+        <button
+          type="button"
+          onClick={handleCopyCode}
+          aria-label={copied ? 'Código copiado' : `Copiar ${code}`}
+          className={CODE_BUTTON}
+        >
+          {code}
+          {copied ? (
+            <Check className="size-3.5 animate-tick-in text-green" aria-hidden="true" />
+          ) : (
+            <Copy className="size-3.5" aria-hidden="true" />
+          )}
+        </button>
+      )}
 
       {badge}
 

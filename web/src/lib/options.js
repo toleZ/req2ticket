@@ -99,6 +99,7 @@ export const ACCENT_COLORS = [
 
 /* ---- Sprints ---- */
 
+export const SPRINT_PLANNED = 'planned'
 export const SPRINT_ACTIVE = 'active'
 export const SPRINT_COMPLETED = 'completed'
 

@@ -1,6 +1,6 @@
 import { useId, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { CheckCheck, ChevronRight, Trash2 } from 'lucide-react'
+import { CheckCheck, ChevronRight, Play, Trash2 } from 'lucide-react'
 
 import { TicketSummaryList } from '@/components/tickets/TicketSummaryList/TicketSummaryList'
 import { Badge } from '@/components/ui/Badge/Badge'
@@ -12,23 +12,36 @@ import { ProgressBar } from '@/components/ui/ProgressBar/ProgressBar'
 import { cn } from '@/lib/cn'
 import { daysRemaining, formatDateRange } from '@/lib/dates'
 import { springSoft } from '@/lib/motion'
-import { findOption, SPRINT_ACTIVE, SPRINT_COMPLETED, SPRINT_STATUS_OPTIONS } from '@/lib/options'
+import { findOption, SPRINT_ACTIVE, SPRINT_COMPLETED, SPRINT_PLANNED, SPRINT_STATUS_OPTIONS } from '@/lib/options'
 import { cancelledNote, summarizeTickets } from '@/lib/ticketStats'
 import { remainingLabel } from './SprintRow.helpers'
-import { DATES, EMPTY_NOTE, GOAL, NAME, OVER_CAPACITY } from './SprintRow.styles'
+import { BLOCKED_NOTE, DATES, EMPTY_NOTE, GOAL, OPEN_BUTTON, OPEN_NAME, OVER_CAPACITY } from './SprintRow.styles'
 
 /**
- * A sprint in the list, drawn like an epic row: the chevron shows its tickets, the first
- * line says what it is and when, the second how far along it is, and the goal closes it.
+ * A sprint in the list, drawn like an epic row: the chevron shows its tickets, the name opens
+ * SprintDetailModal, the second line says how far along it is, and the goal closes it.
  *
- * "Completar" only shows while the sprint can still be completed. A finished sprint keeps
- * just the delete button: a disabled "Completar" next to a "Completado" badge said the same
- * thing twice and looked like something you could still do.
+ * The action button follows the sprint's life: a planned sprint shows "Iniciar", an active one
+ * "Completar", a finished one nothing. Other jumps (reopening, completing a sprint that never
+ * started) are still possible from the sheet's status select, on purpose and not by accident.
+ *
+ * `activeSprint` is the project's active sprint, or undefined. The API allows only one, so
+ * while another sprint holds it "Iniciar" is disabled and a line under the goal says which.
  */
-export function SprintRow({ sprint, tickets, onUpdateSprint, onDeleteSprint, onSelectTicket }) {
+export function SprintRow({
+  sprint,
+  tickets,
+  activeSprint,
+  onSelectSprint,
+  onUpdateSprint,
+  onDeleteSprint,
+  onSelectTicket,
+}) {
   const panelId = useId()
+  const blockedId = useId()
   const [isExpanded, setIsExpanded] = useState(false)
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
+  const [isStartOpen, setIsStartOpen] = useState(false)
   const [isCompleteOpen, setIsCompleteOpen] = useState(false)
 
   const status = findOption(SPRINT_STATUS_OPTIONS, sprint.status)
@@ -39,7 +52,41 @@ export function SprintRow({ sprint, tickets, onUpdateSprint, onDeleteSprint, onS
   const stats = summarizeTickets(tickets)
   // How many committed points go past the sprint's capacity; 0 or less means it fits.
   const overCapacity = stats.points - sprint.capacity
-  const canComplete = sprint.status !== SPRINT_COMPLETED
+
+  const canStart = sprint.status === SPRINT_PLANNED
+  const isStartBlocked = canStart && Boolean(activeSprint)
+  const canComplete = sprint.status === SPRINT_ACTIVE
+
+  /* The button is drawn twice, below the text under sm and beside it from sm up (see the
+     comment where they are placed), so it is written once here. */
+  function renderAction(className) {
+    if (canStart) {
+      return (
+        <Button
+          variant="neutral"
+          size="sm"
+          disabled={isStartBlocked}
+          ariaDescribedBy={isStartBlocked ? blockedId : undefined}
+          onClick={() => setIsStartOpen(true)}
+          className={className}
+        >
+          <Play className="size-4" aria-hidden="true" />
+          Iniciar
+        </Button>
+      )
+    }
+
+    if (canComplete) {
+      return (
+        <Button variant="neutral" size="sm" onClick={() => setIsCompleteOpen(true)} className={className}>
+          <CheckCheck className="size-4" aria-hidden="true" />
+          Completar
+        </Button>
+      )
+    }
+
+    return null
+  }
 
   return (
     <li className={ROW}>
@@ -56,14 +103,25 @@ export function SprintRow({ sprint, tickets, onUpdateSprint, onDeleteSprint, onS
         </button>
 
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <h2 className={NAME}>{sprint.name}</h2>
-            {status && <Badge tone={status.tone}>{status.label}</Badge>}
-            {sprint.status === SPRINT_ACTIVE && (
-              <Badge tone={daysLeft < 0 ? 'orange' : 'neutral'}>{remainingLabel(daysLeft)}</Badge>
-            )}
-            <span className={DATES}>{formatDateRange(sprint.startDate, sprint.endDate)}</span>
-          </div>
+          {/* The heading wraps the button and not the other way round, for the reason written
+              in EpicRow: a heading inside a <button> never reaches the page outline. */}
+          <h2 className="min-w-0">
+            <button
+              type="button"
+              onClick={() => onSelectSprint(sprint)}
+              aria-label={[`Abrir ${sprint.name}`, status?.label, formatDateRange(sprint.startDate, sprint.endDate)]
+                .filter(Boolean)
+                .join(' · ')}
+              className={OPEN_BUTTON}
+            >
+              <span className={OPEN_NAME}>{sprint.name}</span>
+              {status && <Badge tone={status.tone}>{status.label}</Badge>}
+              {sprint.status === SPRINT_ACTIVE && (
+                <Badge tone={daysLeft < 0 ? 'orange' : 'neutral'}>{remainingLabel(daysLeft)}</Badge>
+              )}
+              <span className={DATES}>{formatDateRange(sprint.startDate, sprint.endDate)}</span>
+            </button>
+          </h2>
 
           <div className="mt-1.5 flex flex-wrap items-center gap-2">
             <span className={META}>
@@ -88,23 +146,19 @@ export function SprintRow({ sprint, tickets, onUpdateSprint, onDeleteSprint, onS
 
           {sprint.goal && <p className={GOAL}>{sprint.goal}</p>}
 
+          {isStartBlocked && (
+            <p id={blockedId} className={BLOCKED_NOTE}>
+              Para iniciarlo, completá antes {activeSprint.name}.
+            </p>
+          )}
+
           {/* Below sm the button goes under the text instead of beside it: next to the delete
               icon it squeezed the row's text into a column a few words wide. */}
-          {canComplete && (
-            <Button variant="neutral" size="sm" onClick={() => setIsCompleteOpen(true)} className="mt-2 sm:hidden">
-              <CheckCheck className="size-4" aria-hidden="true" />
-              Completar
-            </Button>
-          )}
+          {renderAction('mt-2 sm:hidden')}
         </div>
 
         <div className="flex shrink-0 items-center gap-1">
-          {canComplete && (
-            <Button variant="neutral" size="sm" onClick={() => setIsCompleteOpen(true)} className="hidden sm:inline-flex">
-              <CheckCheck className="size-4" aria-hidden="true" />
-              Completar
-            </Button>
-          )}
+          {renderAction('hidden sm:inline-flex')}
           <IconButton
             label={`Eliminar ${sprint.name}`}
             variant="danger"
@@ -140,6 +194,19 @@ export function SprintRow({ sprint, tickets, onUpdateSprint, onDeleteSprint, onS
       </AnimatePresence>
 
       <ConfirmModal
+        isOpen={isStartOpen}
+        title="Iniciar sprint"
+        confirmLabel="Iniciar"
+        pendingLabel="Iniciando…"
+        confirmVariant="primary"
+        onClose={() => setIsStartOpen(false)}
+        onConfirm={() => onUpdateSprint(sprint, { status: SPRINT_ACTIVE })}
+      >
+        ¿Iniciar <span className="font-medium text-label">"{sprint.name}"</span>? Pasa a ser el
+        sprint activo hasta que lo completes.
+      </ConfirmModal>
+
+      <ConfirmModal
         isOpen={isCompleteOpen}
         title="Completar sprint"
         confirmLabel="Completar"
@@ -149,7 +216,7 @@ export function SprintRow({ sprint, tickets, onUpdateSprint, onDeleteSprint, onS
         onConfirm={() => onUpdateSprint(sprint, { status: SPRINT_COMPLETED })}
       >
         ¿Marcar <span className="font-medium text-label">"{sprint.name}"</span> como completado?
-        Una vez completado no se puede volver a un estado anterior desde acá.
+        Si hace falta, el estado se puede cambiar después desde el sprint.
       </ConfirmModal>
 
       <ConfirmModal

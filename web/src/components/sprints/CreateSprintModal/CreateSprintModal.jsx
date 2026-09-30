@@ -4,6 +4,7 @@ import { X } from 'lucide-react'
 import { Button } from '@/components/ui/Button/Button'
 import { FOOTER } from '@/components/ui/DetailFooter/DetailFooter.styles'
 import { HEADER } from '@/components/ui/DetailHeader/DetailHeader.styles'
+import { DatePicker } from '@/components/ui/DatePicker/DatePicker'
 import { DetailLayout } from '@/components/ui/DetailLayout/DetailLayout'
 import { IconButton } from '@/components/ui/IconButton/IconButton'
 import { InlineTitleField } from '@/components/ui/InlineTitleField/InlineTitleField'
@@ -125,31 +126,25 @@ export function CreateSprintModal({ isOpen, activeSprint, onClose, onCreate }) {
 
               <div className="hairline-t flex flex-col gap-4 pt-4">
                 <SheetField label="Inicio" htmlFor="sprint-start" required error={errors.startDate}>
-                  <input
+                  <DatePicker
                     id="sprint-start"
-                    type="date"
-                    name="startDate"
                     value={values.startDate}
+                    range={{ start: values.startDate, end: values.endDate }}
                     disabled={submitting}
-                    aria-invalid={errors.startDate ? true : undefined}
-                    aria-describedby={errors.startDate ? 'sprint-start-error' : undefined}
-                    onChange={handleChange}
-                    className={SHEET_INPUT}
+                    error={errors.startDate}
+                    onChange={(value) => setField('startDate', value)}
                   />
                 </SheetField>
 
                 <SheetField label="Fin" htmlFor="sprint-end" required error={errors.endDate}>
-                  <input
+                  <DatePicker
                     id="sprint-end"
-                    type="date"
-                    name="endDate"
-                    min={values.startDate || undefined}
                     value={values.endDate}
+                    min={values.startDate || undefined}
+                    range={{ start: values.startDate, end: values.endDate }}
                     disabled={submitting}
-                    aria-invalid={errors.endDate ? true : undefined}
-                    aria-describedby={errors.endDate ? 'sprint-end-error' : undefined}
-                    onChange={handleChange}
-                    className={SHEET_INPUT}
+                    error={errors.endDate}
+                    onChange={(value) => setField('endDate', value)}
                   />
                 </SheetField>
               </div>

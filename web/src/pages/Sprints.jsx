@@ -5,6 +5,7 @@ import { Plus } from 'lucide-react'
 
 import { PageHeader } from '@/components/layout/PageHeader/PageHeader'
 import { CreateSprintModal } from '@/components/sprints/CreateSprintModal/CreateSprintModal'
+import { SprintDetailModal } from '@/components/sprints/SprintDetailModal/SprintDetailModal'
 import { SprintBacklog } from '@/components/sprints/SprintBacklog/SprintBacklog'
 import { SprintList } from '@/components/sprints/SprintList/SprintList'
 import { TicketDetailModal } from '@/components/tickets/TicketDetailModal/TicketDetailModal'
@@ -29,9 +30,10 @@ export function Sprints() {
 
   const [isModalOpen, setIsModalOpen] = useState(false)
 
-  /* Held by id and not as an object: the ticket is looked up in `tickets` on every render, so
-     after saving the modal sees what the API returned, and if it was deleted this becomes null
-     and the modal unmounts on its own. */
+  /* Which record is open, held by id and not as an object: the entity is looked up in its list
+     on every render, so after saving the modal sees what the API returned, and if it was
+     deleted this becomes null and the modal unmounts on its own. */
+  const [detailSprintId, setDetailSprintId] = useState(null)
   const [detailTicketId, setDetailTicketId] = useState(null)
 
   // Appends what the POST returns, which already carries the id the backend assigned.
@@ -43,6 +45,12 @@ export function Sprints() {
   async function handleUpdateSprint(sprint, patch) {
     await updateSprint(sprint, patch)
     setSprints((prev) => prev.map((current) => (current.id === sprint.id ? { ...current, ...patch } : current)))
+    // Tickets carry their sprint's name, so a rename has to reach them too.
+    if (patch.name && patch.name !== sprint.name) {
+      setTickets((prev) =>
+        prev.map((ticket) => (ticket.sprintId === sprint.id ? { ...ticket, sprintName: patch.name } : ticket)),
+      )
+    }
   }
 
   // The backend leaves the deleted sprint's tickets without a sprint (SetNull), so the same
@@ -59,6 +67,7 @@ export function Sprints() {
 
   const activeSprint = sprints.find((sprint) => sprint.status === SPRINT_ACTIVE)
   const backlogTickets = tickets.filter((ticket) => ticket.sprintId === null)
+  const detailSprint = sprints.find((sprint) => sprint.id === detailSprintId) ?? null
   const detailTicket = tickets.find((ticket) => ticket.id === detailTicketId) ?? null
 
   const countText = sprints.length === 1 ? '1 sprint' : `${sprints.length} sprints`
@@ -92,6 +101,8 @@ export function Sprints() {
         <SprintList
           sprints={sprints}
           tickets={tickets}
+          activeSprint={activeSprint}
+          onSelectSprint={(sprint) => setDetailSprintId(sprint.id)}
           onUpdateSprint={handleUpdateSprint}
           onDeleteSprint={handleDeleteSprint}
           onSelectTicket={handleSelectTicket}
@@ -109,8 +120,22 @@ export function Sprints() {
         onCreate={handleCreate}
       />
 
-      {/* Mounted only while a ticket is chosen: that way every opening seeds the form from
+      {/* Mounted only while a record is chosen: that way every opening seeds the form from
           scratch and no state from the previous one is left. */}
+      <AnimatePresence>
+        {detailSprint && (
+          <SprintDetailModal
+            key={detailSprint.id}
+            sprint={detailSprint}
+            tickets={tickets.filter((ticket) => ticket.sprintId === detailSprint.id)}
+            activeSprint={activeSprint}
+            onClose={() => setDetailSprintId(null)}
+            onUpdateSprint={handleUpdateSprint}
+            onDeleteSprint={handleDeleteSprint}
+          />
+        )}
+      </AnimatePresence>
+
       <AnimatePresence>
         {detailTicket && (
           <TicketDetailModal

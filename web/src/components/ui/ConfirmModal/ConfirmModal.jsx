@@ -7,7 +7,8 @@ import { errorMessage } from '@/lib/errors'
 
 /**
  * The "are you sure?" modal for an action that cannot be undone. Deleting epics, tickets
- * and sprints uses it, and so does completing a sprint.
+ * and sprints uses it, and so do starting and completing a sprint.
+ * `confirmVariant` is any Button variant: `primary` to start, `success` to complete.
  *
  * It handles all the boring parts by itself: it disables the buttons while the request is
  * in flight, shows the error if the backend rejects it, and **only closes on success** —
@@ -65,7 +66,7 @@ export function ConfirmModal({
             Cancelar
           </Button>
           <Button
-            variant={confirmVariant === 'success' ? 'success' : 'danger'}
+            variant={confirmVariant}
             onClick={handleConfirm}
             disabled={submitting}
           >
