@@ -28,6 +28,6 @@ public static class TicketCode
         TicketType.Task => "TASK-",
         TicketType.Bug => "BUG-",
         TicketType.Fix => "FIX-",
-        _ => throw new ArgumentOutOfRangeException(nameof(type), type, "Tipo de ticket desconocido.")
+        _ => throw new ArgumentOutOfRangeException(nameof(type), type, "Unknown ticket type.")
     };
 }

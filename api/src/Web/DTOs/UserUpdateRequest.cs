@@ -10,23 +10,23 @@ namespace Web.DTOs;
 // it resets the password, omitting it leaves it alone.
 public record UserUpdateRequest
 {
-    [Required(ErrorMessage = "El nombre es obligatorio.")]
-    [StringLength(80, MinimumLength = 2, ErrorMessage = "El nombre debe tener entre 2 y 80 caracteres.")]
+    [Required(ErrorMessage = "Name is required.")]
+    [StringLength(80, MinimumLength = 2, ErrorMessage = "Name must be between 2 and 80 characters.")]
     public string Name { get; init; } = string.Empty;
 
-    [Required(ErrorMessage = "El email es obligatorio.")]
-    [EmailAddress(ErrorMessage = "El email no tiene un formato válido.")]
-    [StringLength(120, ErrorMessage = "El email no puede superar los 120 caracteres.")]
+    [Required(ErrorMessage = "Email is required.")]
+    [EmailAddress(ErrorMessage = "Email is not a valid address.")]
+    [StringLength(120, ErrorMessage = "Email cannot exceed 120 characters.")]
     public string Email { get; init; } = string.Empty;
 
     // No [Required]: absent means "leave it as it is".
-    [StringLength(72, MinimumLength = 8, ErrorMessage = "La contraseña debe tener entre 8 y 72 caracteres.")]
+    [StringLength(72, MinimumLength = 8, ErrorMessage = "Password must be between 8 and 72 characters.")]
     public string? Password { get; init; }
 
     // See UserCreateRequest for why the converter is repeated on the property.
-    [Required(ErrorMessage = "El rol es obligatorio.")]
+    [Required(ErrorMessage = "Role is required.")]
     [JsonConverter(typeof(StringOnlyEnumConverter<UserRole>))]
-    [EnumDataType(typeof(UserRole), ErrorMessage = "Rol inválido.")]
+    [EnumDataType(typeof(UserRole), ErrorMessage = "Invalid role.")]
     public UserRole? Role { get; init; }
 
     public User ToEntity() => new()

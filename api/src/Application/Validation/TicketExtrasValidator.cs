@@ -106,7 +106,7 @@ public static class TicketExtrasValidator
 
         if (!Schema.TryGetValue(type, out ExtraField[]? fields))
         {
-            throw new ArgumentException($"Tipo de ticket desconocido: {type}.");
+            throw new ArgumentException($"Unknown ticket type: {type}.");
         }
 
         JsonObject incoming = Parse(rawJson);
@@ -156,11 +156,11 @@ public static class TicketExtrasValidator
         }
         catch (JsonException ex)
         {
-            throw new ArgumentException($"extraFields inválido: {ex.Message}");
+            throw new ArgumentException($"Invalid extraFields: {ex.Message}");
         }
 
         return node as JsonObject
-            ?? throw new ArgumentException("extraFields debe ser un objeto JSON.");
+            ?? throw new ArgumentException("extraFields must be a JSON object.");
     }
 
     // A key the type does not declare is a typo, or a client that got ahead of the API. Dropping
@@ -173,7 +173,7 @@ public static class TicketExtrasValidator
             if (!fields.Any(field => field.Key == pair.Key))
             {
                 throw new ArgumentException(
-                    $"extraFields inválido: la clave '{pair.Key}' no pertenece a este tipo de ticket.");
+                    $"Invalid extraFields: the key '{pair.Key}' does not belong to this ticket type.");
             }
         }
     }
@@ -182,14 +182,14 @@ public static class TicketExtrasValidator
     {
         if (value.GetValueKind() != JsonValueKind.String)
         {
-            throw new ArgumentException($"extraFields inválido: '{field.Key}' debe ser texto.");
+            throw new ArgumentException($"Invalid extraFields: '{field.Key}' must be text.");
         }
 
         string text = value.GetValue<string>();
         if (text.Length > field.MaxLength)
         {
             throw new ArgumentException(
-                $"extraFields inválido: '{field.Key}' no puede superar los {field.MaxLength} caracteres.");
+                $"Invalid extraFields: '{field.Key}' cannot exceed {field.MaxLength} characters.");
         }
 
         return text;
@@ -217,7 +217,7 @@ public static class TicketExtrasValidator
                 .Select(name => JsonSerializer.Serialize(Enum.Parse(field.EnumType!, name), field.EnumType!).Trim('"')));
 
             throw new ArgumentException(
-                $"extraFields inválido: '{field.Key}' debe ser uno de: {allowed}.");
+                $"Invalid extraFields: '{field.Key}' must be one of: {allowed}.");
         }
     }
 
@@ -230,13 +230,13 @@ public static class TicketExtrasValidator
 
         if (value is not JsonArray items)
         {
-            throw new ArgumentException($"extraFields inválido: '{field.Key}' debe ser una lista.");
+            throw new ArgumentException($"Invalid extraFields: '{field.Key}' must be a list.");
         }
 
         if (items.Count > MaxChecklistItems)
         {
             throw new ArgumentException(
-                $"extraFields inválido: '{field.Key}' no puede tener más de {MaxChecklistItems} ítems.");
+                $"Invalid extraFields: '{field.Key}' cannot have more than {MaxChecklistItems} items.");
         }
 
         var canonical = new JsonArray();
@@ -245,25 +245,25 @@ public static class TicketExtrasValidator
             if (item is not JsonObject entry)
             {
                 throw new ArgumentException(
-                    $"extraFields inválido: cada ítem de '{field.Key}' debe ser un objeto {{ text, done }}.");
+                    $"Invalid extraFields: each item in '{field.Key}' must be an object {{ text, done }}.");
             }
 
             string text = entry["text"]?.GetValueKind() == JsonValueKind.String
                 ? entry["text"]!.GetValue<string>()
                 : throw new ArgumentException(
-                    $"extraFields inválido: cada ítem de '{field.Key}' necesita un 'text'.");
+                    $"Invalid extraFields: each item in '{field.Key}' needs a 'text'.");
 
             if (text.Length is 0 or > MaxChecklistTextLength)
             {
                 throw new ArgumentException(
-                    $"extraFields inválido: el texto de un ítem de '{field.Key}' debe tener entre 1 y {MaxChecklistTextLength} caracteres.");
+                    $"Invalid extraFields: the text of an item in '{field.Key}' must be between 1 and {MaxChecklistTextLength} characters.");
             }
 
             JsonValueKind doneKind = entry["done"]?.GetValueKind() ?? JsonValueKind.False;
             if (doneKind is not (JsonValueKind.True or JsonValueKind.False))
             {
                 throw new ArgumentException(
-                    $"extraFields inválido: el 'done' de un ítem de '{field.Key}' debe ser true o false.");
+                    $"Invalid extraFields: the 'done' of an item in '{field.Key}' must be true or false.");
             }
 
             // Rebuilt rather than reused, so an item never carries a key the shape does not have.

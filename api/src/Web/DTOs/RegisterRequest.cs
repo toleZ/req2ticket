@@ -7,18 +7,18 @@ namespace Web.DTOs;
 // password IS a validation error, and 400 is the right answer.
 public record RegisterRequest
 {
-    [Required(ErrorMessage = "El nombre es obligatorio.")]
-    [StringLength(80, MinimumLength = 2, ErrorMessage = "El nombre debe tener entre 2 y 80 caracteres.")]
+    [Required(ErrorMessage = "Name is required.")]
+    [StringLength(80, MinimumLength = 2, ErrorMessage = "Name must be between 2 and 80 characters.")]
     public string Name { get; init; } = string.Empty;
 
-    [Required(ErrorMessage = "El email es obligatorio.")]
-    [EmailAddress(ErrorMessage = "El email no tiene un formato válido.")]
-    [StringLength(120, ErrorMessage = "El email no puede superar los 120 caracteres.")]
+    [Required(ErrorMessage = "Email is required.")]
+    [EmailAddress(ErrorMessage = "Email is not a valid address.")]
+    [StringLength(120, ErrorMessage = "Email cannot exceed 120 characters.")]
     public string Email { get; init; } = string.Empty;
 
     // The upper bound is BCrypt's: it silently ignores everything past 72 bytes, so a
     // longer password would be accepted and then only partly checked.
-    [Required(ErrorMessage = "La contraseña es obligatoria.")]
-    [StringLength(72, MinimumLength = 8, ErrorMessage = "La contraseña debe tener entre 8 y 72 caracteres.")]
+    [Required(ErrorMessage = "Password is required.")]
+    [StringLength(72, MinimumLength = 8, ErrorMessage = "Password must be between 8 and 72 characters.")]
     public string Password { get; init; } = string.Empty;
 }

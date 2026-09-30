@@ -304,7 +304,7 @@
                   "});",
                   "",
                   "pm.test('mismo mensaje que password incorrecta (no filtra si el email existe)', function () {",
-                  "  pm.expect(pm.response.json().message).to.eql('Email o contraseña incorrectos.');",
+                  "  pm.expect(pm.response.json().message).to.eql('Incorrect email or password.');",
                   "});"
                 ]
               }
@@ -2799,7 +2799,7 @@
                       "});",
                       "",
                       "pm.test('lo valida el service, no las DataAnnotations', function () {",
-                      "  pm.expect(pm.response.json().message).to.include('fecha de fin');",
+                      "  pm.expect(pm.response.json().message).to.include('End date');",
                       "});"
                     ]
                   }
@@ -2848,7 +2848,7 @@
                       "});",
                       "",
                       "pm.test('solo puede haber un sprint activo', function () {",
-                      "  pm.expect(pm.response.json().message).to.include('sprint activo');",
+                      "  pm.expect(pm.response.json().message).to.include('active sprint');",
                       "});"
                     ]
                   }

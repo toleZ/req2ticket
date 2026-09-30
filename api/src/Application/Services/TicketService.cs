@@ -48,7 +48,7 @@ public class TicketService
     public async Task<Ticket> CreateAsync(Ticket ticket)
     {
         await EnsureEpicExistsAsync(ticket.EpicId);
-        await EnsureUserExistsAsync(ticket.AssigneeId, "responsable");
+        await EnsureUserExistsAsync(ticket.AssigneeId, "assignee");
         await EnsureUserExistsAsync(ticket.ReporterId, "reporter");
         await EnsureSprintExistsAsync(ticket.SprintId);
 
@@ -81,7 +81,7 @@ public class TicketService
         }
 
         await EnsureEpicExistsAsync(changes.EpicId);
-        await EnsureUserExistsAsync(changes.AssigneeId, "responsable");
+        await EnsureUserExistsAsync(changes.AssigneeId, "assignee");
         await EnsureUserExistsAsync(changes.ReporterId, "reporter");
         await EnsureSprintExistsAsync(changes.SprintId);
 
@@ -151,7 +151,7 @@ public class TicketService
             }
         }
 
-        throw new InvalidOperationException("No se pudo generar un código único para el ticket.");
+        throw new InvalidOperationException("Could not generate a unique code for the ticket.");
     }
 
     private async Task EnsureEpicExistsAsync(int epicId)
@@ -159,7 +159,7 @@ public class TicketService
         Epic? epic = await _epicRepository.GetByIdAsync(epicId);
         if (epic is null)
         {
-            throw new ArgumentException($"No existe una épica con Id {epicId}.");
+            throw new ArgumentException($"There is no epic with Id {epicId}.");
         }
     }
 
@@ -175,7 +175,7 @@ public class TicketService
         User? user = await _userRepository.GetByIdAsync(userId.Value);
         if (user is null)
         {
-            throw new ArgumentException($"No existe un usuario con Id {userId} para el {field}.");
+            throw new ArgumentException($"There is no user with Id {userId} for the {field}.");
         }
     }
 
@@ -190,7 +190,7 @@ public class TicketService
         Sprint? sprint = await _sprintRepository.GetByIdAsync(sprintId.Value);
         if (sprint is null)
         {
-            throw new ArgumentException($"No existe un sprint con Id {sprintId}.");
+            throw new ArgumentException($"There is no sprint with Id {sprintId}.");
         }
     }
 
@@ -226,25 +226,25 @@ public class TicketService
 
         if (childId is not null && parentId == childId)
         {
-            throw new ArgumentException("Un ticket no puede ser su propio padre.");
+            throw new ArgumentException("A ticket cannot be its own parent.");
         }
 
         Ticket? parent = await _ticketRepository.GetByIdAsync(parentId.Value);
         if (parent is null)
         {
-            throw new ArgumentException($"No existe un ticket con Id {parentId}.");
+            throw new ArgumentException($"There is no ticket with Id {parentId}.");
         }
 
         TicketType[] allowed = AllowedParentTypes(childType);
         if (allowed.Length == 0)
         {
-            throw new ArgumentException($"Un ticket de tipo {childType} no puede tener un ticket padre.");
+            throw new ArgumentException($"A {childType} ticket cannot have a parent ticket.");
         }
 
         if (!allowed.Contains(parent.Type))
         {
             throw new ArgumentException(
-                $"Un ticket de tipo {childType} solo puede colgar de: {string.Join(", ", allowed)}.");
+                $"A {childType} ticket can only be a child of: {string.Join(", ", allowed)}.");
         }
     }
 }

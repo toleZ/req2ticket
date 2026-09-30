@@ -43,7 +43,7 @@ public class AuthService
         // Email is the real guarantee, this is the part that produces a readable message.
         if (await _userRepository.ExistsByEmailAsync(normalizedEmail))
         {
-            throw new ArgumentException($"Ya existe un usuario con el email {normalizedEmail}.");
+            throw new ArgumentException($"A user with the email {normalizedEmail} already exists.");
         }
 
         var user = new User
