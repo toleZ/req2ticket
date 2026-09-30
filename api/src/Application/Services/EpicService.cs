@@ -85,7 +85,7 @@ public class EpicService
             }
         }
 
-        throw new InvalidOperationException("No se pudo generar un código único para la épica.");
+        throw new InvalidOperationException("Could not generate a unique code for the epic.");
     }
 
     private async Task EnsureOwnerExistsAsync(int? ownerId)
@@ -98,7 +98,7 @@ public class EpicService
         User? owner = await _userRepository.GetByIdAsync(ownerId.Value);
         if (owner is null)
         {
-            throw new ArgumentException($"No existe un usuario con Id {ownerId}.");
+            throw new ArgumentException($"There is no user with Id {ownerId}.");
         }
     }
 }

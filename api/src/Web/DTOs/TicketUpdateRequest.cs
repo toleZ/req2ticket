@@ -11,14 +11,14 @@ namespace Web.DTOs;
 // own record so both can diverge later without breaking the other.
 public record TicketUpdateRequest
 {
-    [Required(ErrorMessage = "El título es obligatorio.")]
-    [StringLength(160, MinimumLength = 3, ErrorMessage = "El título debe tener entre 3 y 160 caracteres.")]
+    [Required(ErrorMessage = "Title is required.")]
+    [StringLength(160, MinimumLength = 3, ErrorMessage = "Title must be between 3 and 160 characters.")]
     public string Title { get; init; } = string.Empty;
 
-    [StringLength(2000, ErrorMessage = "La descripción no puede superar los 2000 caracteres.")]
+    [StringLength(2000, ErrorMessage = "Description cannot exceed 2000 characters.")]
     public string? Description { get; init; }
 
-    [Range(1, int.MaxValue, ErrorMessage = "EpicId inválido.")]
+    [Range(1, int.MaxValue, ErrorMessage = "Invalid EpicId.")]
     public int EpicId { get; init; }
 
     /* The [JsonConverter] on the enum type itself is not consulted for a nullable property:
@@ -27,28 +27,28 @@ public record TicketUpdateRequest
        to Bug, which is exactly what StringOnlyEnumConverter exists to prevent.
        Repeating it here, on the property, is what actually turns integers off. */
     [JsonConverter(typeof(StringOnlyEnumConverter<TicketPriority>))]
-    [EnumDataType(typeof(TicketPriority), ErrorMessage = "Prioridad inválida.")]
+    [EnumDataType(typeof(TicketPriority), ErrorMessage = "Invalid priority.")]
     public TicketPriority? Priority { get; init; }
 
     [JsonConverter(typeof(StringOnlyEnumConverter<TicketStatus>))]
-    [EnumDataType(typeof(TicketStatus), ErrorMessage = "Estado inválido.")]
+    [EnumDataType(typeof(TicketStatus), ErrorMessage = "Invalid status.")]
     public TicketStatus? Status { get; init; }
 
-    [Range(0, int.MaxValue, ErrorMessage = "Los puntos no pueden ser negativos.")]
+    [Range(0, int.MaxValue, ErrorMessage = "Points cannot be negative.")]
     public int Points { get; init; }
 
-    [Range(1, int.MaxValue, ErrorMessage = "AssigneeId inválido.")]
+    [Range(1, int.MaxValue, ErrorMessage = "Invalid AssigneeId.")]
     public int? AssigneeId { get; init; }
 
-    [Range(1, int.MaxValue, ErrorMessage = "ReporterId inválido.")]
+    [Range(1, int.MaxValue, ErrorMessage = "Invalid ReporterId.")]
     public int? ReporterId { get; init; }
 
     // Optional: a ticket without a sprint stays in the backlog.
-    [Range(1, int.MaxValue, ErrorMessage = "SprintId inválido.")]
+    [Range(1, int.MaxValue, ErrorMessage = "Invalid SprintId.")]
     public int? SprintId { get; init; }
 
     // Optional: the ticket this one was split out of.
-    [Range(1, int.MaxValue, ErrorMessage = "ParentId inválido.")]
+    [Range(1, int.MaxValue, ErrorMessage = "Invalid ParentId.")]
     public int? ParentId { get; init; }
 
     // Read against the ticket's existing Type, since Type cannot change. See

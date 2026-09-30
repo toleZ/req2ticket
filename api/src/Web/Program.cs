@@ -47,14 +47,14 @@ builder.Services.AddSingleton<TokenService>();
 // message that says how to fix it, instead of turning the first login into a 500.
 string jwtKey = builder.Configuration["Jwt:Key"]
     ?? throw new InvalidOperationException(
-        "Falta la configuración Jwt:Key. En desarrollo: " +
-        "dotnet user-secrets set \"Jwt:Key\" \"<al menos 32 caracteres>\" --project src/Web");
+        "Missing the Jwt:Key setting. In development: " +
+        "dotnet user-secrets set \"Jwt:Key\" \"<at least 32 characters>\" --project src/Web");
 
 // HMAC-SHA256 refuses to sign with a key shorter than its own output. Checking the length
 // here turns a confusing runtime exception into a startup error.
 if (Encoding.UTF8.GetByteCount(jwtKey) < 32)
 {
-    throw new InvalidOperationException("Jwt:Key debe tener al menos 32 bytes (32 caracteres ASCII).");
+    throw new InvalidOperationException("Jwt:Key must be at least 32 bytes (32 ASCII characters).");
 }
 
 var jwtSettings = new JwtSettings(

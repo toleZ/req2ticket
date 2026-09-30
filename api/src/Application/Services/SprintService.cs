@@ -63,12 +63,12 @@ public class SprintService
     {
         if (sprint.EndDate < sprint.StartDate)
         {
-            throw new ArgumentException("La fecha de fin no puede ser anterior a la fecha de inicio.");
+            throw new ArgumentException("End date cannot be before the start date.");
         }
 
         if (sprint.Status == SprintStatus.Active && await _sprintRepository.HasActiveSprintAsync(excludeId))
         {
-            throw new ArgumentException("Ya hay un sprint activo.");
+            throw new ArgumentException("There is already an active sprint.");
         }
     }
 }

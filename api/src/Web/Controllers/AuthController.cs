@@ -31,7 +31,7 @@ public class AuthController : ControllerBase
         {
             // Unauthorized(object) returns this body as-is rather than a ProblemDetails,
             // which is the { message } shape the front end already knows how to read.
-            return Unauthorized(new { message = "Email o contraseña incorrectos." });
+            return Unauthorized(new { message = "Incorrect email or password." });
         }
 
         return Ok(BuildAuthResponse(user));

@@ -30,14 +30,14 @@ public class UserService
     public async Task<User> CreateAsync(int? actorId, User nuevo, string password)
     {
         User actor = await LoadActorAsync(actorId);
-        EnsureCanActOn(actor, nuevo.Role, "asignar el rol");
+        EnsureCanActOn(actor, nuevo.Role, "assign the role");
 
         string email = nuevo.Email.Trim().ToLowerInvariant();
 
         // Check-then-act: the unique index is the real guarantee, this is the readable message.
         if (await _userRepository.ExistsByEmailAsync(email))
         {
-            throw new ArgumentException($"Ya existe un usuario con el email {email}.");
+            throw new ArgumentException($"A user with the email {email} already exists.");
         }
 
         nuevo.Name = nuevo.Name.Trim();
@@ -64,20 +64,20 @@ public class UserService
            and user are THE SAME object. Assigning the new role early would make the checks below
            read the role being set instead of the one actually held, and an admin could promote
            themselves. */
-        EnsureCanActOn(actor, user.Role, "editar a un usuario con el rol");
+        EnsureCanActOn(actor, user.Role, "edit a user with the role");
 
         if (changes.Role != user.Role)
         {
-            EnsureCanActOn(actor, changes.Role, "asignar el rol");
+            EnsureCanActOn(actor, changes.Role, "assign the role");
 
             // Upwards it would be self-promotion; downwards it is the mistake there is no way
             // back from, because undoing it needs the role just given up.
             if (user.Id == actor.Id)
             {
-                throw new UnauthorizedAccessException("No podés cambiar tu propio rol.");
+                throw new UnauthorizedAccessException("You cannot change your own role.");
             }
 
-            await EnsureNotLastSuperAdminAsync(user, "degradar");
+            await EnsureNotLastSuperAdminAsync(user, "demote");
         }
 
         // Ordinal, not OrdinalIgnoreCase: both sides are lowercase already, and if a row ever
@@ -86,7 +86,7 @@ public class UserService
         if (!string.Equals(email, user.Email, StringComparison.Ordinal)
             && await _userRepository.ExistsByEmailAsync(email))
         {
-            throw new ArgumentException($"Ya existe un usuario con el email {email}.");
+            throw new ArgumentException($"A user with the email {email} already exists.");
         }
 
         user.Name = changes.Name.Trim();
@@ -115,11 +115,11 @@ public class UserService
 
         if (user.Id == actor.Id)
         {
-            throw new UnauthorizedAccessException("No podés borrarte a vos mismo.");
+            throw new UnauthorizedAccessException("You cannot delete yourself.");
         }
 
-        EnsureCanActOn(actor, user.Role, "borrar a un usuario con el rol");
-        await EnsureNotLastSuperAdminAsync(user, "borrar");
+        EnsureCanActOn(actor, user.Role, "delete a user with the role");
+        await EnsureNotLastSuperAdminAsync(user, "delete");
 
         await _userRepository.DeleteAsync(id);
         return true;
@@ -134,12 +134,12 @@ public class UserService
     private static bool CanActOn(UserRole actor, UserRole target) =>
         actor == UserRole.SuperAdmin || (int)target < (int)actor;
 
-    private static void EnsureCanActOn(User actor, UserRole target, string accion)
+    private static void EnsureCanActOn(User actor, UserRole target, string action)
     {
         if (!CanActOn(actor.Role, target))
         {
             throw new UnauthorizedAccessException(
-                $"Un {RoleNames.Of(actor.Role)} no puede {accion} {RoleNames.Of(target)}.");
+                $"The {RoleNames.Of(actor.Role)} role cannot {action} {RoleNames.Of(target)}.");
         }
     }
 
@@ -148,7 +148,7 @@ public class UserService
        first. It stays because the invariant outlives them: allow deleting your own account, or
        add a role above superAdmin, and this becomes the only thing keeping the system from
        having nobody able to hand the role out. */
-    private async Task EnsureNotLastSuperAdminAsync(User user, string accion)
+    private async Task EnsureNotLastSuperAdminAsync(User user, string action)
     {
         if (user.Role != UserRole.SuperAdmin)
         {
@@ -158,7 +158,7 @@ public class UserService
         if (await _userRepository.CountByRoleAsync(UserRole.SuperAdmin) <= 1)
         {
             throw new UnauthorizedAccessException(
-                $"No se puede {accion} al único superAdmin: nadie podría volver a crear uno.");
+                $"Cannot {action} the only superAdmin: nobody could create another one.");
         }
     }
 
@@ -170,6 +170,6 @@ public class UserService
         User? actor = actorId is null ? null : await _userRepository.GetByIdAsync(actorId.Value);
 
         // Valid token, missing row: the account was deleted mid-session.
-        return actor ?? throw new UnauthorizedAccessException("El usuario autenticado ya no existe.");
+        return actor ?? throw new UnauthorizedAccessException("The authenticated user no longer exists.");
     }
 }

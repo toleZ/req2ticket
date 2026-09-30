@@ -16,43 +16,43 @@ public record TicketCreateRequest
        to Bug, which is exactly what StringOnlyEnumConverter exists to prevent.
        Repeating it here, on the property, is what actually turns integers off. */
     [JsonConverter(typeof(StringOnlyEnumConverter<TicketType>))]
-    [EnumDataType(typeof(TicketType), ErrorMessage = "Tipo de ticket inválido.")]
+    [EnumDataType(typeof(TicketType), ErrorMessage = "Invalid ticket type.")]
     public TicketType? Type { get; init; }
 
-    [Required(ErrorMessage = "El título es obligatorio.")]
-    [StringLength(160, MinimumLength = 3, ErrorMessage = "El título debe tener entre 3 y 160 caracteres.")]
+    [Required(ErrorMessage = "Title is required.")]
+    [StringLength(160, MinimumLength = 3, ErrorMessage = "Title must be between 3 and 160 characters.")]
     public string Title { get; init; } = string.Empty;
 
-    [StringLength(2000, ErrorMessage = "La descripción no puede superar los 2000 caracteres.")]
+    [StringLength(2000, ErrorMessage = "Description cannot exceed 2000 characters.")]
     public string? Description { get; init; }
 
-    [Range(1, int.MaxValue, ErrorMessage = "EpicId inválido.")]
+    [Range(1, int.MaxValue, ErrorMessage = "Invalid EpicId.")]
     public int EpicId { get; init; }
 
     [JsonConverter(typeof(StringOnlyEnumConverter<TicketPriority>))]
-    [EnumDataType(typeof(TicketPriority), ErrorMessage = "Prioridad inválida.")]
+    [EnumDataType(typeof(TicketPriority), ErrorMessage = "Invalid priority.")]
     public TicketPriority? Priority { get; init; }
 
     [JsonConverter(typeof(StringOnlyEnumConverter<TicketStatus>))]
-    [EnumDataType(typeof(TicketStatus), ErrorMessage = "Estado inválido.")]
+    [EnumDataType(typeof(TicketStatus), ErrorMessage = "Invalid status.")]
     public TicketStatus? Status { get; init; }
 
-    [Range(0, int.MaxValue, ErrorMessage = "Los puntos no pueden ser negativos.")]
+    [Range(0, int.MaxValue, ErrorMessage = "Points cannot be negative.")]
     public int Points { get; init; }
 
-    [Range(1, int.MaxValue, ErrorMessage = "AssigneeId inválido.")]
+    [Range(1, int.MaxValue, ErrorMessage = "Invalid AssigneeId.")]
     public int? AssigneeId { get; init; }
 
     // Optional: the controller falls back to whoever is authenticated when it is absent.
-    [Range(1, int.MaxValue, ErrorMessage = "ReporterId inválido.")]
+    [Range(1, int.MaxValue, ErrorMessage = "Invalid ReporterId.")]
     public int? ReporterId { get; init; }
 
     // Optional: a ticket without a sprint stays in the backlog.
-    [Range(1, int.MaxValue, ErrorMessage = "SprintId inválido.")]
+    [Range(1, int.MaxValue, ErrorMessage = "Invalid SprintId.")]
     public int? SprintId { get; init; }
 
     // Optional: the ticket this one was split out of.
-    [Range(1, int.MaxValue, ErrorMessage = "ParentId inválido.")]
+    [Range(1, int.MaxValue, ErrorMessage = "Invalid ParentId.")]
     public int? ParentId { get; init; }
 
     /* JsonElement and not string: it makes the client send a real object
