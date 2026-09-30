@@ -4,7 +4,7 @@ import { X } from 'lucide-react'
 
 import { IconButton } from '@/components/ui/IconButton/IconButton'
 import { useFocusTrap } from '@/hooks/useFocusTrap'
-import { EASE_IOS, springSoft } from '@/lib/motion'
+import { EASE_IOS, exitQuick, springSoft } from '@/lib/motion'
 import { PANEL_BASE, SCRIM, SIZE_CLASSES } from './Modal.styles'
 /**
  * The modal sheet: scrim, panel, trapped focus and the enter/exit animation.
@@ -18,14 +18,16 @@ export function Modal({ isOpen, onClose, title, ariaLabel, size = 'md', children
   const panelRef = useFocusTrap(isOpen, onClose)
 
   return (
-    <AnimatePresence>
+    /* `propagate`: a detail sheet is unmounted by its page (see the pages' <AnimatePresence>),
+       and this passes that exit down so the sheet closes the way it opened. */
+    <AnimatePresence propagate>
       {isOpen && (
         <>
           <motion.div
             className={SCRIM}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            exit={{ opacity: 0, transition: exitQuick }}
             transition={{ duration: 0.25, ease: EASE_IOS }}
             onClick={onClose}
           />
@@ -41,7 +43,7 @@ export function Modal({ isOpen, onClose, title, ariaLabel, size = 'md', children
             className={`${PANEL_BASE} ${SIZE_CLASSES[size]}`}
             initial={{ opacity: 0, scale: 0.96, y: 8 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.96, y: 8 }}
+            exit={{ opacity: 0, scale: 0.97, y: 6, transition: exitQuick }}
             transition={springSoft}
           >
             {title && (

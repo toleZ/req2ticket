@@ -13,7 +13,14 @@
      options  only for kind 'select': [{ value, label }]
      addLabel only for kind 'checklist': the text of the row that adds an item. It lives here
               instead of being built from the label ('Añadir ' + label) because the label is
-              plural ("Criterios de aceptación") and the row talks about a single one. */
+              plural ("Criterios de aceptación") and the row talks about a single one.
+
+   And, only for how the sheet lays them out:
+     section      a key of FIELD_SECTIONS; a heading is drawn where the section starts
+     pair         two consecutive fields with `pair` sit side by side from md up
+     tone         'green' | 'red': the label's colour (expected against actual result)
+     mono         the value is technical (versions, browsers) and reads in monospace
+     placeholder  a hint of what goes in the field */
 
 export const EXTRA_FIELDS = {
   /* The "Como <rol> quiero <acción> para <beneficio>" narrative is deliberately not here: it
@@ -54,20 +61,62 @@ export const EXTRA_FIELDS = {
         { value: 'trivial', label: 'Trivial' },
       ],
     },
-    { name: 'stepsToReproduce', kind: 'textarea', label: 'Pasos para reproducir' },
-    { name: 'expectedResult', kind: 'textarea', label: 'Resultado esperado' },
-    { name: 'actualResult', kind: 'textarea', label: 'Resultado obtenido' },
-    { name: 'environment', kind: 'text', label: 'Entorno' },
+    {
+      name: 'stepsToReproduce',
+      kind: 'textarea',
+      label: 'Pasos para reproducir',
+      section: 'report',
+      placeholder: '1. Abrir…\n2. …\n3. …',
+    },
+    {
+      name: 'expectedResult',
+      kind: 'textarea',
+      label: 'Resultado esperado',
+      section: 'report',
+      pair: true,
+      tone: 'green',
+      placeholder: 'Qué debería pasar',
+    },
+    {
+      name: 'actualResult',
+      kind: 'textarea',
+      label: 'Resultado obtenido',
+      section: 'report',
+      pair: true,
+      tone: 'red',
+      placeholder: 'Qué pasa en cambio',
+    },
+    {
+      name: 'environment',
+      kind: 'text',
+      label: 'Entorno',
+      section: 'report',
+      mono: true,
+      placeholder: 'producción · Chrome 141 · macOS 15',
+    },
   ],
 
   fix: [
-    { name: 'rootCause', kind: 'textarea', label: 'Causa raíz' },
-    { name: 'solution', kind: 'textarea', label: 'Solución aplicada' },
+    {
+      name: 'rootCause',
+      kind: 'textarea',
+      label: 'Causa raíz',
+      section: 'investigate',
+      placeholder: 'Por qué pasaba',
+    },
+    {
+      name: 'solution',
+      kind: 'textarea',
+      label: 'Solución aplicada',
+      section: 'investigate',
+      placeholder: 'Qué se cambió para arreglarlo',
+    },
     {
       name: 'verificationSteps',
       kind: 'checklist',
       label: 'Pasos de verificación',
       addLabel: 'Añadir paso de verificación',
+      section: 'investigate',
     },
     {
       name: 'regressionRisk',
@@ -158,4 +207,20 @@ export function toExtraFieldsPayload(type, values) {
    information per type. */
 export const DESCRIPTION_PLACEHOLDER = {
   userStory: 'Como <rol> quiero <acción> para <beneficio>',
+  task: 'Qué hay que hacer y por qué',
+  bug: 'Qué falla, en pocas palabras',
+  fix: 'Qué bug arregla y en qué consiste',
+}
+
+export const FIELD_SECTIONS = {
+  report: { title: 'Al reportar', hint: 'lo que hace falta para verlo fallar' },
+  investigate: { title: 'Al investigar', hint: 'qué lo rompía y cómo se comprobó' },
+}
+
+/* The line under the title of the create sheet: what this type carries and what it does not. */
+export const TYPE_INTRO = {
+  userStory: 'Una historia se cierra con sus criterios de aceptación. DoR y DoD son opcionales.',
+  task: 'La tarea suma una checklist: ni criterios, ni DoR, ni DoD.',
+  bug: 'Un bug describe cómo verlo fallar. La causa y el arreglo van en un fix.',
+  fix: 'Un fix cuenta qué lo rompía, qué se cambió y cómo se comprobó.',
 }

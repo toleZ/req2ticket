@@ -7,5 +7,11 @@ export const EASE_IOS = [0.32, 0.72, 0, 1]
 /** Panels entering in place: the mobile drawer sliding in, a modal scaling up. */
 export const springSoft = { type: 'spring', stiffness: 320, damping: 30, mass: 0.9 }
 
-/** The active nav highlight moving between items. */
+/** The active nav highlight moving between items, and every other sliding selection. */
 export const springSnappy = { type: 'spring', stiffness: 480, damping: 34, mass: 0.7 }
+
+/** Leaving is quicker than arriving: a panel on its way out accelerates away. */
+export const exitQuick = { duration: 0.16, ease: [0.4, 0, 1, 1] }
+
+/** A list row gliding to its new place after a sort, a filter or a status change. */
+export const layoutGlide = { duration: 0.25, ease: EASE_IOS }

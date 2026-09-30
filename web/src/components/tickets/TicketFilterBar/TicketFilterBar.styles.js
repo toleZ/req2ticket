@@ -1,8 +1,13 @@
-export const FILTER_SELECT = `w-auto rounded-control border border-separator bg-fill-tertiary px-2.5
-  py-1.5 text-footnote text-label disabled:opacity-50`
-
-export const SEARCH_BOX = `flex min-w-48 flex-1 items-center gap-2 rounded-control border
-  border-separator bg-fill-tertiary px-2.5 py-1.5`
-
-export const SEARCH_INPUT = `w-full bg-transparent text-footnote text-label
-  placeholder:text-label-tertiary focus:outline-none`
+/* Tones to solid dots, written out in full: Tailwind reads the code as text and would never see a `bg-${tone}`. */
+export const DOT = {
+  neutral: 'bg-gray3',
+  gray: 'bg-gray',
+  blue: 'bg-blue',
+  indigo: 'bg-indigo',
+  purple: 'bg-purple',
+  green: 'bg-green',
+  yellow: 'bg-yellow',
+  orange: 'bg-orange',
+  red: 'bg-red',
+  struck: 'bg-gray3',
+}

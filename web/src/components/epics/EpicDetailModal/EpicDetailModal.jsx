@@ -10,13 +10,20 @@ import { DetailSelect } from '@/components/ui/DetailRow/DetailSelect'
 import { InlineTitleField } from '@/components/ui/InlineTitleField/InlineTitleField'
 import { Modal } from '@/components/ui/Modal/Modal'
 import { ProgressBar } from '@/components/ui/ProgressBar/ProgressBar'
+import { SearchSelect } from '@/components/ui/SearchSelect/SearchSelect'
+import { SHEET_TEXTAREA } from '@/components/ui/SheetField/SheetField.styles'
 import { cn } from '@/lib/cn'
-import { ACCENT_COLORS, EPIC_PRIORITY_OPTIONS, EPIC_STATUS_OPTIONS } from '@/lib/epicOptions'
+import { ACCENT_COLORS, EPIC_PRIORITY_OPTIONS, EPIC_STATUS_OPTIONS, findOption } from '@/lib/options'
 import { errorMessage } from '@/lib/errors'
-import { findOption } from '@/lib/options'
-import { summarizeTickets } from '@/lib/ticketStats'
+import { userPickerOptions } from '@/components/ui/SearchSelect/SearchSelect.options'
+import { cancelledNote, summarizeTickets } from '@/lib/ticketStats'
 import { validateEpicForm } from '@/lib/validate'
-import { CONTROL_TEXTAREA, FIELD_LABEL, SIDE_CAPTION } from './EpicDetailModal.styles'
+import {
+  FIELD_LABEL,
+  PROGRESS_META,
+  SECTION_LABEL,
+  SIDE_CAPTION,
+} from './EpicDetailModal.styles'
 import { toDetailValues } from './EpicDetailModal.helpers'
 /**
  * An epic's record. Same skeleton as TicketDetailModal — `lg` sheet, two columns, a footer
@@ -40,12 +47,16 @@ export function EpicDetailModal({ epic, tickets, users, onClose, onUpdateEpic, o
   const stats = summarizeTickets(tickets)
 
   function handleChange(e) {
-    const nextValues = { ...values, [e.target.name]: e.target.value }
+    handleFieldChange(e.target.name, e.target.value)
+  }
+
+  function handleFieldChange(name, value) {
+    const nextValues = { ...values, [name]: value }
     setValues(nextValues)
     setDirty(true)
 
-    if (errors[e.target.name]) {
-      setErrors({ ...errors, [e.target.name]: validateEpicForm(nextValues)[e.target.name] })
+    if (errors[name]) {
+      setErrors({ ...errors, [name]: validateEpicForm(nextValues)[name] })
     }
   }
 
@@ -115,6 +126,10 @@ export function EpicDetailModal({ epic, tickets, users, onClose, onUpdateEpic, o
   return (
     <Modal isOpen onClose={handleRequestClose} size="lg" ariaLabel={`${epic.code}: ${epic.name}`}>
       <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col" noValidate>
+        {/* Same as the ticket sheet: the title is an editable field, so a hidden heading. */}
+        <h2 className="sr-only">
+          {epic.code}: {epic.name}
+        </h2>
         <DetailHeader
           leading={
             accent && (
@@ -168,20 +183,17 @@ export function EpicDetailModal({ epic, tickets, users, onClose, onUpdateEpic, o
               </DetailRow>
 
               <DetailRow label="Responsable" htmlFor={`epic-${epic.id}-owner`}>
-                <DetailSelect
-                  id={`epic-${epic.id}-owner`}
-                  name="ownerId"
-                  value={values.ownerId}
-                  disabled={submitting}
-                  onChange={handleChange}
-                >
-                  <option value="">Sin asignar</option>
-                  {users.map((user) => (
-                    <option key={user.id} value={user.id}>
-                      {user.name}
-                    </option>
-                  ))}
-                </DetailSelect>
+                <div className="w-full min-w-0">
+                  <SearchSelect
+                    id={`epic-${epic.id}-owner`}
+                    value={values.ownerId}
+                    options={userPickerOptions(users, 'Sin asignar')}
+                    searchLabel="Buscar persona"
+                    noResults="Nadie coincide"
+                    disabled={submitting}
+                    onChange={(value) => handleFieldChange('ownerId', value)}
+                  />
+                </div>
               </DetailRow>
 
               {/* Stacked and not in a detail row: ten swatches do not fit beside the label. */}
@@ -221,27 +233,33 @@ export function EpicDetailModal({ epic, tickets, users, onClose, onUpdateEpic, o
               value={values.description}
               disabled={submitting}
               onChange={handleChange}
-              className={CONTROL_TEXTAREA}
+              className={SHEET_TEXTAREA}
             />
           </div>
 
           <div>
-            <p className="mb-1.5 text-subheadline font-medium text-label">Avance</p>
-            {stats.total === 0 ? (
-              <p className="text-footnote text-label-tertiary">
+            <p className={SECTION_LABEL}>Avance</p>
+            {stats.all === 0 ? (
+              <p className="text-footnote text-label-secondary">
                 Esta épica todavía no tiene tickets.
               </p>
             ) : (
               <>
-                <div className="flex items-center justify-between text-footnote text-label-secondary">
+                <div className={PROGRESS_META}>
                   <span>
                     {stats.completed} de {stats.total} tickets completados
+                    {cancelledNote(stats)}
                   </span>
                   <span>
                     {stats.pointsCompleted}/{stats.points} pts
                   </span>
                 </div>
-                <ProgressBar value={stats.completed} max={stats.total} className="mt-1.5" />
+                <ProgressBar
+                  value={stats.completed}
+                  max={stats.total}
+                  label={`Tickets completados: ${stats.completed} de ${stats.total}`}
+                  className="mt-1.5"
+                />
               </>
             )}
           </div>
@@ -253,8 +271,10 @@ export function EpicDetailModal({ epic, tickets, users, onClose, onUpdateEpic, o
           submitting={submitting}
           confirmDeleteMessage={
             <>
-              Se eliminan también sus {stats.total === 1 ? 'ticket' : 'tickets'}. No se puede
-              deshacer.
+              {/* `all`, cancelled included: the backend deletes every one of them. */}
+              {stats.all === 1 && 'Se elimina también su ticket. '}
+              {stats.all > 1 && `Se eliminan también sus ${stats.all} tickets. `}
+              No se puede deshacer.
             </>
           }
           onExitConfirm={() => setFooterMode('edit')}

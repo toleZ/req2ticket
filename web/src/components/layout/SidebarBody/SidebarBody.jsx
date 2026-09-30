@@ -1,68 +1,88 @@
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
-import { PRIMARY_ITEMS, PROJECT_ITEMS, PROJECT_SECTION_LABEL } from '@/lib/navItems'
 import { SidebarNavItem } from '@/components/layout/SidebarNavItem/SidebarNavItem'
-import { BRAND_LINK, BRAND_ROW, BRAND_TILE, BRAND_WORDMARK, COLLAPSE_ROW, NAV, NAV_LIST, NAV_SECTION_HEADER } from './SidebarBody.styles'
+import { UserMenu } from '@/components/layout/UserMenu/UserMenu'
 import { IconButton } from '@/components/ui/IconButton/IconButton'
-
-/* Every horizontal offset here is a constant, so the rail and the drawer line up. */
-
-/* Fixed height so swapping the eyebrow for the rule does not shift the list below. */
+import { readSession } from '@/lib/auth'
+import { cn } from '@/lib/cn'
+import { NAV_ITEMS } from '@/lib/navItems'
+import { ROLE_LABELS } from '@/lib/options'
+import { SHORTCUT } from './SidebarBody.data'
+import {
+  BRAND_TILE,
+  CARD,
+  CARD_FRAME,
+  CARD_NAME,
+  CARD_ROLE,
+  CARD_ROW,
+  CARD_TEXT,
+  NAV,
+  NAV_LIST,
+  USER_ROW,
+} from './SidebarBody.styles'
 
 /**
- * The brand row and the navigation. Rendered both inside the desktop rail and inside
- * the mobile drawer, which is why it owns no width, no border and no position.
+ * What the rail and the mobile drawer both show: the project card, the nav with its counts,
+ * and the user row with its menu. `badges` comes from navBadges() in lib/navItems.js.
+ *
+ * The card links to Resumen; there is one project for now, so there is nothing to switch to.
+ * The collapse control sits at the foot, beside the user (`onToggleCollapse`; the drawer
+ * passes none, there is nothing to collapse there).
  */
-export function SidebarBody({ surface, isCollapsed = false, onToggleCollapse, onNavigate }) {
-  /* One highlight per surface and per width. Why it has to be unique: NavIndicator.jsx. */
+export function SidebarBody({
+  surface,
+  isCollapsed = false,
+  badges = {},
+  onToggleCollapse,
+  onNavigate,
+}) {
   const indicatorId = `nav-indicator-${surface}-${isCollapsed ? 'collapsed' : 'expanded'}`
-
+  const role = ROLE_LABELS[readSession()?.user?.role]
   const collapseLabel = isCollapsed ? 'Expandir la barra lateral' : 'Contraer la barra lateral'
+
+  const collapseControl = onToggleCollapse && (
+    <IconButton
+      label={collapseLabel}
+      title={`${collapseLabel} (${SHORTCUT})`}
+      onClick={onToggleCollapse}
+      ariaExpanded={!isCollapsed}
+      className="ml-2 self-start"
+    >
+      {isCollapsed ? (
+        <PanelLeftOpen className="size-4.5" aria-hidden="true" />
+      ) : (
+        <PanelLeftClose className="size-4.5" aria-hidden="true" />
+      )}
+    </IconButton>
+  )
 
   return (
     <>
-      {/* Always a link home, never the collapse control: a control hidden in the logo
-          is a control nobody finds. */}
-      <div className={BRAND_ROW}>
-        <Link to="/" onClick={onNavigate} className={BRAND_LINK}>
+      <div className={CARD_ROW}>
+        <Link
+          to="/"
+          onClick={onNavigate}
+          title={isCollapsed ? 'Req2Ticket' : undefined}
+          className={cn(CARD, !isCollapsed && CARD_FRAME)}
+        >
           <span className={BRAND_TILE} aria-hidden="true">
-            R2
+            REQ
           </span>
-          <span className={`${BRAND_WORDMARK} ${isCollapsed ? 'opacity-0' : 'opacity-100'}`}>
-            Req2Ticket
+          <span className={cn(CARD_TEXT, isCollapsed && 'opacity-0')}>
+            <span className={cn(CARD_NAME, 'block')}>Req2Ticket</span>
+            {role && <span className={cn(CARD_ROLE, 'block')}>{role}</span>}
           </span>
         </Link>
       </div>
 
       <nav aria-label="Principal" className={NAV}>
         <ul className={NAV_LIST}>
-          {PRIMARY_ITEMS.map((item) => (
+          {NAV_ITEMS.map((item) => (
             <li key={item.to}>
               <SidebarNavItem
                 item={item}
-                isCollapsed={isCollapsed}
-                indicatorId={indicatorId}
-                onNavigate={onNavigate}
-              />
-            </li>
-          ))}
-        </ul>
-
-        <div className={NAV_SECTION_HEADER}>
-          {isCollapsed ? (
-            /* w-4.5 is the icon width, so the rule sits in the icon column. */
-            <span className="h-px w-4.5 bg-separator" aria-hidden="true" />
-          ) : (
-            <p className="eyebrow">{PROJECT_SECTION_LABEL}</p>
-          )}
-        </div>
-
-        <ul className={NAV_LIST}>
-          {PROJECT_ITEMS.map((item) => (
-            <li key={item.to}>
-              <SidebarNavItem
-                item={item}
+                badge={item.badge ? badges[item.badge] : null}
                 isCollapsed={isCollapsed}
                 indicatorId={indicatorId}
                 onNavigate={onNavigate}
@@ -72,23 +92,12 @@ export function SidebarBody({ surface, isCollapsed = false, onToggleCollapse, on
         </ul>
       </nav>
 
-      {/* At the foot of the rail, not in the brand row: the brand row keeps its own offset. */}
-      {onToggleCollapse && (
-        <div className={COLLAPSE_ROW}>
-          <IconButton
-            label={collapseLabel}
-            title={collapseLabel}
-            onClick={onToggleCollapse}
-            ariaExpanded={!isCollapsed}
-          >
-            {isCollapsed ? (
-              <PanelLeftOpen className="size-4" aria-hidden="true" />
-            ) : (
-              <PanelLeftClose className="size-4" aria-hidden="true" />
-            )}
-          </IconButton>
+      <div className={USER_ROW}>
+        {collapseControl}
+        <div className="min-w-0">
+          <UserMenu isCollapsed={isCollapsed} onNavigate={onNavigate} />
         </div>
-      )}
+      </div>
     </>
   )
 }

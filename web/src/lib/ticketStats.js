@@ -1,5 +1,5 @@
 import { CHECKLIST_KEY } from '@/lib/ticketExtraFields'
-import { TICKET_CANCELLED, TICKET_DONE } from '@/lib/ticketOptions'
+import { TICKET_CANCELLED, TICKET_DONE } from '@/lib/options'
 
 /* Summary of a set of tickets. The sprint card and the epic row share it: both show the
    same numbers over different slices of the backlog. */
@@ -13,11 +13,22 @@ export function summarizeTickets(tickets) {
   const done = counted.filter((ticket) => ticket.status === TICKET_DONE)
 
   return {
+    /* `all` and `cancelled` are for saying so on screen: "2 de 3 (1 cancelado)". Anything
+       that asks "does it have tickets?" or deletes them must look at `all`, not `total`. */
+    all: tickets.length,
+    cancelled: tickets.length - counted.length,
     total: counted.length,
     completed: done.length,
     points: counted.reduce((sum, ticket) => sum + ticket.points, 0),
     pointsCompleted: done.reduce((sum, ticket) => sum + ticket.points, 0),
   }
+}
+
+/* " (1 cancelado)" / " (3 cancelados)", or nothing. Appended to a count that leaves the
+   cancelled tickets out, so the number never looks like it disagrees with the list below it. */
+export function cancelledNote(stats) {
+  if (stats.cancelled === 0) return ''
+  return stats.cancelled === 1 ? ' (1 cancelado)' : ` (${stats.cancelled} cancelados)`
 }
 
 /* How many of the ticket's checklist items are ticked, and how many there are.

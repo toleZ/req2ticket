@@ -14,11 +14,12 @@ export function SelectField({
   value,
   disabled = false,
   error,
+  reserveError = false,
   onChange,
   children,
 }) {
   return (
-    <Field id={id} label={label} optional={optional} error={error}>
+    <Field id={id} label={label} optional={optional} error={error} reserveError={reserveError}>
       <select
         id={id}
         name={name}

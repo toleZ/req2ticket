@@ -3,7 +3,6 @@ import { useState } from 'react'
 import { TicketExtraFields } from '@/components/tickets/TicketExtraFields/TicketExtraFields'
 import { TicketPointsField } from '@/components/tickets/TicketPointsField/TicketPointsField'
 import { TicketTypeIcon } from '@/components/tickets/TicketTypeIcon/TicketTypeIcon'
-import { Avatar } from '@/components/ui/Avatar/Avatar'
 import { Badge } from '@/components/ui/Badge/Badge'
 import { DetailFooter } from '@/components/ui/DetailFooter/DetailFooter'
 import { DetailHeader } from '@/components/ui/DetailHeader/DetailHeader'
@@ -12,18 +11,21 @@ import { DetailRow } from '@/components/ui/DetailRow/DetailRow'
 import { DetailSelect } from '@/components/ui/DetailRow/DetailSelect'
 import { InlineTitleField } from '@/components/ui/InlineTitleField/InlineTitleField'
 import { Modal } from '@/components/ui/Modal/Modal'
+import { SearchSelect } from '@/components/ui/SearchSelect/SearchSelect'
+import { SHEET_LABEL, SHEET_TEXTAREA } from '@/components/ui/SheetField/SheetField.styles'
 import { formatDateTime, timeAgo } from '@/lib/dates'
+import { cn } from '@/lib/cn'
 import { errorMessage } from '@/lib/errors'
-import { findOption } from '@/lib/options'
+import { findOption, TICKET_PRIORITY_OPTIONS, TICKET_STATUS_OPTIONS, TICKET_TYPE_OPTIONS } from '@/lib/options'
+import { epicPickerOptions, sprintPickerOptions, userPickerOptions } from '@/components/ui/SearchSelect/SearchSelect.options'
 import {
   DESCRIPTION_PLACEHOLDER,
   EXTRA_FIELDS,
   toExtraFieldsPayload,
   toFormValues,
 } from '@/lib/ticketExtraFields'
-import { TICKET_PRIORITY_OPTIONS, TICKET_STATUS_OPTIONS, TICKET_TYPE_OPTIONS } from '@/lib/ticketOptions'
 import { validateTicketForm } from '@/lib/validate'
-import { CONTROL_TEXTAREA, FIELD_LABEL, META, STORY_CALLOUT, STORY_TEXTAREA } from './TicketDetailModal.styles'
+import { META, STORY_CALLOUT, STORY_TEXTAREA, TYPE_VALUE } from './TicketDetailModal.styles'
 import { toDetailValues } from './TicketDetailModal.helpers'
 /**
  * A ticket's record: everything it holds, on a two-column sheet, and the only place it is
@@ -45,9 +47,8 @@ import { toDetailValues } from './TicketDetailModal.helpers'
  * ticket changes, and syncing state with props from an effect is exactly what React advises
  * against and what the project's eslint rejects (react-hooks/set-state-in-effect).
  *
- * The cost: unmounting also takes away the <AnimatePresence> living inside Modal, so the sheet
- * has no exit animation. The entrance one it does have. That is the price of not having to
- * sync anything.
+ * Unmounting would also skip Modal's exit animation, so each page wraps this sheet in an
+ * <AnimatePresence> and Modal propagates that exit: the sheet closes the way it opened.
  */
 export function TicketDetailModal({
   ticket,
@@ -66,6 +67,9 @@ export function TicketDetailModal({
   const [dirty, setDirty] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
+  /* A tick saves on its own (see handleChecklistToggle): the error of the last one that
+     failed, shown under that checklist. */
+  const [checklistError, setChecklistError] = useState(null)
 
   /* The footer has three faces: the normal one, the "are you sure you want to delete it?" and
      the "you have unsaved changes". All three live here and not in a ConfirmModal on top,
@@ -76,9 +80,6 @@ export function TicketDetailModal({
 
   const type = findOption(TICKET_TYPE_OPTIONS, ticket.type)
   const status = findOption(TICKET_STATUS_OPTIONS, values.status)
-  /* A <select>'s ids are strings and the API's are numbers, so the comparison goes through
-     String() — the same conversion the Tickets page's filters make. */
-  const assignee = users.find((user) => String(user.id) === values.assigneeId)
 
   /* The extra fields split in two: the content on the left, the dropdowns on the right. It
      filters by `kind` and not by a list of names so that a new field in
@@ -93,15 +94,19 @@ export function TicketDetailModal({
   }
 
   function handleChange(e) {
-    const nextValues = { ...values, [e.target.name]: e.target.value }
+    handleFieldChange(e.target.name, e.target.value)
+  }
+
+  function handleFieldChange(name, value) {
+    const nextValues = { ...values, [name]: value }
     setValues(nextValues)
     markDirty()
 
     // If the field already had an error, it is re-checked as you type so the message
     // disappears as soon as you fix it. A field with no error yet is not validated until
     // submit.
-    if (errors[e.target.name]) {
-      setErrors({ ...errors, [e.target.name]: validateTicketForm(nextValues)[e.target.name] })
+    if (errors[name]) {
+      setErrors({ ...errors, [name]: validateTicketForm(nextValues)[name] })
     }
   }
 
@@ -113,6 +118,31 @@ export function TicketDetailModal({
   function handleExtraChange(name, value) {
     setExtras({ ...extras, [name]: value })
     markDirty()
+  }
+
+  /* Ticking an item is the most frequent thing done in this sheet, so it saves right away
+     instead of waiting for "Guardar cambios" — and it does not make the form dirty.
+
+     What goes to the API is the SAVED ticket (the `ticket` prop, not the form) with only this
+     checklist replaced: whatever else is being edited stays a draft until Guardar. If the
+     save fails the tick is undone and the error appears under the checklist.
+
+     The list is not disabled while it saves: every save sends the whole checklist as it is on
+     screen, so a second quick tick simply goes out in the next request. Disabling it dimmed
+     every row for the length of the request, which read as a flash. */
+  async function handleChecklistToggle(name, items) {
+    const before = extras
+    setExtras({ ...extras, [name]: items })
+    setChecklistError(null)
+    try {
+      const saved = toFormValues(ticket.type, ticket.extraFields)
+      await onUpdateTicket(ticket, {
+        extraFields: toExtraFieldsPayload(ticket.type, { ...saved, [name]: items }),
+      })
+    } catch (err) {
+      setExtras(before)
+      setChecklistError({ name, message: errorMessage(err) })
+    }
   }
 
   /* All three ways out go through here: the X, the click on the backdrop and Escape — all
@@ -191,6 +221,11 @@ export function TicketDetailModal({
       ariaLabel={`${ticket.code}: ${ticket.title}`}
     >
       <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col" noValidate>
+        {/* The sheet's visible title is an editable field, so the dialog also carries a real
+            heading for anyone moving through it by headings. Visible only to screen readers. */}
+        <h2 className="sr-only">
+          {ticket.code}: {ticket.title}
+        </h2>
         <DetailHeader
           leading={<TicketTypeIcon type={ticket.type} className="size-4.5" />}
           code={ticket.code}
@@ -211,7 +246,7 @@ export function TicketDetailModal({
               <DetailRow label="Tipo">
                 <span
                   title="El tipo se define al crear el ticket y no se puede cambiar."
-                  className="flex items-center gap-1.5 text-footnote text-label"
+                  className={TYPE_VALUE}
                 >
                   <TicketTypeIcon type={ticket.type} className="size-4" />
                   {type && type.label}
@@ -275,60 +310,46 @@ export function TicketDetailModal({
                 </DetailRow>
               ))}
 
-              {/* No empty option: the epic is required, the ticket's only relation the API will
-                  not accept as null. */}
               <DetailRow label="Épica" htmlFor={`ticket-${ticket.id}-epic`}>
-                <DetailSelect
-                  id={`ticket-${ticket.id}-epic`}
-                  name="epicId"
-                  value={values.epicId}
-                  disabled={submitting}
-                  onChange={handleChange}
-                >
-                  {epics.map((epic) => (
-                    <option key={epic.id} value={epic.id}>
-                      {epic.name}
-                    </option>
-                  ))}
-                </DetailSelect>
+                <div className="w-full min-w-0">
+                  <SearchSelect
+                    id={`ticket-${ticket.id}-epic`}
+                    value={values.epicId}
+                    options={epicPickerOptions(epics)}
+                    searchLabel="Buscar épica"
+                    noResults="Ninguna épica coincide"
+                    disabled={submitting}
+                    onChange={(value) => handleFieldChange('epicId', value)}
+                  />
+                </div>
               </DetailRow>
 
               <DetailRow label="Sprint" htmlFor={`ticket-${ticket.id}-sprint`}>
-                <DetailSelect
-                  id={`ticket-${ticket.id}-sprint`}
-                  name="sprintId"
-                  value={values.sprintId}
-                  disabled={submitting}
-                  onChange={handleChange}
-                >
-                  <option value="">Sin sprint</option>
-                  {sprints.map((sprint) => (
-                    <option key={sprint.id} value={sprint.id}>
-                      {sprint.name}
-                    </option>
-                  ))}
-                </DetailSelect>
+                <div className="w-full min-w-0">
+                  <SearchSelect
+                    id={`ticket-${ticket.id}-sprint`}
+                    value={values.sprintId}
+                    options={sprintPickerOptions(sprints, 'Sin sprint')}
+                    searchLabel="Buscar sprint"
+                    noResults="Ningún sprint coincide"
+                    disabled={submitting}
+                    onChange={(value) => handleFieldChange('sprintId', value)}
+                  />
+                </div>
               </DetailRow>
 
               <DetailRow label="Asignado" htmlFor={`ticket-${ticket.id}-assignee`}>
-                <DetailSelect
-                  id={`ticket-${ticket.id}-assignee`}
-                  name="assigneeId"
-                  value={values.assigneeId}
-                  disabled={submitting}
-                  onChange={handleChange}
-                >
-                  <option value="">Sin asignar</option>
-                  {users.map((user) => (
-                    <option key={user.id} value={user.id}>
-                      {user.name}
-                    </option>
-                  ))}
-                </DetailSelect>
-                {/* The name comes from `users` and not from `ticket.assigneeName`: that one is
-                    what is saved, so on picking a different assignee the avatar would keep the
-                    previous one's initials until Guardar is pressed. */}
-                <Avatar name={assignee ? assignee.name : null} size="sm" />
+                <div className="w-full min-w-0">
+                  <SearchSelect
+                    id={`ticket-${ticket.id}-assignee`}
+                    value={values.assigneeId}
+                    options={userPickerOptions(users, 'Sin asignar')}
+                    searchLabel="Buscar persona"
+                    noResults="Nadie coincide"
+                    disabled={submitting}
+                    onChange={(value) => handleFieldChange('assigneeId', value)}
+                  />
+                </div>
               </DetailRow>
 
               {/* The points are stacked and not in a detail row: seven buttons do not fit next
@@ -378,11 +399,16 @@ export function TicketDetailModal({
               survives where it can — in the placeholder, already drawn in label-tertiary. */}
           {ticket.type === 'userStory' ? (
             <div className={STORY_CALLOUT}>
-              <p className="eyebrow mb-2">Historia</p>
+              <label
+                htmlFor={`ticket-${ticket.id}-description`}
+                className={cn(SHEET_LABEL, 'text-blue-text')}
+              >
+                Historia
+              </label>
               <textarea
+                id={`ticket-${ticket.id}-description`}
                 rows={3}
                 name="description"
-                aria-label="Historia"
                 value={values.description}
                 disabled={submitting}
                 onChange={handleChange}
@@ -392,7 +418,10 @@ export function TicketDetailModal({
             </div>
           ) : (
             <div>
-              <label htmlFor={`ticket-${ticket.id}-description`} className={FIELD_LABEL}>
+              <label
+                htmlFor={`ticket-${ticket.id}-description`}
+                className={cn(SHEET_LABEL, 'text-label-secondary')}
+              >
                 Descripción
               </label>
               <textarea
@@ -402,7 +431,7 @@ export function TicketDetailModal({
                 value={values.description}
                 disabled={submitting}
                 onChange={handleChange}
-                className={CONTROL_TEXTAREA}
+                className={SHEET_TEXTAREA}
               />
             </div>
           )}
@@ -414,6 +443,8 @@ export function TicketDetailModal({
             disabled={submitting}
             idPrefix={`ticket-${ticket.id}`}
             kinds={['text', 'textarea', 'checklist']}
+            onChecklistToggle={handleChecklistToggle}
+            checklistError={checklistError}
           />
         </DetailLayout>
 

@@ -18,6 +18,7 @@ export function Button({
   onClick,
   disabled = false,
   ariaPressed,
+  ariaDescribedBy,
   className,
   children,
 }) {
@@ -27,6 +28,7 @@ export function Button({
       onClick={onClick}
       disabled={disabled}
       aria-pressed={ariaPressed}
+      aria-describedby={ariaDescribedBy}
       className={cn(BASE, SIZE_CLASSES[size], VARIANT_CLASSES[variant], className)}
     >
       {children}

@@ -7,19 +7,8 @@ import { FormError } from '@/components/ui/FormError/FormError'
 import { PasswordField } from '@/components/ui/Field/PasswordField'
 import { errorMessage } from '@/lib/errors'
 import { validateLoginForm } from '@/lib/validate'
-import { INITIAL_VALUES } from './LoginForm.data'
-
-/* Every key here has to match the field's `name` in the form exactly: handleChange uses
-   `e.target.name` to know what to update. If they do not match, the field silently stops
-   accepting input and nothing raises an error. */
-
-/* Demo account credentials: the button below fills them in for the user.
-
-   Every seeded account shares this password and the email is the role in lowercase
-   (admin@, productowner@, scrummaster@, developer@, superadmin@), so switching roles
-   while developing means editing the local part of what this button typed. See
-   api/src/Infrastructure/SeedData.cs — this has to match it. */
-const DEMO_ACCOUNT = { email: 'admin@req2ticket.com', password: 'Passw0rd!' }
+import { DEMO_ACCOUNT, INITIAL_VALUES } from './LoginForm.data'
+import { DEMO_BUTTON, REMEMBER } from './LoginForm.styles'
 
 export function LoginForm({ onSubmit }) {
   const [values, setValues] = useState(INITIAL_VALUES)
@@ -104,7 +93,7 @@ export function LoginForm({ onSubmit }) {
 
         {/* Unticked, the session lives in sessionStorage and dies when the tab closes. Ticked,
             it goes to localStorage and survives closing the browser. */}
-        <label htmlFor="remember" className="flex items-center gap-2 text-subheadline text-label">
+        <label htmlFor="remember" className={REMEMBER}>
           <input
             id="remember"
             name="remember"
@@ -124,7 +113,7 @@ export function LoginForm({ onSubmit }) {
       <button
         type="button"
         onClick={fillDemoAccount}
-        className="mt-4 flex w-full items-start gap-2 rounded-control bg-fill-tertiary p-3 text-left text-footnote text-label-secondary transition-colors hover:bg-fill-secondary"
+        className={DEMO_BUTTON}
       >
         <Sparkles className="mt-0.5 size-4 shrink-0 text-blue" aria-hidden="true" />
         <span>

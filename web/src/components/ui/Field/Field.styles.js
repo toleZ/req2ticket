@@ -3,15 +3,17 @@ export const ICON_WRAP =
 
 export const LABEL = 'mb-1 block text-subheadline font-medium text-label'
 
-export const OPTIONAL = 'font-normal text-label-tertiary'
+export const OPTIONAL = 'font-normal text-label-secondary'
 
-export const FIELD_ERROR = 'mt-1 text-footnote text-red'
+export const FIELD_ERROR = 'mt-1 animate-fade-in text-footnote text-red-text'
 
 /* No horizontal padding in the base on purpose. Each variant sets its own, because a base
    `px-3` plus a variant `pl-9` would put both classes in the DOM and the CSS order — not the
    order we wrote them in — would pick the winner. Composing them here instead of through `cn`
-   keeps that decision visible. */
-export const CONTROL_BASE = `w-full rounded-control border border-separator bg-fill-tertiary py-2
+   keeps that decision visible.
+
+   `min-h-11` below lg, where the pointer is a finger: py-2 alone drew a 40px field. */
+export const CONTROL_BASE = `min-h-11 w-full rounded-control border border-separator bg-fill-tertiary py-2 lg:min-h-0
   text-body text-label transition-colors duration-fast placeholder:text-label-tertiary
   hover:border-separator-opaque disabled:opacity-50`
 

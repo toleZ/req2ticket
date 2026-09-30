@@ -44,9 +44,14 @@
 
   /* ── Radii ─────────────────────────────────────────────────────────────── */
   --radius-control: 0.625rem;  /* 10 — buttons, inputs */
+  --radius-control-inner: 0.375rem; /* 6 — pills and options inside a control: its radius minus its 4px padding */
+  --radius-mini: 0.3125rem;    /* 5 — keycaps and count pills */
   --radius-card: 0.875rem;     /* 14 — cards */
   --radius-group: 1.125rem;    /* 18 — list groups */
   --radius-sheet: 1.25rem;     /* 20 — sheets, modals */
+
+  /* ── Tracking ──────────────────────────────────────────────────────────── */
+  --tracking-label: 0.06em;    /* small uppercase labels: sheet labels, section titles */
 
   /* ── Motion ────────────────────────────────────────────────────────────── */
   --ease-ios: cubic-bezier(0.32, 0.72, 0, 1);
@@ -61,6 +66,40 @@
   --transition-duration-slow: 380ms;
   --transition-duration-sheet: 420ms;
 
+  /* One-shot animations, as `animate-*` utilities. Entrances only: an element that leaves
+     either unmounts at once or collapses with row-out. `row-in` fills backwards so it lets go
+     of its max-height when it ends, and a long item is never clipped. */
+  --animate-fade-in: fade-in 150ms var(--ease-out-quad) both;
+  --animate-fade-in-late: fade-in 150ms var(--ease-out-quad) 200ms both;
+  --animate-pop-in: pop-in 160ms var(--ease-ios) both;
+  --animate-tick-in: tick-in 180ms var(--ease-ios) both;
+  --animate-row-in: row-in 200ms var(--ease-ios) backwards;
+  --animate-row-out: row-out 150ms var(--ease-out-quad) forwards;
+  /* Rows revealed by "Mostrar más" or by unfolding a section: they rise into place one after
+     another. Each row sets its own animation-delay for the stagger (lib/reveal.js) — a var()
+     in here would resolve on :root, not on the row. */
+  --animate-reveal: reveal 240ms var(--ease-ios) backwards;
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+  }
+  @keyframes pop-in {
+    from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+  }
+  @keyframes tick-in {
+    from { opacity: 0; transform: scale(0.4); }
+  }
+  @keyframes row-in {
+    from { opacity: 0; max-height: 0; padding-block: 0; }
+    to { max-height: 8rem; }
+  }
+  @keyframes reveal {
+    from { opacity: 0; transform: translateY(6px); }
+  }
+  @keyframes row-out {
+    from { max-height: 8rem; }
+    to { opacity: 0; max-height: 0; padding-block: 0; border-top-width: 0; }
+  }
 }
 
 /* ── Light palette (default) ───────────────────────────────────────────────
@@ -83,6 +122,22 @@
   --sys-indigo: #5856d6;
   --sys-mint: #00c7be;
 
+  /* Text versions of the accents, for badges, links and error messages only. The accents
+     above stay Apple's exact colours for fills and buttons; these start from Apple's
+     "Increase Contrast" variants and only move in lightness until they reach 4.5:1 on every
+     surface a badge sits on (including its own 12% tint over a row fill). */
+  --sys-blue-text: #0040dd;
+  --sys-green-text: #006a1d;
+  --sys-red-text: #b20000;
+  --sys-orange-text: #b41a00;
+  --sys-yellow-text: #a14100;
+  --sys-purple-text: #7d389e;
+  --sys-pink-text: #b1002b;
+  --sys-teal-text: #006379;
+  --sys-indigo-text: #3634a3;
+  --sys-mint-text: #006661;
+  --sys-gray-text: #5a5a5e;
+
   /* Grays */
   --sys-gray: #8e8e93;
   --sys-gray2: #aeaeb2;
@@ -93,7 +148,8 @@
 
   /* Labels (text) */
   --label: #000000;
-  --label-secondary: rgb(60 60 67 / 0.62);
+  /* 0.76, not Apple's 0.6: at 0.62 secondary text measured 3.3:1 on a row fill. */
+  --label-secondary: rgb(60 60 67 / 0.76);
   --label-tertiary: rgb(60 60 67 / 0.4);
   --label-quaternary: rgb(60 60 67 / 0.22);
 
@@ -157,6 +213,18 @@
   --sys-teal: #40cbe0;
   --sys-indigo: #5e5ce6;
   --sys-mint: #63e6e2;
+
+  --sys-blue-text: #53aeff;
+  --sys-green-text: #30db5b;
+  --sys-red-text: #ff8278;
+  --sys-orange-text: #ffb340;
+  --sys-yellow-text: #ffd426;
+  --sys-purple-text: #da8fff;
+  --sys-pink-text: #ff7b97;
+  --sys-teal-text: #5de6ff;
+  --sys-indigo-text: #9b9cff;
+  --sys-mint-text: #66d4cf;
+  --sys-gray-text: #aeaeb2;
 
   /* Greys with a hint of blue (the B channel sits a few points above R). A perfectly neutral
      grey over a cool background reads as dirty, leaning brown. */
@@ -223,6 +291,18 @@
   --color-teal: var(--sys-teal);
   --color-indigo: var(--sys-indigo);
   --color-mint: var(--sys-mint);
+
+  --color-blue-text: var(--sys-blue-text);
+  --color-green-text: var(--sys-green-text);
+  --color-red-text: var(--sys-red-text);
+  --color-orange-text: var(--sys-orange-text);
+  --color-yellow-text: var(--sys-yellow-text);
+  --color-purple-text: var(--sys-purple-text);
+  --color-pink-text: var(--sys-pink-text);
+  --color-teal-text: var(--sys-teal-text);
+  --color-indigo-text: var(--sys-indigo-text);
+  --color-mint-text: var(--sys-mint-text);
+  --color-gray-text: var(--sys-gray-text);
 
   --color-gray: var(--sys-gray);
   --color-gray2: var(--sys-gray2);

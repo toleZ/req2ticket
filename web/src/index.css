@@ -48,6 +48,12 @@
     font-family: var(--font-mono);
   }
 
+  /* The ring's colour at rest too. Controls with `transition-colors` also animate
+     outline-color, and from its default — the text colour — the ring faded in from black. */
+  * {
+    outline-color: color-mix(in oklab, var(--sys-blue) 55%, transparent);
+  }
+
   /* Visible focus ring, keyboard only. Never remove this. */
   :focus-visible {
     outline: 3px solid color-mix(in oklab, var(--sys-blue) 55%, transparent);
@@ -125,20 +131,45 @@
   letter-spacing: -0.01em;
 }
 
+/* The focus ring for a box that wraps a bare input (the search box, the checklist's "add"
+   row): the input drops its own outline and the box draws the global ring instead. Same
+   values as :focus-visible above, and the same trigger — `:has(:focus-visible)` — so it still
+   only shows for keyboard focus on buttons. */
+@utility focus-ring-within {
+  &:has(:focus-visible) {
+    outline: 3px solid color-mix(in oklab, var(--sys-blue) 55%, transparent);
+    outline-offset: 2px;
+  }
+}
+
 /* Section eyebrow: small caps, the lowest rung of the hierarchy. */
 @utility eyebrow {
   font-size: 0.6875rem;
   font-weight: 600;
-  letter-spacing: 0.06em;
+  letter-spacing: var(--tracking-label);
   text-transform: uppercase;
-  color: var(--label-tertiary);
+  color: var(--label-secondary);
 }
 
+/* Reduced motion keeps the feedback and drops the movement. Colour, background, border,
+   shadow and opacity changes still ease (a hover, a pressed toggle, a fade), but nothing slides,
+   grows or scales: `transition-property` is narrowed to those five, so a transform or a width
+   change lands at once.
+
+   It used to force `transition-duration: 120ms` on every element instead. That gave everything
+   `transition: all`, and a jump motion had already removed came back as a short slide — the
+   mobile drawer still slid in. Elements with no transition of their own are unaffected: their
+   duration is still 0. */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 120ms !important;
+    transition-property: color, background-color, border-color, box-shadow, opacity !important;
     scroll-behavior: auto !important;
+  }
+
+  /* Revealed rows appear together instead of one after another. */
+  .animate-reveal {
+    animation-delay: 0ms !important;
   }
 }
