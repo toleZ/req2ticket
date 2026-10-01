@@ -2,9 +2,9 @@ import { useId, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { ChevronRight } from 'lucide-react'
 
-import { TicketSummaryList } from '@/components/tickets/TicketSummaryList/TicketSummaryList'
+import { EpicBreakdown } from '@/components/epics/EpicBreakdown/EpicBreakdown'
 import { Badge } from '@/components/ui/Badge/Badge'
-import { CHEVRON, EXPAND_BUTTON, META, PANEL, PANEL_LABEL, ROW } from '@/components/ui/ListRow/ListRow.styles'
+import { CHEVRON, EXPAND_BUTTON, META, PANEL, ROW } from '@/components/ui/ListRow/ListRow.styles'
 import { ProgressBar } from '@/components/ui/ProgressBar/ProgressBar'
 import { cn } from '@/lib/cn'
 import { ACCENT_COLORS, EPIC_PRIORITY_OPTIONS, EPIC_STATUS_OPTIONS, findOption } from '@/lib/options'
@@ -13,7 +13,7 @@ import { cancelledNote, summarizeTickets } from '@/lib/ticketStats'
 import { OPEN_BUTTON, OPEN_CODE, OPEN_NAME, OWNER_NAME } from './EpicRow.styles'
 
 /**
- * An epic in the list: read-only, apart from the disclosure that shows its tickets.
+ * An epic in the list: read-only, apart from the disclosure that shows its breakdown.
  *
  * The status and the priority used to be edited in here with two selects; that now lives in
  * EpicDetailModal, which also lets you touch the name, description, owner and colour.
@@ -77,20 +77,24 @@ export function EpicRow({ epic, tickets, onSelectEpic, onSelectTicket }) {
             </button>
           </h2>
 
-          <div className="mt-1.5 flex flex-wrap items-center gap-2">
-            <span className={META}>
-              {stats.completed}/{stats.total} {stats.total === 1 ? 'ticket' : 'tickets'}
-              {cancelledNote(stats)} ·{' '}
-              {stats.pointsCompleted}/{stats.points} pts
-            </span>
-            <ProgressBar
-              value={stats.completed}
-              max={stats.total}
-              size="sm"
-              label={`Tickets completados: ${stats.completed} de ${stats.total}`}
-              className="w-20"
-            />
-          </div>
+          {/* Collapsed, this line is the epic's progress at a glance. Expanded, the breakdown
+              shows the same figures larger right below, so the line steps aside. */}
+          {!isExpanded && (
+            <div className="mt-1.5 flex flex-wrap items-center gap-2">
+              <span className={META}>
+                {stats.completed}/{stats.total} {stats.total === 1 ? 'ticket' : 'tickets'}
+                {cancelledNote(stats)} ·{' '}
+                {stats.pointsCompleted}/{stats.points} pts
+              </span>
+              <ProgressBar
+                value={stats.completed}
+                max={stats.total}
+                size="sm"
+                label={`Tickets completados: ${stats.completed} de ${stats.total}`}
+                className="w-20"
+              />
+            </div>
+          )}
 
           {epic.description && (
             <p className="mt-1 text-footnote text-label-secondary">{epic.description}</p>
@@ -108,16 +112,13 @@ export function EpicRow({ epic, tickets, onSelectEpic, onSelectTicket }) {
             transition={springSoft}
             className="overflow-hidden"
           >
-            <div className={PANEL}>
-              <p className={PANEL_LABEL}>Tickets</p>
+            <div className={cn(PANEL, 'pt-4')}>
               {stats.all === 0 ? (
-                <p className="mt-1.5 text-footnote text-label-secondary">
+                <p className="text-footnote text-label-secondary">
                   Esta épica todavía no tiene tickets.
                 </p>
               ) : (
-                <div className="mt-1.5">
-                  <TicketSummaryList tickets={tickets} onSelectTicket={onSelectTicket} />
-                </div>
+                <EpicBreakdown epic={epic} tickets={tickets} onSelectTicket={onSelectTicket} />
               )}
             </div>
           </motion.div>

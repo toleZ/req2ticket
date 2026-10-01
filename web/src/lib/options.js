@@ -33,12 +33,13 @@ export function rankOf(options, value) {
 
 /* ---- Tickets ---- */
 
-/* `short` is what fits where there is no room for "Historia de usuario". */
+/* `short` is what fits where there is no room for "Historia de usuario"; `plural` names a
+   group of them (the epic's "Por tipo" breakdown). */
 export const TICKET_TYPE_OPTIONS = [
-  { value: 'userStory', label: 'Historia de usuario', short: 'UH' },
-  { value: 'task', label: 'Tarea', short: 'Tarea' },
-  { value: 'bug', label: 'Bug', short: 'Bug' },
-  { value: 'fix', label: 'Fix', short: 'Fix' },
+  { value: 'userStory', label: 'Historia de usuario', short: 'UH', plural: 'Historias' },
+  { value: 'task', label: 'Tarea', short: 'Tarea', plural: 'Tareas' },
+  { value: 'bug', label: 'Bug', short: 'Bug', plural: 'Bugs' },
+  { value: 'fix', label: 'Fix', short: 'Fix', plural: 'Fixes' },
 ]
 
 export const TICKET_PRIORITY_OPTIONS = [
