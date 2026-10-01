@@ -1,6 +1,5 @@
 import { Link, useMatch } from 'react-router-dom'
 
-import { NavIndicator } from '@/components/layout/NavIndicator/NavIndicator'
 import {
   NAV_BADGE,
   NAV_ICON,
@@ -12,8 +11,11 @@ import {
 } from './SidebarNavItem.styles'
 
 /* The label and the badge fade instead of unmounting when the rail collapses, so the row
-   never reflows mid-animation; `title` names the item while only its icon shows. */
-export function SidebarNavItem({ item, badge, isCollapsed, indicatorId, onNavigate }) {
+   never reflows mid-animation; `title` names the item while only its icon shows.
+
+   The tinted highlight behind the active item is not drawn here: SidebarBody draws one for
+   the whole list (NavIndicator), so it can slide between items. */
+export function SidebarNavItem({ item, badge, isCollapsed, onNavigate }) {
   const { to, label, icon: Icon, end } = item
   const isActive = Boolean(useMatch({ path: to, end: Boolean(end) }))
   const faded = isCollapsed ? 'opacity-0' : 'opacity-100'
@@ -26,8 +28,6 @@ export function SidebarNavItem({ item, badge, isCollapsed, indicatorId, onNaviga
       title={isCollapsed ? label : undefined}
       className={`${NAV_ITEM} ${isActive ? NAV_ITEM_ACTIVE : NAV_ITEM_IDLE}`}
     >
-      {isActive && <NavIndicator layoutId={indicatorId} />}
-
       <Icon className={`${NAV_ICON} ${isActive ? NAV_ICON_ACTIVE : ''}`} aria-hidden="true" />
 
       <span className={`${NAV_LABEL} ${faded}`}>{label}</span>

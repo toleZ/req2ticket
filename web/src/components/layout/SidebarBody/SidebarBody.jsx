@@ -1,6 +1,7 @@
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, matchPath, useLocation } from 'react-router-dom'
 
+import { NavIndicator } from '@/components/layout/NavIndicator/NavIndicator'
 import { SidebarNavItem } from '@/components/layout/SidebarNavItem/SidebarNavItem'
 import { UserMenu } from '@/components/layout/UserMenu/UserMenu'
 import { IconButton } from '@/components/ui/IconButton/IconButton'
@@ -31,13 +32,17 @@ import {
  * passes none, there is nothing to collapse there).
  */
 export function SidebarBody({
-  surface,
   isCollapsed = false,
   badges = {},
   onToggleCollapse,
   onNavigate,
 }) {
-  const indicatorId = `nav-indicator-${surface}-${isCollapsed ? 'collapsed' : 'expanded'}`
+  const { pathname } = useLocation()
+  // Which item the highlight sits behind, matched the same way SidebarNavItem marks itself
+  // active; -1 on a page that is not in the list.
+  const activeIndex = NAV_ITEMS.findIndex((item) =>
+    Boolean(matchPath({ path: item.to, end: Boolean(item.end) }, pathname)),
+  )
   const role = ROLE_LABELS[readSession()?.user?.role]
   const collapseLabel = isCollapsed ? 'Expandir la barra lateral' : 'Contraer la barra lateral'
 
@@ -77,19 +82,23 @@ export function SidebarBody({
       </div>
 
       <nav aria-label="Principal" className={NAV}>
-        <ul className={NAV_LIST}>
-          {NAV_ITEMS.map((item) => (
-            <li key={item.to}>
-              <SidebarNavItem
-                item={item}
-                badge={item.badge ? badges[item.badge] : null}
-                isCollapsed={isCollapsed}
-                indicatorId={indicatorId}
-                onNavigate={onNavigate}
-              />
-            </li>
-          ))}
-        </ul>
+        {/* The wrapper is the frame the highlight moves in: it starts at the list's top edge,
+            and a <span> may not sit directly inside a <ul>. */}
+        <div className="relative">
+          <NavIndicator index={activeIndex} />
+          <ul className={NAV_LIST}>
+            {NAV_ITEMS.map((item) => (
+              <li key={item.to}>
+                <SidebarNavItem
+                  item={item}
+                  badge={item.badge ? badges[item.badge] : null}
+                  isCollapsed={isCollapsed}
+                  onNavigate={onNavigate}
+                />
+              </li>
+            ))}
+          </ul>
+        </div>
       </nav>
 
       <div className={USER_ROW}>

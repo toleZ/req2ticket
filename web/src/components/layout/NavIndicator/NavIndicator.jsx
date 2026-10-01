@@ -1,29 +1,29 @@
-import { motion } from 'motion/react'
-
-import { springSnappy } from '@/lib/motion'
+import { cn } from '@/lib/cn'
+import { ITEM_PITCH } from './NavIndicator.data'
+import { PILL, PILL_HIDDEN } from './NavIndicator.styles'
 
 /**
  * The highlight behind the active nav item, which slides from one item to the next.
  *
  * You do not need to read past this line to add a page or a nav item — see navItems.js.
  *
- * How it slides: motion treats two elements sharing a `layoutId` as the SAME element
- * and animates between their positions. Only one item is active at a time, so the old
- * one unmounts, the new one mounts, and motion moves the pill between them.
+ * There is one pill per list, and it sits at `index` × the distance between items, moved by a
+ * CSS transition. It used to be motion's shared `layoutId`, which measures where the old and
+ * the new item are against the page. The rail is sticky, so against the page its items sat
+ * wherever the window was scrolled to: leave a long page from its foot and the pill flew up
+ * from thousands of pixels below. Counting items instead of measuring them, the page's scroll
+ * has nothing to do with it.
  *
- * That is also why the id has to be unique per surface. Below lg the desktop rail is
- * `hidden lg:flex` — invisible, but still mounted. If the rail and the mobile drawer
- * used the same id, motion would see two live copies and fly the pill between two
- * surfaces you can never see at once. SidebarBody builds the id; it namespaces by
- * surface and by collapse state for the same reason.
+ * `index` is -1 when the page is not in the list (Ajustes): the pill fades out in place.
  */
-export function NavIndicator({ layoutId }) {
+export function NavIndicator({ index }) {
+  const isShown = index >= 0
+
   return (
-    <motion.span
-      layoutId={layoutId}
-      transition={springSnappy}
-      className="absolute inset-0 rounded-control bg-blue/12"
+    <span
       aria-hidden="true"
+      className={cn(PILL, !isShown && PILL_HIDDEN)}
+      style={isShown ? { transform: `translateY(${index * ITEM_PITCH}px)` } : undefined}
     />
   )
 }

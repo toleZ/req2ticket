@@ -54,7 +54,6 @@ export function MobileDrawer({ isOpen, badges, onClose }) {
             transition={springSoft}
           >
             <SidebarBody
-              surface="drawer"
               badges={badges}
               onNavigate={onClose}
             />

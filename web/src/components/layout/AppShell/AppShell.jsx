@@ -83,7 +83,6 @@ export function AppShell() {
 
       <aside className={`${RAIL} ${isCollapsed ? RAIL_COLLAPSED : RAIL_EXPANDED}`}>
         <SidebarBody
-          surface="rail"
           isCollapsed={isCollapsed}
           badges={badges}
           onToggleCollapse={handleToggleCollapse}
