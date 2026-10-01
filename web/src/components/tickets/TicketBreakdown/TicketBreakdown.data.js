@@ -1,7 +1,7 @@
 /* The order the breakdown reads in: work under way first, then work not started, then what
    is finished, and last what was dropped. Not the flow order of TICKET_STATUS_OPTIONS on
    purpose — this panel answers "what is happening now", so the live statuses lead. The same
-   order drives the bar, the legend and the "Pendientes" list, so the three never disagree. */
+   order drives the bar, the legend and the list, so the three never disagree. */
 export const STATUS_ORDER = ['inProgress', 'inReview', 'testing', 'todo', 'backlog', 'done', 'cancelled']
 
 /* Fills for the bar's segments and the legend's dots. Same hues as the status badges (see
@@ -17,6 +17,6 @@ export const SEGMENT_CLASSES = {
   done: 'bg-green',
 }
 
-/* How many pending tickets the panel lists. Past that, the link to the Backlog takes over:
-   the panel is a summary, the Backlog is where the whole list lives. */
-export const PENDING_LIMIT = 4
+/* How many tickets the list card shows. Past that, the link to the Backlog takes over: the
+   panel is a summary, the Backlog is where the whole list lives. */
+export const LIST_LIMIT = 5

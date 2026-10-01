@@ -8,11 +8,12 @@ import { CODE, POINTS, ROW, TITLE } from './TicketSummaryList.styles'
    edge, so the grey band crossed the full width to point at something you read on the left. */
 
 /**
- * A compact listing of what a sprint or an epic contains.
+ * A compact listing of tickets: today, the Sprints page's Backlog block (the tickets with no
+ * sprint). The expanded epic and sprint rows used to draw it too; they now show
+ * TicketBreakdown, whose list borrows this one's look.
  *
  * Each row opens the ticket: `onSelectTicket` arrives from the page, which is the one holding
- * the modal. This component is used in three places (the expanded epic, a sprint's card and
- * the Backlog block), so wiring it here makes all three clickable at once.
+ * the modal.
  *
  * The rows carry no padding of their own: the hover paints nothing, so there is no box that
  * needs air inside it and the text stays aligned with the rest of the panel.

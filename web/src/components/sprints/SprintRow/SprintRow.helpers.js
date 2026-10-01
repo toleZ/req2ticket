@@ -6,3 +6,15 @@ export function remainingLabel(daysLeft) {
   if (daysLeft > 1) return `Quedan ${daysLeft} días`
   return daysLeft === -1 ? 'Vencido hace 1 día' : `Vencido hace ${-daysLeft} días`
 }
+
+/* "Agregar del Backlog": glide down to the Backlog block on this same page instead of the
+   anchor's jump, so it is clear the page scrolled rather than changed. With reduced motion
+   it jumps. The link keeps its href, so it still works if this never runs. */
+export function scrollToBacklog(event, id) {
+  const target = document.getElementById(id)
+  if (!target) return
+
+  event.preventDefault()
+  const isReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  target.scrollIntoView({ behavior: isReduced ? 'auto' : 'smooth', block: 'start' })
+}
