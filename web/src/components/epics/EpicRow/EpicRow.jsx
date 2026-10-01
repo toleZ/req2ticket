@@ -2,7 +2,8 @@ import { useId, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { ChevronRight } from 'lucide-react'
 
-import { EpicBreakdown } from '@/components/epics/EpicBreakdown/EpicBreakdown'
+import { EpicTypeProgress } from '@/components/epics/EpicTypeProgress/EpicTypeProgress'
+import { TicketBreakdown } from '@/components/tickets/TicketBreakdown/TicketBreakdown'
 import { Badge } from '@/components/ui/Badge/Badge'
 import { CHEVRON, EXPAND_BUTTON, META, PANEL, ROW } from '@/components/ui/ListRow/ListRow.styles'
 import { ProgressBar } from '@/components/ui/ProgressBar/ProgressBar'
@@ -78,23 +79,36 @@ export function EpicRow({ epic, tickets, onSelectEpic, onSelectTicket }) {
           </h2>
 
           {/* Collapsed, this line is the epic's progress at a glance. Expanded, the breakdown
-              shows the same figures larger right below, so the line steps aside. */}
-          {!isExpanded && (
-            <div className="mt-1.5 flex flex-wrap items-center gap-2">
-              <span className={META}>
-                {stats.completed}/{stats.total} {stats.total === 1 ? 'ticket' : 'tickets'}
-                {cancelledNote(stats)} ·{' '}
-                {stats.pointsCompleted}/{stats.points} pts
-              </span>
-              <ProgressBar
-                value={stats.completed}
-                max={stats.total}
-                size="sm"
-                label={`Tickets completados: ${stats.completed} de ${stats.total}`}
-                className="w-20"
-              />
-            </div>
-          )}
+              shows the same figures larger right below, so the line steps aside.
+              It folds away with the panel's own spring (and opens back with it), so the
+              lines under it glide up instead of jumping while the breakdown opens. The gap
+              above it is padding inside the fold, not a margin: a margin would still jump. */}
+          <AnimatePresence initial={false}>
+            {!isExpanded && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={springSoft}
+                className="overflow-hidden"
+              >
+                <div className="flex flex-wrap items-center gap-2 pt-1.5">
+                  <span className={META}>
+                    {stats.completed}/{stats.total} {stats.total === 1 ? 'ticket' : 'tickets'}
+                    {cancelledNote(stats)} ·{' '}
+                    {stats.pointsCompleted}/{stats.points} pts
+                  </span>
+                  <ProgressBar
+                    value={stats.completed}
+                    max={stats.total}
+                    size="sm"
+                    label={`Tickets completados: ${stats.completed} de ${stats.total}`}
+                    className="w-20"
+                  />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {epic.description && (
             <p className="mt-1 text-footnote text-label-secondary">{epic.description}</p>
@@ -118,7 +132,12 @@ export function EpicRow({ epic, tickets, onSelectEpic, onSelectTicket }) {
                   Esta épica todavía no tiene tickets.
                 </p>
               ) : (
-                <EpicBreakdown epic={epic} tickets={tickets} onSelectTicket={onSelectTicket} />
+                <TicketBreakdown
+                  tickets={tickets}
+                  backlogHref={`/backlog?epic=${epic.id}`}
+                  aside={<EpicTypeProgress tickets={tickets} />}
+                  onSelectTicket={onSelectTicket}
+                />
               )}
             </div>
           </motion.div>

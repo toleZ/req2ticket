@@ -4,6 +4,7 @@ import { TicketSummaryList } from '@/components/tickets/TicketSummaryList/Ticket
 import { Badge } from '@/components/ui/Badge/Badge'
 import { LoadMore } from '@/components/ui/LoadMore/LoadMore'
 import { PAGE } from '@/components/ui/LoadMore/LoadMore.data'
+import { SPRINT_BACKLOG_ID } from './SprintBacklog.data'
 import { INTRO } from './SprintBacklog.styles'
 
 /**
@@ -28,7 +29,8 @@ export function SprintBacklog({ tickets, onSelectTicket }) {
   }
 
   return (
-    <div className="mt-6 border-t border-separator pt-4">
+    // scroll-mt clears the sticky top bar when a link jumps here (#sprint-backlog).
+    <div id={SPRINT_BACKLOG_ID} className="mt-6 scroll-mt-14 border-t border-separator pt-4">
       <div className="flex items-center gap-2">
         <h2 className="text-headline text-label">Backlog</h2>
         <Badge tone="neutral">{tickets.length}</Badge>

@@ -1,6 +1,8 @@
-/* The page's own background, punched into the row: it reads as a well inside the epic rather
-   than a card stacked on it. Its own @container so the columns below follow the card's width. */
-export const CARD = '@container flex flex-col rounded-card bg-base p-4'
+/* The page's own background, punched into the row: it reads as a well inside the epic or
+   sprint rather than a card stacked on it. Its own @container so the columns below follow the card's width.
+   `self-start`: beside a tall aside (a sprint with nine people) a stretched card was mostly
+   empty well; it keeps the height of what it holds instead. */
+export const CARD = '@container flex flex-col self-start rounded-card bg-base p-4'
 
 /* `eyebrow` is the app's section title (index.css). font-sans because h3 brings Manrope, and
    these small caps are set in Inter everywhere else. */
@@ -26,6 +28,10 @@ export const ROW = 'group col-span-full grid min-h-11 grid-cols-subgrid items-ce
 export const TITLE = `line-clamp-2 min-w-0 text-footnote text-label underline-offset-2 group-hover:underline
   group-hover:decoration-label-tertiary @md:line-clamp-1`
 
+/* Struck and in the secondary grey, not dimmed with opacity: opacity would take the text under
+   4.5:1 on the dark well. The hover still underlines it — it still opens. */
+export const TITLE_CANCELLED = 'text-label-secondary line-through'
+
 export const CODE_COLUMN = 'hidden @md:block'
 
 export const STATUS_COLUMN = 'justify-self-end'
@@ -36,8 +42,7 @@ export const POINTS_COLUMN = 'text-right tabular-nums'
 
 export const EMPTY = 'mt-2 text-footnote text-label-secondary'
 
-/* mt-auto pins the link to the foot of the card when the type column beside it is taller. */
-export const FOOTER = 'mt-auto flex flex-wrap items-center justify-end gap-x-3 gap-y-1 pt-3'
+export const FOOTER = 'flex flex-wrap items-center justify-end gap-x-3 gap-y-1 pt-3'
 
 export const MORE = 'mr-auto text-caption text-label-secondary'
 

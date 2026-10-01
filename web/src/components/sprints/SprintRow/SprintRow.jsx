@@ -1,25 +1,33 @@
 import { useId, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { CheckCheck, ChevronRight, Play, Trash2 } from 'lucide-react'
+import { CalendarDays, CheckCheck, ChevronRight, Flag, Play, Plus, Trash2 } from 'lucide-react'
 
-import { TicketSummaryList } from '@/components/tickets/TicketSummaryList/TicketSummaryList'
+import { SprintCapacityNote } from '@/components/sprints/SprintCapacityNote/SprintCapacityNote'
+import { SPRINT_BACKLOG_ID } from '@/components/sprints/SprintBacklog/SprintBacklog.data'
+import { TicketBreakdown } from '@/components/tickets/TicketBreakdown/TicketBreakdown'
+import { TicketBreakdownDone } from '@/components/tickets/TicketBreakdownDone/TicketBreakdownDone'
 import { Badge } from '@/components/ui/Badge/Badge'
 import { Button } from '@/components/ui/Button/Button'
+import { BASE as BUTTON_BASE, SIZE_CLASSES as BUTTON_SIZES, VARIANT_CLASSES as BUTTON_VARIANTS } from '@/components/ui/Button/Button.styles'
 import { ConfirmModal } from '@/components/ui/ConfirmModal/ConfirmModal'
 import { IconButton } from '@/components/ui/IconButton/IconButton'
-import { CHEVRON, EXPAND_BUTTON, META, PANEL, PANEL_LABEL, ROW } from '@/components/ui/ListRow/ListRow.styles'
+import { CHEVRON, EXPAND_BUTTON, META, PANEL, ROW } from '@/components/ui/ListRow/ListRow.styles'
 import { ProgressBar } from '@/components/ui/ProgressBar/ProgressBar'
 import { cn } from '@/lib/cn'
 import { daysRemaining, formatDateRange } from '@/lib/dates'
 import { springSoft } from '@/lib/motion'
 import { findOption, SPRINT_ACTIVE, SPRINT_COMPLETED, SPRINT_PLANNED, SPRINT_STATUS_OPTIONS } from '@/lib/options'
 import { cancelledNote, summarizeTickets } from '@/lib/ticketStats'
-import { remainingLabel } from './SprintRow.helpers'
-import { BLOCKED_NOTE, DATES, EMPTY_NOTE, GOAL, OPEN_BUTTON, OPEN_NAME, OVER_CAPACITY } from './SprintRow.styles'
+import { remainingLabel, scrollToBacklog } from './SprintRow.helpers'
+import { BLOCKED_NOTE, DATES, EMPTY_NOTE, GOAL, LINE_ICON, OPEN_BUTTON, OPEN_NAME, OVER_CAPACITY } from './SprintRow.styles'
 
 /**
- * A sprint in the list, drawn like an epic row: the chevron shows its tickets, the name opens
- * SprintDetailModal, the second line says how far along it is, and the goal closes it.
+ * A sprint in the list, drawn like an epic row: the chevron shows its breakdown, the name opens
+ * SprintDetailModal, the second line says how far along it is, then the goal and the dates.
+ *
+ * Expanded, the breakdown (TicketBreakdown) carries the sprint's capacity as its note and, once
+ * nothing is pending, a panel that fits the sprint's moment: an active sprint offers to be
+ * completed or to take more from the Backlog; a completed one says everything was delivered.
  *
  * The action button follows the sprint's life: a planned sprint shows "Iniciar", an active one
  * "Completar", a finished one nothing. Other jumps (reopening, completing a sprint that never
@@ -56,6 +64,8 @@ export function SprintRow({
   const canStart = sprint.status === SPRINT_PLANNED
   const isStartBlocked = canStart && Boolean(activeSprint)
   const canComplete = sprint.status === SPRINT_ACTIVE
+  // Every counted ticket done: "Completar" turns green, it is now the obvious next step.
+  const isAllDone = stats.total > 0 && stats.completed === stats.total
 
   /* The button is drawn twice, below the text under sm and beside it from sm up (see the
      comment where they are placed), so it is written once here. */
@@ -78,7 +88,12 @@ export function SprintRow({
 
     if (canComplete) {
       return (
-        <Button variant="neutral" size="sm" onClick={() => setIsCompleteOpen(true)} className={className}>
+        <Button
+          variant={isAllDone ? 'success' : 'neutral'}
+          size="sm"
+          onClick={() => setIsCompleteOpen(true)}
+          className={className}
+        >
           <CheckCheck className="size-4" aria-hidden="true" />
           Completar
         </Button>
@@ -86,6 +101,50 @@ export function SprintRow({
     }
 
     return null
+  }
+
+  /* What the breakdown shows instead of its list once nothing is pending. A planned sprint
+     with everything done is odd enough to get the breakdown's plain panel (undefined). */
+  function renderDone() {
+    if (sprint.status === SPRINT_COMPLETED) {
+      return (
+        <TicketBreakdownDone
+          title="Se entregó todo lo comprometido"
+          text={`${stats.completed} ${stats.completed === 1 ? 'ticket' : 'tickets'} · ${stats.pointsCompleted} pts entregados.`}
+          backlogHref={`/backlog?sprint=${sprint.id}`}
+        />
+      )
+    }
+
+    if (sprint.status === SPRINT_ACTIVE) {
+      return (
+        <TicketBreakdownDone
+          title="Todos los tickets están hechos"
+          text={`${remainingLabel(daysLeft)}. Podés cerrar el sprint ahora o sumar algo del Backlog.`}
+          backlogHref={`/backlog?sprint=${sprint.id}`}
+          actions={
+            <>
+              <Button variant="success" size="sm" onClick={() => setIsCompleteOpen(true)}>
+                Completar sprint
+              </Button>
+              {/* A plain link to the Backlog block at the foot of this page, which is where a
+                  ticket without a sprint gets one. Drawn as a button because it reads as the
+                  second of two choices. */}
+              <a
+                href={`#${SPRINT_BACKLOG_ID}`}
+                onClick={(event) => scrollToBacklog(event, SPRINT_BACKLOG_ID)}
+                className={cn(BUTTON_BASE, BUTTON_SIZES.sm, BUTTON_VARIANTS.neutral)}
+              >
+                <Plus className="size-4" aria-hidden="true" />
+                Agregar del Backlog
+              </a>
+            </>
+          }
+        />
+      )
+    }
+
+    return undefined
   }
 
   return (
@@ -119,32 +178,59 @@ export function SprintRow({
               {sprint.status === SPRINT_ACTIVE && (
                 <Badge tone={daysLeft < 0 ? 'orange' : 'neutral'}>{remainingLabel(daysLeft)}</Badge>
               )}
-              <span className={DATES}>{formatDateRange(sprint.startDate, sprint.endDate)}</span>
             </button>
           </h2>
 
-          <div className="mt-1.5 flex flex-wrap items-center gap-2">
-            <span className={META}>
-              {stats.completed}/{stats.total} {stats.total === 1 ? 'ticket' : 'tickets'}
-              {cancelledNote(stats)} · {stats.pointsCompleted}/{stats.points} pts
-            </span>
-            <ProgressBar
-              value={stats.completed}
-              max={stats.total}
-              size="sm"
-              label={`Tickets completados: ${stats.completed} de ${stats.total}`}
-              className="w-20"
-            />
-            {overCapacity > 0 ? (
-              <span className={OVER_CAPACITY}>
-                Excede la capacidad ({sprint.capacity} pts) por {overCapacity} pts
-              </span>
-            ) : (
-              <span className={META}>Capacidad {sprint.capacity} pts</span>
+          {/* Collapsed, this line is the sprint's progress at a glance. Expanded, the breakdown
+              shows the same figures larger right below, so the line steps aside.
+              It folds away with the panel's own spring (and opens back with it), so the
+              lines under it glide up instead of jumping while the breakdown opens. The gap
+              above it is padding inside the fold, not a margin: a margin would still jump. */}
+          <AnimatePresence initial={false}>
+            {!isExpanded && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={springSoft}
+                className="overflow-hidden"
+              >
+                <div className="flex flex-wrap items-center gap-2 pt-1.5">
+                  <span className={META}>
+                    {stats.completed}/{stats.total} {stats.total === 1 ? 'ticket' : 'tickets'}
+                    {cancelledNote(stats)} · {stats.pointsCompleted}/{stats.points} pts
+                  </span>
+                  <ProgressBar
+                    value={stats.completed}
+                    max={stats.total}
+                    size="sm"
+                    label={`Tickets completados: ${stats.completed} de ${stats.total}`}
+                    className="w-20"
+                  />
+                  {overCapacity > 0 ? (
+                    <span className={OVER_CAPACITY}>
+                      Excede la capacidad ({sprint.capacity} pts) por {overCapacity} pts
+                    </span>
+                  ) : (
+                    <span className={META}>Capacidad {sprint.capacity} pts</span>
+                  )}
+                </div>
+              </motion.div>
             )}
-          </div>
+          </AnimatePresence>
 
-          {sprint.goal && <p className={GOAL}>{sprint.goal}</p>}
+          {/* The goal and the dates each get a line and an icon that says which is which:
+              side by side with the name, the dates read as part of the title. */}
+          {sprint.goal && (
+            <p className={GOAL}>
+              <Flag className={LINE_ICON} aria-hidden="true" />
+              {sprint.goal}
+            </p>
+          )}
+          <p className={DATES}>
+            <CalendarDays className={LINE_ICON} aria-hidden="true" />
+            {formatDateRange(sprint.startDate, sprint.endDate)}
+          </p>
 
           {isStartBlocked && (
             <p id={blockedId} className={BLOCKED_NOTE}>
@@ -179,14 +265,19 @@ export function SprintRow({
             transition={springSoft}
             className="overflow-hidden"
           >
-            <div className={PANEL}>
-              <p className={PANEL_LABEL}>Tickets</p>
+            <div className={cn(PANEL, 'pt-4')}>
               {stats.all === 0 ? (
                 <p className={EMPTY_NOTE}>Todavía no hay tickets asignados a este sprint.</p>
               ) : (
-                <div className="mt-1.5">
-                  <TicketSummaryList tickets={tickets} onSelectTicket={onSelectTicket} />
-                </div>
+                <TicketBreakdown
+                  tickets={tickets}
+                  backlogHref={`/backlog?sprint=${sprint.id}`}
+                  note={<SprintCapacityNote points={stats.points} capacity={sprint.capacity} />}
+                  done={renderDone()}
+                  pendingTitle={sprint.status === SPRINT_COMPLETED ? 'Sin terminar' : undefined}
+                  pendingHint={sprint.status === SPRINT_COMPLETED ? 'Quedaron abiertos al cerrar el sprint' : undefined}
+                  onSelectTicket={onSelectTicket}
+                />
               )}
             </div>
           </motion.div>
