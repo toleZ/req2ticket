@@ -1,4 +1,4 @@
-import { FILL, SIZE_CLASSES, TRACK } from './ProgressBar.styles'
+import { FILL, SIZE_CLASSES, TONE_CLASSES, TRACK } from './ProgressBar.styles'
 import { cn } from '@/lib/cn'
 /**
  * `label` names the bar for screen readers ("Checklist 2 de 5"): a progressbar without a name
@@ -6,7 +6,7 @@ import { cn } from '@/lib/cn'
  * something already labelled — a row's button that says "checklist 2 de 5" — where a second
  * announcement would only repeat it; it takes the bar out of the accessibility tree.
  */
-export function ProgressBar({ value, max = 100, size = 'md', label, decorative = false, className }) {
+export function ProgressBar({ value, max = 100, size = 'md', tone = 'blue', label, decorative = false, className }) {
   const pct = max > 0 ? Math.min(100, Math.max(0, (value / max) * 100)) : 0
 
   return (
@@ -19,7 +19,7 @@ export function ProgressBar({ value, max = 100, size = 'md', label, decorative =
       aria-valuemax={decorative ? undefined : max}
       className={cn(TRACK, SIZE_CLASSES[size], className)}
     >
-      <div className={FILL} style={{ width: `${pct}%` }} />
+      <div className={cn(FILL, TONE_CLASSES[tone])} style={{ width: `${pct}%` }} />
     </div>
   )
 }

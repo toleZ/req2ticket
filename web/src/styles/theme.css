@@ -79,6 +79,8 @@
      another. Each row sets its own animation-delay for the stagger (lib/reveal.js) — a var()
      in here would resolve on :root, not on the row. */
   --animate-reveal: reveal 240ms var(--ease-ios) backwards;
+  /* A bar drawing itself left to right as its panel opens (the epic's status breakdown). */
+  --animate-wipe-in: wipe-in 560ms var(--ease-ios) backwards;
 
   @keyframes fade-in {
     from { opacity: 0; }
@@ -95,6 +97,9 @@
   }
   @keyframes reveal {
     from { opacity: 0; transform: translateY(6px); }
+  }
+  @keyframes wipe-in {
+    from { clip-path: inset(0 100% 0 0); }
   }
   @keyframes row-out {
     from { max-height: 8rem; }
