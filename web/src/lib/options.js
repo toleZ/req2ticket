@@ -112,13 +112,21 @@ export const SPRINT_STATUS_OPTIONS = [
 
 /* ---- Users ---- */
 
-/* The API's roles (UserRole in User.cs, camelCase) as the interface names them. */
-export const ROLE_LABELS = {
-  viewer: 'Lector',
-  qa: 'QA',
-  developer: 'Desarrollador',
-  scrumMaster: 'Scrum Master',
-  productOwner: 'Product Owner',
-  admin: 'Administrador',
-  superAdmin: 'Superadministrador',
-}
+/* The API's roles (UserRole in User.cs, camelCase) as the interface names them, from least to
+   most privilege — the same order as the C# enum, and lib/roles.js compares ranks by reading
+   it. Reordering here changes who may edit whom on screen (never on the server).
+
+   A role's colour is only an identity, to tell one from another down the Equipo list: it does
+   not say anything about status or urgency, which is why it may reuse their accents. */
+export const ROLE_OPTIONS = [
+  { value: 'viewer', label: 'Lector', tone: 'neutral', dotClass: 'bg-gray', description: 'Solo lectura de épicas, tickets y sprints.' },
+  { value: 'qa', label: 'QA', tone: 'teal', dotClass: 'bg-teal', description: 'Prueba y valida tickets.' },
+  { value: 'developer', label: 'Developer', tone: 'blue', dotClass: 'bg-blue', description: 'Crea y trabaja tickets.' },
+  { value: 'scrumMaster', label: 'Scrum Master', tone: 'indigo', dotClass: 'bg-indigo', description: 'Planifica y cierra sprints.' },
+  { value: 'productOwner', label: 'Product Owner', tone: 'purple', dotClass: 'bg-purple', description: 'Define épicas y prioridades.' },
+  { value: 'admin', label: 'Admin', tone: 'orange', dotClass: 'bg-orange', description: 'Administra este espacio y sus integrantes.' },
+  { value: 'superAdmin', label: 'Super Admin', tone: 'red', dotClass: 'bg-red', description: 'Administra la plataforma y a los admins.' },
+]
+
+/* The same labels keyed by value, for the places that only need the name (the sidebar card). */
+export const ROLE_LABELS = Object.fromEntries(ROLE_OPTIONS.map((option) => [option.value, option.label]))

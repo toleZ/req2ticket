@@ -4,6 +4,8 @@ const MIN_LOGIN_PASSWORD_LENGTH = 6
 // The API demands at least 8 (see RegisterRequest.cs): validating 6 here would let through a
 // form the backend rejects anyway.
 const MIN_REGISTER_PASSWORD_LENGTH = 8
+// BCrypt ignores everything past 72 bytes, so the API refuses longer ones.
+const MAX_PASSWORD_LENGTH = 72
 const UPPERCASE_RE = /[A-Z]/
 const NUMBER_RE = /[0-9]/
 const SPECIAL_CHAR_RE = /[^A-Za-z0-9]/
@@ -82,6 +84,43 @@ export function validateTicketForm(values) {
 
   if (!values.epicId) {
     errors.epicId = 'Elegí una épica'
+  }
+
+  return errors
+}
+
+/* Creating or editing someone else's account, so the messages do not say "tu". The password
+   only asks for the API's length (8 to 72, see UserCreateRequest.cs): the strength rules of the
+   sign-up are for a password you choose yourself, not one an admin hands over to be changed.
+   Editing, an empty password means "leave it as it is".
+
+   `takenEmails` are the other members' addresses, already lowercase: the API would refuse a
+   repeat anyway, but in English and only after the round trip. */
+export function validateMemberForm(values, isNew, takenEmails) {
+  const errors = {}
+  const name = values.name.trim()
+  const email = values.email.trim().toLowerCase()
+
+  if (!name) {
+    errors.name = 'Ingresá nombre y apellido'
+  } else if (name.length < 2) {
+    errors.name = 'El nombre debe tener al menos 2 caracteres'
+  }
+
+  if (!email) {
+    errors.email = 'Ingresá el email'
+  } else if (!EMAIL_RE.test(email)) {
+    errors.email = 'Ingresá un email válido que termine en .com'
+  } else if (takenEmails.includes(email)) {
+    errors.email = 'Ya hay un integrante con ese email'
+  }
+
+  if (isNew && !values.password) {
+    errors.password = 'Ingresá una contraseña'
+  } else if (values.password && values.password.length < MIN_REGISTER_PASSWORD_LENGTH) {
+    errors.password = `La contraseña debe tener al menos ${MIN_REGISTER_PASSWORD_LENGTH} caracteres`
+  } else if (values.password.length > MAX_PASSWORD_LENGTH) {
+    errors.password = `La contraseña puede tener hasta ${MAX_PASSWORD_LENGTH} caracteres`
   }
 
   return errors

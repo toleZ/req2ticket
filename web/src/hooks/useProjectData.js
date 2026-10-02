@@ -20,8 +20,9 @@ import { deleteTicket, getEpics, getSprints, getTickets, getUsers, updateTicket 
  * of two lists that happened to agree.
  *
  * The setters come back out because each page still owns its own entity: Épicas creates and
- * deletes epics, Sprints creates and deletes sprints, and both of those also have to touch
- * `tickets` (deleting an epic cascades, deleting a sprint sends its tickets to the backlog).
+ * deletes epics, Sprints creates and deletes sprints, Equipo creates and deletes users, and all
+ * of those also have to touch `tickets` (deleting an epic cascades, deleting a sprint sends its
+ * tickets to the backlog, deleting a person leaves theirs unassigned).
  * Only the two ticket handlers live here, because those three were identical word for word.
  */
 export function useProjectData() {
@@ -90,6 +91,7 @@ export function useProjectData() {
     sprints,
     setSprints,
     users,
+    setUsers,
     loadState,
     reload,
     updateTicketAndStore,
