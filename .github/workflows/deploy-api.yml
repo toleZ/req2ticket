@@ -1,0 +1,205 @@
+name: Deploy API
+
+# The branch picks the environment: dev deploys to dev, main deploys to prod.
+# Each GitHub environment holds its own secrets and variables under the same names,
+# and only accepts deploys from its own branch, so this one file serves both.
+on:
+  push:
+    branches: [main, dev]
+    paths:
+      - 'api/**'
+      - '.config/dotnet-tools.json'
+      - '.github/workflows/deploy-api.yml'
+  # Redeploy without a code change. Run it from dev or main; any other branch maps
+  # to the dev environment, which rejects it.
+  workflow_dispatch:
+
+# Deploys never overlap and are never cancelled: killing a run halfway through a
+# migration or through azure/webapps-deploy can leave the database or the App
+# Service half written, so a newer push waits instead. One lane per branch, so dev
+# never queues behind prod.
+concurrency:
+  group: deploy-api-${{ github.ref_name }}
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  # Built once, without knowing the environment: the same output can go anywhere.
+  build-api:
+    name: build-api
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    env:
+      # There is no IDesignTimeDbContextFactory, so dotnet ef boots Program.cs, which
+      # throws without a Jwt:Key of at least 32 bytes. Not a secret: building the
+      # bundle signs nothing and opens no connection.
+      Jwt__Key: ci-dummy-key-not-a-secret-0123456789
+    defaults:
+      run:
+        working-directory: api
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.x'
+
+      - name: Restore
+        run: dotnet restore src/req2ticket.sln
+
+      - name: Build
+        run: dotnet build src/req2ticket.sln --configuration Release --no-restore
+
+      # The Web project only, not the solution: publishing the solution would pour
+      # all four projects into the same folder.
+      - name: Publish
+        run: dotnet publish src/Web/Web.csproj --configuration Release --no-build --output "$RUNNER_TEMP/app"
+
+      - name: Restore dotnet-ef
+        run: dotnet tool restore
+
+      # A single executable that applies the pending migrations, so the deploy job
+      # needs neither the SDK nor the source. Self-contained for linux-x64 because
+      # that is the runner it will run on.
+      - name: Build the migrations bundle
+        run: >
+          dotnet ef migrations bundle
+          --project src/Infrastructure
+          --startup-project src/Web
+          --configuration Release
+          --self-contained
+          --target-runtime linux-x64
+          --output "$RUNNER_TEMP/efbundle/efbundle"
+          --force
+
+      - name: Upload the app
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-app
+          path: ${{ runner.temp }}/app
+          retention-days: 1
+
+      - name: Upload the migrations bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: efbundle
+          path: ${{ runner.temp }}/efbundle
+          retention-days: 1
+
+  deploy-api:
+    name: deploy-api
+    needs: build-api
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: ${{ github.ref_name == 'main' && 'prod' || 'dev' }}
+      url: ${{ vars.API_URL }}
+    permissions:
+      id-token: write   # to ask GitHub for the OIDC token azure/login trades with Entra ID
+    steps:
+      - name: Download the app
+        uses: actions/download-artifact@v4
+        with:
+          name: api-app
+          path: ${{ runner.temp }}/app
+
+      - name: Download the migrations bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: efbundle
+          path: ${{ runner.temp }}/efbundle
+
+      # Artifacts are zipped on upload and lose the executable bit on the way.
+      - name: Make the bundle executable
+        run: chmod +x "$RUNNER_TEMP/efbundle/efbundle"
+
+      # OIDC: no password stored anywhere. Each environment logs in with its own
+      # identity, which Azure only trusts for a job running in that environment.
+      - name: Log in to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      # Postgres only lets in the App Services' outbound IPs. The runner's IP is
+      # different on every run, so it gets a rule of its own, named after the run,
+      # that the step after the migration removes.
+      - name: Open the database firewall for this runner
+        env:
+          RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+          PG_SERVER: ${{ vars.AZURE_PG_SERVER }}
+          RULE: gh-run-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          RUNNER_IP=$(curl --silent --fail --retry 3 https://api.ipify.org)
+          echo "Runner IP: $RUNNER_IP"
+          az postgres flexible-server firewall-rule create \
+            --resource-group "$RESOURCE_GROUP" \
+            --server-name "$PG_SERVER" \
+            --name "$RULE" \
+            --start-ip-address "$RUNNER_IP" \
+            --end-ip-address "$RUNNER_IP" \
+            --output none
+
+      # Before the deploy, so the new code never runs against the old schema. Keep
+      # migrations additive (new table, nullable column): for a moment the old code
+      # runs against the new schema, and it has to survive that.
+      #
+      # Wait & Retry by hand: a new firewall rule can take a few seconds to apply, so
+      # the first connection may time out. A fixed wait because the delay is short and
+      # known. Retrying is safe: applied migrations are recorded and skipped.
+      - name: Apply the database migrations
+        env:
+          DB_CONNECTION_STRING: ${{ secrets.DB_CONNECTION_STRING }}
+          Jwt__Key: ci-dummy-key-not-a-secret-0123456789
+        run: |
+          for attempt in 1 2 3; do
+            if "$RUNNER_TEMP/efbundle/efbundle" --connection "$DB_CONNECTION_STRING"; then
+              exit 0
+            fi
+            echo "::warning::Migration attempt $attempt of 3 failed, retrying in 15 s"
+            sleep 15
+          done
+          echo "::error::The migrations could not be applied. Nothing was deployed."
+          exit 1
+
+      # always(): the rule must not stay open because a migration failed.
+      - name: Close the database firewall
+        if: always()
+        env:
+          RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+          PG_SERVER: ${{ vars.AZURE_PG_SERVER }}
+          RULE: gh-run-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          az postgres flexible-server firewall-rule delete \
+            --resource-group "$RESOURCE_GROUP" \
+            --server-name "$PG_SERVER" \
+            --name "$RULE" \
+            --yes \
+            --output none || echo "::warning::Could not remove firewall rule $RULE, delete it by hand."
+
+      - name: Deploy to App Service
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ vars.API_WEBAPP_NAME }}
+          package: ${{ runner.temp }}/app
+
+      # A green deploy only proves the files were copied. /health also opens a
+      # connection to the database, so a missing setting or a bad connection string
+      # fails here. Retries cover the F1 cold start, which can take tens of seconds.
+      # F1 has no slots: if this fails, the new version is already live, and going
+      # back means redeploying the previous commit.
+      - name: Smoke test
+        env:
+          API_URL: ${{ vars.API_URL }}
+        run: |
+          curl --fail --silent --show-error \
+            --retry 8 --retry-delay 10 --retry-all-errors --max-time 60 \
+            "$API_URL/health"
+          echo

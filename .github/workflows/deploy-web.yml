@@ -1,0 +1,109 @@
+name: Deploy web
+
+# Same shape as the API: dev deploys to dev, main deploys to prod, and each GitHub
+# environment holds its own variables under the same names.
+on:
+  push:
+    branches: [main, dev]
+    paths:
+      - 'web/**'
+      - '.github/workflows/deploy-web.yml'
+  # Redeploy without a code change, for example after the API's URL changed. Run it
+  # from dev or main; any other branch maps to dev, which rejects it.
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-web-${{ github.ref_name }}
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  # One job, not build + deploy: Vite writes the API's URL into the JS at build time,
+  # so each environment needs its own build and the build already needs the
+  # environment. Named deploy-web because "web" is a required CI check.
+  deploy-web:
+    name: deploy-web
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: ${{ github.ref_name == 'main' && 'prod' || 'dev' }}
+      url: ${{ vars.WEB_URL }}
+    permissions:
+      contents: read    # checkout
+      id-token: write   # to ask GitHub for the OIDC token azure/login trades with Entra ID
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # Without it the build still succeeds, and the front ships calling
+      # "undefined/api/...". Better to stop here.
+      - name: Check the API URL is set
+        env:
+          API_URL: ${{ vars.API_URL }}
+        run: |
+          if [ -z "$API_URL" ]; then
+            echo "::error::The API_URL variable is empty for this environment. Set it in Settings > Environments."
+            exit 1
+          fi
+          echo "Building against $API_URL"
+
+      # Same setup as the web job in ci.yml. pnpm must come before setup-node,
+      # because `cache: pnpm` shells out to `pnpm store path`.
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.20.0
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      # No lint here: CI already ran it on the pull request that brought this commit.
+      - name: Build
+        env:
+          VITE_API_URL: ${{ vars.API_URL }}
+        run: pnpm build
+
+      - name: Log in to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      # dist/ already holds web.config (copied from public/), which tells IIS how to
+      # serve a single-page app.
+      - name: Deploy to App Service
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ vars.WEB_WEBAPP_NAME }}
+          package: web/dist
+
+      # Three things that only break once deployed: the page itself, a route that
+      # only React Router knows (IIS answers 404 without the web.config rewrite), and
+      # a font (IIS refuses extensions it has no MIME type for).
+      - name: Smoke test
+        env:
+          WEB_URL: ${{ vars.WEB_URL }}
+        run: |
+          check() {
+            echo "GET $1"
+            curl --fail --silent --show-error --output /dev/null \
+              --retry 8 --retry-delay 10 --retry-all-errors --max-time 60 \
+              "$WEB_URL$1"
+          }
+          check /
+          check /tickets
+          FONT=$(cd dist && ls assets/*.woff2 | head -n 1)
+          check "/$FONT"
