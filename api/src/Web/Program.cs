@@ -122,13 +122,27 @@ builder.Services.AddAuthorization(authorizationOptions =>
 
 #endregion
 
-builder.Services.AddCors();
+// Only the front ends listed in Cors:Origins may call the API from a browser. appsettings.json
+// lists the Vite dev server, and in Azure each App Service replaces that entry with its own
+// front end through Cors__Origins__0. An empty list blocks every browser origin, while curl and
+// Postman keep working because CORS is enforced by the browser, not the server.
+string[] allowedOrigins = builder.Configuration.GetSection("Cors:Origins").Get<string[]>() ?? [];
+
+builder.Services.AddCors(corsOptions =>
+    corsOptions.AddPolicy("Front", policy =>
+        policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod()));
 
 // The string in appsettings.json matches the setup in api/dotnet-commands.md, with no password
 // because a Homebrew cluster trusts local connections. If yours needs one, put the whole string
 // in user-secrets under the same key and it wins.
 builder.Services.AddDbContext<Req2TicketContext>(dbContextOptions =>
     dbContextOptions.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// What the deploy pipeline checks after publishing. A green deploy only proves the files were
+// copied, so /health also opens a connection to the database: a missing or mistyped connection
+// string fails here instead of on the first real request.
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<Req2TicketContext>();
 
 var app = builder.Build();
 
@@ -140,8 +154,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// Wide open for development: the front end just needs to be able to call the API.
-app.UseCors(policy => policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
+app.UseCors("Front");
 
 // Order is not a style choice: authentication builds the identity from the Authorization
 // header, and authorization is what decides whether that identity may proceed. Both have to
@@ -150,5 +163,9 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// Anonymous because the fallback policy would otherwise demand a token, and the pipeline has
+// none. It answers only "Healthy" or "Unhealthy", so nothing about the database leaks.
+app.MapHealthChecks("/health").AllowAnonymous();
 
 app.Run();

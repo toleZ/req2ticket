@@ -2,9 +2,9 @@ name: CI
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, dev]
   push:
-    branches: [main]
+    branches: [main, dev]
 
 # No path filters here on purpose. A workflow skipped by a path filter never
 # reports its check, and a required check that never reports leaves the pull
@@ -19,9 +19,54 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # These job names are the contexts the ruleset requires, and GitHub matches
-  # contexts by name across every workflow in the repo. That is why none of them
-  # can be called "build" or "deploy": the deploy workflows already use those.
+  # These job names are the contexts the rulesets require, and GitHub matches
+  # contexts by name across every workflow in the repo. That is why the deploy
+  # workflows name theirs build-api, deploy-api and deploy-web: a deploy job
+  # called "api" or "web" could satisfy a required check it has nothing to do with.
+
+  # Rulesets can require a pull request but cannot say which branch it comes from,
+  # so this check does. The flow it enforces:
+  #   feat|fix|refactor|chore|docs|ci|test/*  -> dev    (main too, to back-merge a hotfix)
+  #   dev or hotfix/*                          -> main
+  # On a push there is no pull request, the job is skipped, and a skipped job
+  # counts as passing for a required check.
+  branch-policy:
+    name: branch-policy
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check where the pull request comes from
+        # Through env and never as ${{ }} inside the script: whoever opens the pull
+        # request picks the branch name, and an interpolated name runs as shell code.
+        env:
+          BASE: ${{ github.base_ref }}
+          HEAD: ${{ github.head_ref }}
+        run: |
+          allowed_into_dev='^(feat|fix|refactor|chore|docs|ci|test)/.+'
+
+          case "$BASE" in
+            dev)
+              if [[ "$HEAD" =~ $allowed_into_dev || "$HEAD" == "main" ]]; then
+                echo "OK: $HEAD -> dev"
+                exit 0
+              fi
+              echo "::error::'$HEAD' cannot open a pull request into dev. Rename the branch with one of these prefixes: feat/ fix/ refactor/ chore/ docs/ ci/ test/ (git branch -m <new-name>)."
+              exit 1
+              ;;
+            main)
+              if [[ "$HEAD" == "dev" || "$HEAD" =~ ^hotfix/.+ ]]; then
+                echo "OK: $HEAD -> main"
+                exit 0
+              fi
+              echo "::error::Only dev and hotfix/* can open a pull request into main. Open this one against dev instead."
+              exit 1
+              ;;
+            *)
+              echo "No rule for base '$BASE'."
+              ;;
+          esac
+
   api:
     name: api
     runs-on: ubuntu-latest
@@ -63,11 +108,11 @@ jobs:
         with:
           dotnet-version: '10.x'
 
-      # dotnet-ef does not ship with the SDK and the repo has no dotnet-tools.json
-      - name: Install dotnet-ef
-        run: |
-          dotnet tool install --global dotnet-ef --version 10.0.11
-          echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
+      # dotnet-ef does not ship with the SDK. The version lives in
+      # .config/dotnet-tools.json so CI, the deploy and every laptop run the same one,
+      # and it has to match the EF Core packages or the commands refuse to run.
+      - name: Restore dotnet-ef
+        run: dotnet tool restore
 
       # dotnet ef builds the projects but never restores them, and a clean runner
       # has no obj/project.assets.json, so without this the command dies with

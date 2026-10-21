@@ -8,7 +8,10 @@
 import { clearSession, getToken } from '@/lib/auth'
 import { FALLBACK_ERROR } from '@/lib/errors'
 
-const API_URL = 'http://localhost:5080'
+/* Vite replaces this with the literal URL when it builds, so it is fixed per build, not read
+   while the app runs. Locally it comes from .env.development; in Azure the deploy workflow sets
+   it for each environment. It ends up in the public JS, so it must never hold a secret. */
+const API_URL = import.meta.env.VITE_API_URL
 
 /* The four verbs, and the whole point of this file: every function in epics.js,
    tickets.js and the rest is one of these plus a path. */
