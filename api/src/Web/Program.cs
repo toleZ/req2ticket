@@ -122,7 +122,15 @@ builder.Services.AddAuthorization(authorizationOptions =>
 
 #endregion
 
-builder.Services.AddCors();
+// Only the front ends listed in Cors:Origins may call the API from a browser. appsettings.json
+// lists the Vite dev server, and in Azure each App Service replaces that entry with its own
+// front end through Cors__Origins__0. An empty list blocks every browser origin, while curl and
+// Postman keep working because CORS is enforced by the browser, not the server.
+string[] allowedOrigins = builder.Configuration.GetSection("Cors:Origins").Get<string[]>() ?? [];
+
+builder.Services.AddCors(corsOptions =>
+    corsOptions.AddPolicy("Front", policy =>
+        policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod()));
 
 // The string in appsettings.json matches the setup in api/dotnet-commands.md, with no password
 // because a Homebrew cluster trusts local connections. If yours needs one, put the whole string
@@ -140,8 +148,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// Wide open for development: the front end just needs to be able to call the API.
-app.UseCors(policy => policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
+app.UseCors("Front");
 
 // Order is not a style choice: authentication builds the identity from the Authorization
 // header, and authorization is what decides whether that identity may proceed. Both have to
