@@ -63,11 +63,11 @@ jobs:
         with:
           dotnet-version: '10.x'
 
-      # dotnet-ef does not ship with the SDK and the repo has no dotnet-tools.json
-      - name: Install dotnet-ef
-        run: |
-          dotnet tool install --global dotnet-ef --version 10.0.11
-          echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
+      # dotnet-ef does not ship with the SDK. The version lives in
+      # .config/dotnet-tools.json so CI, the deploy and every laptop run the same one,
+      # and it has to match the EF Core packages or the commands refuse to run.
+      - name: Restore dotnet-ef
+        run: dotnet tool restore
 
       # dotnet ef builds the projects but never restores them, and a clean runner
       # has no obj/project.assets.json, so without this the command dies with
