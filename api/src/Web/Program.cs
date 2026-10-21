@@ -138,6 +138,12 @@ builder.Services.AddCors(corsOptions =>
 builder.Services.AddDbContext<Req2TicketContext>(dbContextOptions =>
     dbContextOptions.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+// What the deploy pipeline checks after publishing. A green deploy only proves the files were
+// copied, so /health also opens a connection to the database: a missing or mistyped connection
+// string fails here instead of on the first real request.
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<Req2TicketContext>();
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -157,5 +163,9 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// Anonymous because the fallback policy would otherwise demand a token, and the pipeline has
+// none. It answers only "Healthy" or "Unhealthy", so nothing about the database leaks.
+app.MapHealthChecks("/health").AllowAnonymous();
 
 app.Run();
