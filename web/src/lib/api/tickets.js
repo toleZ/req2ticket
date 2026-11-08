@@ -1,62 +1,60 @@
-import { del, get, post, put } from './client'
+import { typeFieldsToPayload } from '@/lib/ticketTypes'
+import { del, get, patch, post, put } from './client'
 
-export function getTickets() {
-  return get('/api/tickets')
+/* The list is light (TicketSummary): no description and no lists, but with points,
+   checklistDone/checklistTotal and openChildrenCount. The detail brings everything: the
+   description, the type's object (ticket.bug, ticket.userStory…), the children, and the names
+   of the epic, the people and the sprint. */
+export function getTickets(projectId) {
+  return get(`/api/projects/${projectId}/tickets`)
 }
 
-export function createTicket(values) {
-  return post('/api/tickets', {
+export function getTicket(projectId, ticketId) {
+  return get(`/api/projects/${projectId}/tickets/${ticketId}`)
+}
+
+/* R2T-UH-12, or uh-12: the API normalizes the case. */
+export function getTicketByCode(projectId, code) {
+  return get(`/api/projects/${projectId}/tickets/code/${encodeURIComponent(code.trim())}`)
+}
+
+/* `values` is a form: the common fields, `points`, and `typeFields` with the type's own ones
+   (see lib/ticketTypes.js). Only the type's object travels — the API refuses any other.
+   No status and no reporter: a ticket is born "todo" and its reporter is whoever is logged in. */
+function toPayload(values) {
+  return {
     type: values.type,
-    title: values.title,
+    title: values.title.trim(),
     description: values.description || null,
     epicId: Number(values.epicId),
     priority: values.priority,
-    status: values.status,
-    points: Number(values.points) || 0,
     assigneeId: values.assigneeId ? Number(values.assigneeId) : null,
     sprintId: values.sprintId ? Number(values.sprintId) : null,
     parentId: values.parentId ? Number(values.parentId) : null,
-    extraFields: values.extraFields || null,
-  })
+    [values.type]: typeFieldsToPayload(values.type, values.typeFields ?? {}, values.points),
+  }
 }
 
-/* The backend's PUT replaces the whole ticket, so `patch` is merged over `ticket` (the one
-   we already hold in memory) to avoid wiping the fields that did not change.
-
-   `type` is absent on purpose: it is assigned once on create and the API refuses to change
-   it, because the ticket's code carries its prefix. `extraFields` travels as the object the
-   API returned, not as a string.
-
-   `reporterId` is NOT optional here, and leaving it out was a real bug: TicketService.UpdateAsync
-   does `ticket.ReporterId = changes.ReporterId` without checking, so a PUT that omits the key
-   sends null and erases who reported the ticket. Nobody noticed because `reporterName` was not
-   drawn on any screen — the detail modal's sidebar does show it ("Abierta por …"), so now it
-   is visible. The general rule: if the API replaces the whole resource, EVERY field has to
-   travel from here, not only the ones the screen lets you touch. */
-export async function updateTicket(ticket, patch) {
-  const merged = { ...ticket, ...patch }
-  await put(`/api/tickets/${ticket.id}`, {
-    title: merged.title,
-    description: merged.description || null,
-    epicId: Number(merged.epicId),
-    priority: merged.priority,
-    status: merged.status,
-    points: Number(merged.points) || 0,
-    assigneeId: merged.assigneeId ? Number(merged.assigneeId) : null,
-    reporterId: merged.reporterId ? Number(merged.reporterId) : null,
-    sprintId: merged.sprintId ? Number(merged.sprintId) : null,
-    parentId: merged.parentId ? Number(merged.parentId) : null,
-    extraFields: merged.extraFields || null,
-  })
-
-  /* The PUT answers 204 with no body, so the ticket is requested again after saving. It is
-     one more round trip and it is worth it: the response carries `epicName`, `sprintName`,
-     `assigneeName` and `updatedAt` already recalculated by the backend. Building all that by
-     hand in the page was the same logic repeated in each of the three — and `updatedAt` cannot
-     be guessed from here, which is exactly what the detail modal shows at the bottom. */
-  return get(`/api/tickets/${ticket.id}`)
+/* Answers the ticket's detail, as saved. */
+export function createTicket(projectId, values) {
+  return post(`/api/projects/${projectId}/tickets`, toPayload(values))
 }
 
-export function deleteTicket(id) {
-  return del(`/api/tickets/${id}`)
+/* The PUT replaces everything the ticket owns, so `ticketValues` has to be COMPLETE: build it
+   from the detail (ticketToFormValues in lib/ticketTypes.js), never from the list's
+   summary, which has no description and no lists. Status is not part of it — use
+   changeTicketStatus. Answers the detail as saved. */
+export function updateTicket(projectId, ticketId, ticketValues) {
+  return put(`/api/projects/${projectId}/tickets/${ticketId}`, toPayload(ticketValues))
+}
+
+/* The one way to change status: the detail's selector and the board both use it. The API
+   checks the workflow, the children and the epic, and answers 400 with the reason. */
+export function changeTicketStatus(projectId, ticketId, status) {
+  return patch(`/api/projects/${projectId}/tickets/${ticketId}/status`, { status })
+}
+
+/* Takes every descendant with it. */
+export function deleteTicket(projectId, ticketId) {
+  return del(`/api/projects/${projectId}/tickets/${ticketId}`)
 }

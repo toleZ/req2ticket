@@ -1,20 +1,35 @@
 using Domain.Entities;
+using Domain.ReadModels;
 
 namespace Domain.Interfaces;
 
+// Every lookup takes the project: an id from another project is "not found", never a leak.
 public interface ITicketRepository : IBaseRepository<Ticket>
 {
-    Task<Ticket?> GetByIdWithRelationsAsync(int id);
+    // Tracked, for updates. Comes back as its real subclass (Bug, Fix…).
+    Task<Ticket?> GetInProjectAsync(int projectId, int id);
 
-    Task<List<Ticket>> GetByEpicIdAsync(int epicId);
+    // With epic, people, sprint and parent, read-only.
+    Task<Ticket?> GetDetailAsync(int projectId, int id);
 
-    // A null sprintId means the backlog: the tickets that are not planned into any sprint.
-    Task<List<Ticket>> GetBySprintIdAsync(int? sprintId);
+    Task<Ticket?> GetByCodeAsync(int projectId, string code);
 
-    // The tickets a ticket divides into. Used on delete, which takes the children with it.
-    Task<List<Ticket>> GetByParentIdAsync(int parentId);
+    Task<List<TicketSummary>> GetSummariesAsync(int projectId);
 
-    Task<Ticket?> GetByCodeAsync(string code);
+    Task<TicketSummary?> GetSummaryAsync(int projectId, int id);
 
-    Task<bool> CodeExistsAsync(string code);
+    Task<List<TicketRef>> GetChildRefsAsync(int parentId);
+
+    Task<List<int>> GetChildIdsAsync(int parentId);
+
+    Task<int> CountOpenChildrenAsync(int parentId);
+
+    Task<int> CountOpenInEpicAsync(int epicId);
+
+    // Moves a sprint's open tickets to another sprint (or the backlog with null). Done and
+    // cancelled ones stay as history. Returns how many moved.
+    Task<int> MoveOpenTicketsAsync(int sprintId, int? targetSprintId);
+
+    // Leaves the user's tickets in this project without an assignee (removing a member).
+    Task UnassignAsync(int projectId, int userId);
 }

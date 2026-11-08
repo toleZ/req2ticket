@@ -4,24 +4,35 @@ using System.Text.Json.Serialization;
 
 namespace Domain.Entities;
 
-// One table for every kind of work item. What every type shares lives in a column; what only
-// one type needs lives in ExtraFields, shaped by Type. Adding a fifth type is a new enum
-// member plus a new record in TicketExtras.cs — not a new table.
-public class Ticket
+/* What every kind of work item shares. Each type is a subclass with its own fields — UserStory,
+   TicketTask, Bug, Fix — mapped table-per-type (TPT): this class is the Tickets table and each
+   subclass has its own table whose primary key is also a foreign key to Tickets.Id.
+
+   Why TPT: almost every read mixes types (lists, board, epic and sprint progress), and Tickets is
+   the one table anything can point at with a real foreign key: ParentId today, comments or
+   attachments later. Each type still gets real columns, so the database and the compiler know
+   which fields a bug has. Abstract, so EF never creates a "plain" ticket. */
+public abstract class Ticket
 {
     [Key]
     public int Id { get; set; }
 
-    // Public identifier, assigned by the service on create. It never changes and is
-    // never accepted from the client.
+    // Set by the service from the route, never from the body. Same value as the epic's project.
+    public int ProjectId { get; set; }
+
+    // The position in this project's sequence for this type (ENT-4). With the project key and
+    // the type it builds Code. Assigned once, never reused.
+    public int Number { get; set; }
+
+    // {KEY}-{TYPE}-{N}, e.g. R2T-UH-12. Assigned once on create, never accepted from the client.
     [Required]
-    [StringLength(TicketCode.MaxLength)]
+    [StringLength(WorkItemCode.MaxLength)]
     public string Code { get; set; } = string.Empty;
 
-    // Assigned on create and never updated, same rule as Code and for the same reason: the
-    // code carries this type's prefix, so a ticket that changed type would carry a code that
-    // lies about what it is. Converting a bug into a task means creating a new ticket.
-    public TicketType Type { get; set; }
+    // Kept as a column even though the subclass already says it: lists filter by type without
+    // joining four tables. Each subclass sets it in its constructor and nothing else writes it,
+    // because the code carries the type's prefix — converting a bug into a task means a new ticket.
+    public TicketType Type { get; protected set; }
 
     [Required]
     [StringLength(160, MinimumLength = 3)]
@@ -30,64 +41,51 @@ public class Ticket
     [StringLength(2000)]
     public string? Description { get; set; }
 
-    // A ticket always belongs to an epic — unlike Epic.OwnerId, this FK is required.
+    // A ticket always belongs to an epic of its own project.
     public int EpicId { get; set; }
 
     public Epic? Epic { get; set; }
 
     public TicketPriority Priority { get; set; } = TicketPriority.Medium;
 
+    // Only TicketService.ChangeStatusAsync changes this after create, so the workflow and the
+    // completion rules are checked in one place.
     public TicketStatus Status { get; set; } = TicketStatus.Todo;
-
-    public int Points { get; set; }
 
     public int? AssigneeId { get; set; }
 
     public User? Assignee { get; set; }
 
-    // Who raised it. Defaulted from the token on create, so in practice it only goes null
-    // once the reporter's user row is deleted — same rule as Epic.OwnerId.
+    // Whoever created it, taken from the token. Only goes null once that user is deleted.
     public int? ReporterId { get; set; }
 
     public User? Reporter { get; set; }
 
-    // Nullable on purpose, unlike EpicId: a ticket without a sprint is the backlog, not
-    // missing data. Deleting the sprint sends its tickets back there instead of removing
-    // them, which is why the relationship is configured with SetNull.
+    // Null is the backlog, not missing data: deleting a sprint sends its tickets back there.
     public int? SprintId { get; set; }
 
     public Sprint? Sprint { get; set; }
 
-    // "Se divide en": a user story divides into tasks, a bug into fixes. Which type may hang
-    // from which is TicketService.AllowedParentTypes, and that table is what rules out
-    // cycles — follow any legal chain and it ends at a user story.
+    // "Se divide en": a story into tasks and bugs, a bug into fixes. Which type may hang from
+    // which is TicketService.AllowedParentTypes; following any legal chain ends at a story, so
+    // there are no cycles to guard against.
     public int? ParentId { get; set; }
 
     public Ticket? Parent { get; set; }
 
-    // The per-type fields, as a JSON object whose shape Type decides. text and not jsonb,
-    // which would reorder the keys — see the note in Req2TicketContext. What guarantees the
-    // text is valid for this type is TicketExtrasValidator, not the database.
-    public string? ExtraFields { get; set; }
-
-    // DateTimeOffset and not DateTime: a DateTime loses its Kind in the database, and
-    // `new Date("2026-08-26T12:00:00")` in the browser is local time, so every timestamp would
-    // shift by the reader's offset. Maps to timestamptz, which only accepts UTC — Npgsql throws
-    // on a non-zero offset, so keep writing UtcNow.
+    // DateTimeOffset, stored as timestamptz in UTC. Keep writing UtcNow: Npgsql refuses offsets.
     public DateTimeOffset CreatedAt { get; set; }
 
     public DateTimeOffset UpdatedAt { get; set; }
 }
 
-// UserStory is "historia de usuario" (UH) in the UI. The member is named after the concept
-// rather than the Spanish abbreviation so it reads the same as every other identifier here.
+// UserStory is "historia de usuario" (UH) in the UI.
 [JsonConverter(typeof(StringOnlyEnumConverter<TicketType>))]
 public enum TicketType
 {
     [JsonStringEnumMemberName("userStory")]
     UserStory,
 
-    // Shadows nothing: the member is only ever reachable as TicketType.Task.
     [JsonStringEnumMemberName("task")]
     Task,
 
@@ -114,18 +112,13 @@ public enum TicketPriority
     Critical
 }
 
-// Declared in workflow order, which is also the order the board reads top to bottom.
-// That order is stored, not just displayed: enums persist as INTEGER, so slipping a new
-// member into the middle renumbers every one after it and silently reinterprets existing
-// rows — Done would start reading as whatever took its number. Adding one needs a data
-// migration, not just a new member. Today the database is dev-only and reseeded from
-// HasData, which is the only reason this list could be reordered for free.
+/* Declared in workflow order, which is also the board's column order. Stored as INTEGER, so
+   slipping a member into the middle renumbers every one after it and silently reinterprets
+   existing rows: adding one needs a data migration. `backlog` used to be the first member;
+   it was removed because being in the backlog means having no sprint, not a status. */
 [JsonConverter(typeof(StringOnlyEnumConverter<TicketStatus>))]
 public enum TicketStatus
 {
-    [JsonStringEnumMemberName("backlog")]
-    Backlog,
-
     [JsonStringEnumMemberName("todo")]
     Todo,
 
@@ -141,24 +134,13 @@ public enum TicketStatus
     [JsonStringEnumMemberName("done")]
     Done,
 
-    // Terminal but not success. It counts as neither completed nor outstanding, so
-    // summarizeTickets in the front end drops these rows from the rollups entirely —
-    // a cancelled ticket should not drag a sprint's percentage down forever.
+    // Closed without being completed. It counts as neither done nor open, so it never drags a
+    // sprint's or an epic's percentage down.
     [JsonStringEnumMemberName("cancelled")]
     Cancelled
 }
 
-// The two enums below only ever appear inside a ticket's ExtraFields JSON, never as a column.
-// They live here anyway, with the other three, so every value a ticket can carry is declared in
-// one file — and so TicketExtrasValidator has a real type to validate against instead of a list
-// of strings it would have to keep in step by hand.
-
-// Severity is not Priority: severity is how badly it breaks, priority is how soon we look at
-// it. A trivial bug on the login screen can be minor and critical at once.
-//
-// Careful with the order: default(BugSeverity) is Blocker, but a bug that arrives without a
-// severity is stored as "minor". That default is spelled out in the validator's schema, not
-// inferred from position.
+// Severity is not priority: severity is how badly it breaks, priority how soon we look at it.
 [JsonConverter(typeof(StringOnlyEnumConverter<BugSeverity>))]
 public enum BugSeverity
 {

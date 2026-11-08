@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { Check, Plus, X } from 'lucide-react'
-import { ADD_BUTTON, ADD_INPUT, ADD_ROW, CIRCLE, ITEM, REMOVE_BUTTON } from './ChecklistField.styles'
+import { ADD_BUTTON, ADD_INPUT, ADD_ROW, CIRCLE, ITEM, ITEM_LABEL, REMOVE_BUTTON } from './ChecklistField.styles'
 
 import { cn } from '@/lib/cn'
+import { MAX_CHECKLIST_ITEMS } from '@/lib/ticketTypes'
 
 /* The circle you see. The real <input> sits next to it, in sr-only: it is still a native
    checkbox (space ticks it, a screen reader announces it as a checkbox) but it is not drawn,
@@ -22,14 +23,36 @@ import { cn } from '@/lib/cn'
  * bottom — and that is why this component exists separately: a story has three checklists and
  * each needs its own draft. Three instances, three `draft`s, no shared state.
  */
-export function ChecklistField({ id, items, disabled, addLabel = 'Añadir ítem', onItemsChange }) {
+/* `onToggle` is optional. When given, ticking an item goes there instead of to
+   `onItemsChange`: the ticket sheet uses it to save a tick on the spot, while adding,
+   editing or removing items still waits for "Guardar cambios". Without it (the create
+   modal, where there is no ticket to save yet) a tick is one more change to the form.
+
+   A list holds at most MAX_CHECKLIST_ITEMS (30, like the API): at that point the add row says
+   so and stops accepting. `readOnly` (no tickets.write, or a closed epic) shows the items with
+   their ticks and nothing to press. */
+export function ChecklistField({
+  id,
+  items,
+  disabled,
+  readOnly = false,
+  addLabel = 'Añadir ítem',
+  onItemsChange,
+  onToggle,
+}) {
   const [draft, setDraft] = useState('')
+  const isFull = items.length >= MAX_CHECKLIST_ITEMS
+  /* The item that just arrived (it grows in) and the one on its way out (it collapses
+     first, and only leaves the list when that animation ends). */
+  const [added, setAdded] = useState(null)
+  const [removing, setRemoving] = useState(null)
 
   function handleAdd() {
     const text = draft.trim()
-    if (!text) return
+    if (!text || isFull) return
 
     onItemsChange([...items, { text, done: false }])
+    setAdded(items.length)
     setDraft('')
   }
 
@@ -37,11 +60,28 @@ export function ChecklistField({ id, items, disabled, addLabel = 'Añadir ítem'
      is not a preference: React compares by identity, so handing it back the same array,
      modified, would redraw nothing. */
   function handleToggle(index) {
-    onItemsChange(items.map((item, i) => (i === index ? { ...item, done: !item.done } : item)))
+    const nextItems = items.map((item, i) => (i === index ? { ...item, done: !item.done } : item))
+    if (onToggle) {
+      onToggle(nextItems)
+    } else {
+      onItemsChange(nextItems)
+    }
   }
 
   function handleRemove(index) {
-    onItemsChange(items.filter((item, i) => i !== index))
+    if (removing === null) setRemoving(index)
+  }
+
+  /* `e.target` check: the tick's own animation inside the row bubbles up here too. */
+  function handleRowAnimationEnd(e, index) {
+    if (e.target !== e.currentTarget) return
+
+    if (index === removing) {
+      setRemoving(null)
+      onItemsChange(items.filter((item, i) => i !== index))
+    } else if (index === added) {
+      setAdded(null)
+    }
   }
 
   /* Enter adds the item. The preventDefault is not optional: inside a <form>, Enter in an
@@ -53,18 +93,26 @@ export function ChecklistField({ id, items, disabled, addLabel = 'Añadir ítem'
   }
 
   return (
-    <div className="-mx-1.5">
+    <div>
       {items.length > 0 && (
         <ul className="flex flex-col">
           {/* key by index: the items have no id and the list only changes by adding and
               removing. The day they can be reordered, this needs a real id. */}
           {items.map((item, index) => (
-            <li key={index} className={ITEM}>
-              <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-2.5">
+            <li
+              key={index}
+              onAnimationEnd={(e) => handleRowAnimationEnd(e, index)}
+              className={cn(
+                ITEM,
+                index === added && 'animate-row-in',
+                index === removing && 'animate-row-out overflow-hidden',
+              )}
+            >
+              <label className={ITEM_LABEL}>
                 <input
                   type="checkbox"
                   checked={item.done}
-                  disabled={disabled}
+                  disabled={disabled || readOnly}
                   onChange={() => handleToggle(index)}
                   className="peer sr-only"
                 />
@@ -72,12 +120,14 @@ export function ChecklistField({ id, items, disabled, addLabel = 'Añadir ítem'
                   aria-hidden="true"
                   className={cn(CIRCLE, item.done && 'border-blue bg-blue')}
                 >
-                  {item.done && <Check className="size-3" strokeWidth={3.5} />}
+                  {item.done && <Check className="size-3 animate-tick-in" strokeWidth={3.5} />}
                 </span>
                 <span
                   className={cn(
-                    'min-w-0 flex-1 text-footnote',
-                    item.done ? 'text-label-tertiary line-through' : 'text-label',
+                    /* Always struck through, with the line transparent until done: that
+                       way the strike fades in with the colour instead of snapping on. */
+                    'min-w-0 flex-1 text-footnote line-through transition-colors duration-fast',
+                    item.done ? 'text-label-secondary decoration-label-secondary' : 'text-label decoration-transparent',
                   )}
                 >
                   {item.text}
@@ -86,20 +136,27 @@ export function ChecklistField({ id, items, disabled, addLabel = 'Añadir ítem'
 
               {/* Appears when the mouse is over the row (group-hover) so the list is not full
                   of crosses. focus-visible brings it back for anyone navigating with Tab. */}
-              <button
-                type="button"
-                aria-label={`Quitar "${item.text}"`}
-                disabled={disabled}
-                onClick={() => handleRemove(index)}
-                className={REMOVE_BUTTON}
-              >
-                <X className="size-3.5" aria-hidden="true" />
-              </button>
+              {!readOnly && (
+                <button
+                  type="button"
+                  aria-label={`Quitar "${item.text}"`}
+                  disabled={disabled}
+                  onClick={() => handleRemove(index)}
+                  className={REMOVE_BUTTON}
+                >
+                  <X className="size-3.5" aria-hidden="true" />
+                </button>
+              )}
             </li>
           ))}
         </ul>
       )}
 
+      {readOnly && items.length === 0 && (
+        <p className="px-3 py-2.5 text-footnote text-label-tertiary">Sin ítems</p>
+      )}
+
+      {!readOnly && (
       <div className={ADD_ROW}>
         {/* The "+" is a real button and not an ornament: Enter is enough for the keyboard,
             but whoever types and then reaches for the mouse needs something to click. */}
@@ -107,7 +164,7 @@ export function ChecklistField({ id, items, disabled, addLabel = 'Añadir ítem'
           type="button"
           aria-label={addLabel}
           onClick={handleAdd}
-          disabled={disabled}
+          disabled={disabled || isFull}
           className={ADD_BUTTON}
         >
           <Plus className="size-3.5" aria-hidden="true" />
@@ -116,14 +173,16 @@ export function ChecklistField({ id, items, disabled, addLabel = 'Añadir ítem'
           id={id}
           type="text"
           value={draft}
-          disabled={disabled}
+          maxLength={300}
+          disabled={disabled || isFull}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={addLabel}
+          placeholder={isFull ? `Máximo ${MAX_CHECKLIST_ITEMS} ítems` : addLabel}
           aria-label={addLabel}
           className={ADD_INPUT}
         />
       </div>
+      )}
     </div>
   )
 }

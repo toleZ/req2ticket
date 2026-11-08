@@ -1,96 +1,103 @@
-import { useEffect, useState } from 'react'
-import { Hash, Type } from 'lucide-react'
+import { useState } from 'react'
+import { motion } from 'motion/react'
+import { X } from 'lucide-react'
 
-import { TicketExtraFields } from '@/components/tickets/TicketExtraFields/TicketExtraFields'
+import { TicketTypeFields } from '@/components/tickets/TicketTypeFields/TicketTypeFields'
+import { TicketTypeIcon } from '@/components/tickets/TicketTypeIcon/TicketTypeIcon'
 import { Button } from '@/components/ui/Button/Button'
-import { SelectField } from '@/components/ui/Field/SelectField'
-import { TextAreaField } from '@/components/ui/Field/TextAreaField'
-import { TextField } from '@/components/ui/Field/TextField'
-import { FormError } from '@/components/ui/FormError/FormError'
+import { FOOTER } from '@/components/ui/DetailFooter/DetailFooter.styles'
+import { HEADER } from '@/components/ui/DetailHeader/DetailHeader.styles'
+import { DetailLayout } from '@/components/ui/DetailLayout/DetailLayout'
+import { IconButton } from '@/components/ui/IconButton/IconButton'
 import { Modal } from '@/components/ui/Modal/Modal'
-import { getUsers } from '@/lib/api'
+import { RequiredMark, RequiredNote } from '@/components/ui/SheetField/SheetField'
+import { FIELD_ERROR, SHEET_TEXTAREA, SIDE_LABEL } from '@/components/ui/SheetField/SheetField.styles'
+import { toast } from '@/components/ui/Toast/toast'
+import { cn } from '@/lib/cn'
 import { errorMessage } from '@/lib/errors'
-import { DESCRIPTION_PLACEHOLDER, emptyExtras, toExtraFieldsPayload } from '@/lib/ticketExtraFields'
-import {
-  TICKET_PRIORITY_OPTIONS,
-  TICKET_STATUS_OPTIONS,
-  TICKET_TYPE_OPTIONS,
-} from '@/lib/ticketOptions'
+import { useEpics } from '@/lib/queries/epics'
+import { useMembers } from '@/lib/queries/members'
+import { useSprints } from '@/lib/queries/sprints'
+import { useCreateTicket, useTickets } from '@/lib/queries/tickets'
+import { DESCRIPTION_PLACEHOLDER, HAS_POINTS, PARENT_TYPES, TYPE_INTRO, emptyTypeFields, toFormErrors } from '@/lib/ticketTypes'
 import { validateTicketForm } from '@/lib/validate'
+import { CREATE_LABEL, FIELD_IDS, NEW_TITLE, SWAP, initialValues } from './CreateTicketModal.data'
+import { FORM, FORM_ERROR, TYPE_HEADING } from './CreateTicketModal.styles'
+import { CreateTicketSideFields } from './CreateTicketSideFields'
+import { CreateTicketTypeStep } from './CreateTicketTypeStep'
 
-/* Every key here has to match the field's `name` in the form exactly: handleChange uses
-   `e.target.name` to know what to update. If they do not match, the field silently stops
-   accepting input and nothing raises an error. */
-const INITIAL_TYPE = 'userStory'
-
-const INITIAL_VALUES = {
-  type: INITIAL_TYPE,
-  title: '',
-  description: '',
-  epicId: '',
-  priority: 'medium',
-  status: 'todo',
-  points: '',
-  assigneeId: '',
-  sprintId: '',
-}
-
-export function CreateTicketModal({ isOpen, onClose, onCreate, epics, sprints }) {
-  const [values, setValues] = useState(INITIAL_VALUES)
-  /* The extra fields go in their own object and not inside `values`: they are the only ones
-     that change when the type changes, and keeping them apart makes resetting them one line. */
-  const [extras, setExtras] = useState(emptyExtras(INITIAL_TYPE))
+/**
+ * The create sheet (ENT-2). It starts by asking the type, with four cards, because the type
+ * decides every field that follows and it can never change afterwards. Then it has the detail
+ * sheet's shape: content on the left, metadata on the right, and only that type's fields.
+ *
+ *     <CreateTicketModal projectId={projectId} isOpen={open} onClose={close} />
+ *
+ * `defaults` presets what a shortcut already knows: { type, parentId, epicId, sprintId } (from
+ * a story's "Agregar tarea", a bug's "Crear fix"). With a type in `defaults` the cards are
+ * skipped. The form is seeded from `defaults` when this mounts, so give it a `key` that changes
+ * with them. `onCreated(ticket)` gets the new ticket's detail.
+ *
+ * The pieces live next to this file: CreateTicketTypeStep (the four cards) and
+ * CreateTicketSideFields (the side column). This file keeps the form's state and the submit.
+ */
+export function CreateTicketModal({ projectId, isOpen, onClose, defaults, onCreated }) {
+  const [values, setValues] = useState(() => initialValues(defaults))
+  const [typeChosen, setTypeChosen] = useState(Boolean(defaults?.type))
   const [errors, setErrors] = useState({})
-  const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
-  const [users, setUsers] = useState([])
 
-  // The assignees come from the API. If it fails the select stays empty and the ticket can
-  // still be created without assigning anyone.
-  useEffect(() => {
-    if (!isOpen) return
+  const { data: epics = [] } = useEpics(projectId)
+  const { data: sprints = [] } = useSprints(projectId)
+  const { data: members = [] } = useMembers(projectId)
+  const { data: tickets = [] } = useTickets(projectId)
+  const createTicket = useCreateTicket(projectId)
+  const submitting = createTicket.isPending
+  const type = values.type
 
-    getUsers()
-      .then(setUsers)
-      .catch(() => setUsers([]))
-  }, [isOpen])
+  function setField(name, value) {
+    const nextValues = { ...values, [name]: value }
 
-  function handleChange(e) {
-    const nextValues = { ...values, [e.target.name]: e.target.value }
-    setValues(nextValues)
-
-    // If the field already had an error, it is re-checked as you type so the message
-    // disappears as soon as you fix it. A field with no error yet is not validated until
-    // submit.
-    if (errors[e.target.name]) {
-      setErrors({ ...errors, [e.target.name]: validateTicketForm(nextValues)[e.target.name] })
+    // The parent has to be in the same epic: changing the epic drops a parent from another one.
+    if (name === 'epicId' && values.parentId) {
+      const parent = tickets.find((ticket) => String(ticket.id) === values.parentId)
+      if (String(parent?.epicId) !== value) nextValues.parentId = ''
     }
+
+    setValues(nextValues)
+    if (errors[name]) setErrors({ ...errors, [name]: validateTicketForm(nextValues)[name] })
   }
 
-  /* Changing the type changes the fields below. They reset to empty instead of trying to keep
-     what was typed: a bug's fields do not exist on a task, and sending the backend a key its
-     type does not accept is a 400.
-
-     Careful: this does NOT belong in a useEffect watching `values.type`. An effect would also
-     run on the first render and would wipe the extras every time the modal opens. It is the
-     answer to a click, and answers to a click go in the click's handler. */
-  function handleTypeChange(e) {
-    const type = e.target.value
-    setValues({ ...values, type })
-    setExtras(emptyExtras(type))
+  function handleTypeFieldChange(name, value) {
+    const nextValues = { ...values, typeFields: { ...values.typeFields, [name]: value } }
+    setValues(nextValues)
+    if (errors[name]) setErrors({ ...errors, [name]: validateTicketForm(nextValues)[name] })
   }
 
-  function handleExtraChange(name, value) {
-    setExtras({ ...extras, [name]: value })
+  /* A type's fields do not exist on another, so choosing a type starts them empty. A parent
+     of the wrong type for the new choice is dropped too. */
+  function chooseType(nextType) {
+    setValues({
+      ...values,
+      type: nextType,
+      typeFields: emptyTypeFields(nextType),
+      points: HAS_POINTS[nextType] ? values.points : '',
+      parentId: PARENT_TYPES[nextType].length > 0 ? values.parentId : '',
+    })
+    setErrors({})
+    setTypeChosen(true)
+  }
+
+  function reset() {
+    setValues(initialValues(defaults))
+    setTypeChosen(Boolean(defaults?.type))
+    setErrors({})
+    setFormError('')
   }
 
   function handleClose() {
     if (submitting) return
-
-    setValues(INITIAL_VALUES)
-    setExtras(emptyExtras(INITIAL_TYPE))
-    setErrors({})
-    setFormError('')
+    reset()
     onClose()
   }
 
@@ -98,192 +105,137 @@ export function CreateTicketModal({ isOpen, onClose, onCreate, epics, sprints })
     e.preventDefault()
     const found = validateTicketForm(values)
     setErrors(found)
-    if (Object.keys(found).length) return
+    const firstInvalid = Object.keys(found)[0]
+    if (firstInvalid) {
+      document.getElementById(FIELD_IDS[firstInvalid])?.focus()
+      return
+    }
 
     setFormError('')
-    setSubmitting(true)
     try {
-      await onCreate({
+      const ticket = await createTicket.mutateAsync({
         ...values,
-        title: values.title.trim(),
+        title: values.title.replace(/\s+/g, ' ').trim(),
         description: values.description.trim(),
-        extraFields: toExtraFieldsPayload(values.type, extras),
       })
-      // The modal only closes once the ticket was created: if the POST fails, what was
-      // typed stays on screen and the error is shown above.
-      setValues(INITIAL_VALUES)
-      setExtras(emptyExtras(INITIAL_TYPE))
-      setErrors({})
+      toast.success(`${ticket.code} creado`)
+      reset()
+      onCreated?.(ticket)
       onClose()
     } catch (err) {
-      setFormError(errorMessage(err))
-    } finally {
-      setSubmitting(false)
+      // What the API refused field by field goes under each field; the rest, in the footer.
+      const fieldErrors = toFormErrors(err.fieldErrors, type)
+      if (Object.keys(fieldErrors).length > 0) setErrors({ ...found, ...fieldErrors })
+      else setFormError(errorMessage(err))
     }
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="Nuevo ticket">
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
-        {formError && <FormError>{formError}</FormError>}
+    <Modal isOpen={isOpen} onClose={handleClose} size="lg">
+      {!typeChosen ? (
+        <CreateTicketTypeStep onChoose={chooseType} onClose={handleClose} />
+      ) : (
+        <form onSubmit={handleSubmit} className={FORM} noValidate>
+          <div className={HEADER}>
+            <TicketTypeIcon type={type} className="size-4.5" />
+            <h2 className={TYPE_HEADING}>{NEW_TITLE[type]}</h2>
+            {!defaults?.type && (
+              <Button variant="ghost" size="sm" onClick={() => setTypeChosen(false)} disabled={submitting}>
+                Cambiar tipo
+              </Button>
+            )}
+            <IconButton label="Cerrar" onClick={handleClose} disabled={submitting}>
+              <X className="size-4.5" aria-hidden="true" />
+            </IconButton>
+          </div>
 
-        <SelectField
-          id="ticket-type"
-          name="type"
-          label="Tipo"
-          value={values.type}
-          disabled={submitting}
-          onChange={handleTypeChange}
-        >
-          {TICKET_TYPE_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </SelectField>
-
-        <TextField
-          id="ticket-title"
-          name="title"
-          label="Título"
-          icon={Type}
-          value={values.title}
-          disabled={submitting}
-          error={errors.title}
-          onChange={handleChange}
-        />
-
-        {/* The placeholder changes with the type: a story suggests the "Como… quiero… para…"
-            that used to be three fields. It is a suggestion and nothing more — the field is
-            still free text and is not validated against that format. */}
-        <TextAreaField
-          id="ticket-description"
-          name="description"
-          label="Descripción"
-          optional
-          placeholder={DESCRIPTION_PLACEHOLDER[values.type] || ''}
-          value={values.description}
-          disabled={submitting}
-          onChange={handleChange}
-        />
-
-        <SelectField
-          id="ticket-epic"
-          name="epicId"
-          label="Épica"
-          value={values.epicId}
-          disabled={submitting}
-          error={errors.epicId}
-          onChange={handleChange}
-        >
-          <option value="">Elegí una épica</option>
-          {epics.map((epic) => (
-            <option key={epic.id} value={epic.id}>
-              {epic.name}
-            </option>
-          ))}
-        </SelectField>
-
-        <div className="grid grid-cols-2 gap-3">
-          <SelectField
-            id="ticket-priority"
-            name="priority"
-            label="Prioridad"
-            value={values.priority}
-            disabled={submitting}
-            onChange={handleChange}
+          <DetailLayout
+            side={
+              <CreateTicketSideFields
+                values={values}
+                errors={errors}
+                submitting={submitting}
+                epics={epics}
+                sprints={sprints}
+                members={members}
+                tickets={tickets}
+                onFieldChange={setField}
+                onTypeFieldChange={handleTypeFieldChange}
+              />
+            }
           >
-            {TICKET_PRIORITY_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </SelectField>
+            <motion.div {...SWAP} className="flex flex-col gap-5">
+              <div>
+                <label htmlFor="ticket-title" className={SIDE_LABEL}>
+                  Título<RequiredMark />
+                </label>
+                {/* The same box as the description and the type's fields below it. */}
+                <input
+                  id="ticket-title"
+                  placeholder="Título del ticket"
+                  maxLength={160}
+                  aria-required="true"
+                  aria-invalid={errors.title ? true : undefined}
+                  aria-describedby={errors.title ? 'ticket-title-error' : undefined}
+                  value={values.title}
+                  disabled={submitting}
+                  onChange={(e) => setField('title', e.target.value)}
+                  className={cn(SHEET_TEXTAREA, errors.title && 'border-red')}
+                />
+                {errors.title && (
+                  <p id="ticket-title-error" role="alert" className={FIELD_ERROR}>
+                    {errors.title}
+                  </p>
+                )}
+                <p className="mt-1 text-footnote text-label-secondary">{TYPE_INTRO[type]}</p>
+              </div>
 
-          <SelectField
-            id="ticket-status"
-            name="status"
-            label="Estado"
-            value={values.status}
-            disabled={submitting}
-            onChange={handleChange}
-          >
-            {TICKET_STATUS_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </SelectField>
-        </div>
+              {/* A story's placeholder hints at its "Como <rol> quiero…" shape. */}
+              <div>
+                <label htmlFor="ticket-description" className={SIDE_LABEL}>
+                  Descripción
+                </label>
+                <textarea
+                  id="ticket-description"
+                  rows={3}
+                  maxLength={2000}
+                  value={values.description}
+                  disabled={submitting}
+                  onChange={(e) => setField('description', e.target.value)}
+                  placeholder={DESCRIPTION_PLACEHOLDER[type]}
+                  className={SHEET_TEXTAREA}
+                />
+              </div>
 
-        <TextField
-          id="ticket-points"
-          name="points"
-          label="Puntos"
-          icon={Hash}
-          type="number"
-          min="0"
-          placeholder="0"
-          value={values.points}
-          disabled={submitting}
-          onChange={handleChange}
-        />
+              <TicketTypeFields
+                type={type}
+                values={values.typeFields}
+                onChange={handleTypeFieldChange}
+                disabled={submitting}
+                idPrefix="ticket-nuevo"
+                optional
+                errors={errors}
+              />
+            </motion.div>
+          </DetailLayout>
 
-        <SelectField
-          id="ticket-assignee"
-          name="assigneeId"
-          label="Responsable"
-          optional
-          value={values.assigneeId}
-          disabled={submitting}
-          onChange={handleChange}
-        >
-          <option value="">Sin asignar</option>
-          {users.map((user) => (
-            <option key={user.id} value={user.id}>
-              {user.name}
-            </option>
-          ))}
-        </SelectField>
-
-        <SelectField
-          id="ticket-sprint"
-          name="sprintId"
-          label="Sprint"
-          optional
-          value={values.sprintId}
-          disabled={submitting}
-          onChange={handleChange}
-        >
-          <option value="">Sin sprint (backlog)</option>
-          {sprints.map((sprint) => (
-            <option key={sprint.id} value={sprint.id}>
-              {sprint.name}
-            </option>
-          ))}
-        </SelectField>
-
-        {/* The fields belonging to the type chosen above. It is the same component for all
-            four: the list comes from EXTRA_FIELDS in lib/ticketExtraFields.js. Here they are
-            all drawn, `select`s included; the detail modal is the one that splits them. */}
-        <TicketExtraFields
-          type={values.type}
-          values={extras}
-          onChange={handleExtraChange}
-          disabled={submitting}
-          idPrefix="ticket-nuevo"
-          optional
-        />
-
-        <div className="mt-1 flex justify-end gap-2">
-          <Button variant="ghost" onClick={handleClose} disabled={submitting}>
-            Cancelar
-          </Button>
-          <Button type="submit" disabled={submitting}>
-            {submitting ? 'Creando…' : 'Crear ticket'}
-          </Button>
-        </div>
-      </form>
+          <div className={FOOTER}>
+            {formError ? (
+              <p role="alert" className={FORM_ERROR}>
+                {formError}
+              </p>
+            ) : (
+              <RequiredNote />
+            )}
+            <Button variant="ghost" onClick={handleClose} disabled={submitting}>
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={submitting}>
+              {submitting ? 'Creando…' : CREATE_LABEL[type]}
+            </Button>
+          </div>
+        </form>
+      )}
     </Modal>
   )
 }

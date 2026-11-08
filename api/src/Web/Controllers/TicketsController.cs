@@ -1,137 +1,90 @@
 using Application.Services;
+using Domain.Common;
 using Domain.Entities;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Web.Authorization;
 using Web.DTOs;
 
 namespace Web.Controllers;
 
-// Reading only needs a valid token, which the fallback policy in Program.cs already demands.
-// Writing carries an explicit policy, so a Viewer gets 403 instead of changing the backlog.
-[Route("api/[controller]")]
+/* Tickets of a project. The list is light (TicketSummary); the detail carries the description, the
+   type's fields and the children (DATA-1). Writes answer with the detail as saved, so the client
+   never needs a second GET. */
+[Route("api/projects/{pid:int}/tickets")]
 [ApiController]
+[RequireProjectMember]
 public class TicketsController : ControllerBase
 {
     private readonly TicketService _ticketService;
+    private readonly CurrentUser _currentUser;
 
-    public TicketsController(TicketService ticketService)
+    public TicketsController(TicketService ticketService, CurrentUser currentUser)
     {
         _ticketService = ticketService;
+        _currentUser = currentUser;
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll()
-    {
-        List<Ticket> tickets = await _ticketService.GetAllAsync();
-        return Ok(tickets.Select(TicketResponse.FromEntity));
-    }
+    public async Task<IActionResult> GetAll([FromRoute] int pid) =>
+        Ok(await _ticketService.GetSummariesAsync(pid));
 
-    // The backlog is the tickets that are not planned into any sprint. It lives here and
-    // not under /api/sprints because there is no sprint to hang it from.
-    [HttpGet("backlog")]
-    public async Task<IActionResult> GetBacklog()
-    {
-        List<Ticket> tickets = await _ticketService.GetBySprintIdAsync(null);
-        return Ok(tickets.Select(TicketResponse.FromEntity));
-    }
-
-    // The :int constraint keeps /api/tickets/abc from matching and failing model binding
-    // with a 400; without it, a bad id looks like a validation error instead of a 404.
     [HttpGet("{id:int}")]
-    public async Task<IActionResult> GetById([FromRoute] int id)
+    public async Task<IActionResult> GetById([FromRoute] int pid, [FromRoute] int id)
     {
-        Ticket? ticket = await _ticketService.GetByIdAsync(id);
-        if (ticket is null)
-        {
-            return NotFound();
-        }
-
-        return Ok(TicketResponse.FromEntity(ticket));
+        TicketDetailView? view = await _ticketService.GetDetailAsync(pid, id);
+        return view is null ? NotFound() : Ok(TicketDetailResponse.From(view));
     }
 
-    // The "se divide en" side of the self-relation: what this ticket was split into.
-    [HttpGet("{id:int}/children")]
-    public async Task<IActionResult> GetChildren([FromRoute] int id)
-    {
-        Ticket? ticket = await _ticketService.GetByIdAsync(id);
-        if (ticket is null)
-        {
-            return NotFound();
-        }
-
-        List<Ticket> children = await _ticketService.GetChildrenAsync(id);
-        return Ok(children.Select(TicketResponse.FromEntity));
-    }
-
+    // R2T-UH-12, or uh-12 written by hand: the service normalizes the case.
     [HttpGet("code/{code}")]
-    public async Task<IActionResult> GetByCode([FromRoute] string code)
+    public async Task<IActionResult> GetByCode([FromRoute] int pid, [FromRoute] string code)
     {
-        Ticket? ticket = await _ticketService.GetByCodeAsync(code);
-        if (ticket is null)
-        {
-            return NotFound();
-        }
-
-        return Ok(TicketResponse.FromEntity(ticket));
+        TicketDetailView? view = await _ticketService.GetByCodeAsync(pid, code);
+        return view is null ? NotFound() : Ok(TicketDetailResponse.From(view));
     }
 
-    [Authorize(Policy = "CanEditTickets")]
+    [RequireProjectPermission(Permission.TicketsWrite)]
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] TicketCreateRequest request)
+    public async Task<IActionResult> Create([FromRoute] int pid, [FromBody] TicketWriteRequest request)
     {
-        try
-        {
-            Ticket ticket = request.ToEntity();
-
-            // Jira fills the reporter with whoever pressed the button. Done here and not in
-            // TicketService because "who is logged in" is an HTTP fact, and Application has
-            // no HttpContext and should not grow one. ??= so an explicit reporterId wins.
-            ticket.ReporterId ??= CurrentUserId();
-
-            Ticket created = await _ticketService.CreateAsync(ticket);
-            return CreatedAtAction(nameof(GetById), new { id = created.Id }, TicketResponse.FromEntity(created));
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        Ticket created = await _ticketService.CreateAsync(pid, _currentUser.Id, request.ToEntity());
+        TicketDetailView view = (await _ticketService.GetDetailAsync(pid, created.Id))!;
+        return CreatedAtAction(nameof(GetById), new { pid, id = created.Id }, TicketDetailResponse.From(view));
     }
 
-    [Authorize(Policy = "CanEditTickets")]
+    [RequireProjectPermission(Permission.TicketsWrite)]
     [HttpPut("{id:int}")]
-    public async Task<IActionResult> Update([FromRoute] int id, [FromBody] TicketUpdateRequest request)
+    public async Task<IActionResult> Update([FromRoute] int pid, [FromRoute] int id, [FromBody] TicketWriteRequest request)
     {
-        try
-        {
-            bool updated = await _ticketService.UpdateAsync(id, request.ToEntity());
-            if (!updated)
-            {
-                return NotFound();
-            }
-
-            return NoContent();
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
-    }
-
-    [Authorize(Policy = "CanEditTickets")]
-    [HttpDelete("{id:int}")]
-    public async Task<IActionResult> Delete([FromRoute] int id)
-    {
-        bool deleted = await _ticketService.DeleteAsync(id);
-        if (!deleted)
+        bool updated = await _ticketService.UpdateAsync(pid, id, request.ToEntity());
+        if (!updated)
         {
             return NotFound();
         }
 
-        return NoContent();
+        return Ok(TicketDetailResponse.From((await _ticketService.GetDetailAsync(pid, id))!));
     }
 
-    // TokenService writes the user id into "sub", and Program.cs turns off inbound claim
-    // mapping, so it arrives spelled exactly like that instead of as a SOAP-era URI.
-    private int? CurrentUserId() =>
-        int.TryParse(User.FindFirst("sub")?.Value, out int id) ? id : null;
+    // The one way to change status: the detail's selector and the board both use it.
+    [RequireProjectPermission(Permission.TicketsWrite)]
+    [HttpPatch("{id:int}/status")]
+    public async Task<IActionResult> ChangeStatus([FromRoute] int pid, [FromRoute] int id, [FromBody] TicketStatusRequest request)
+    {
+        bool changed = await _ticketService.ChangeStatusAsync(pid, id, request.Status!.Value);
+        if (!changed)
+        {
+            return NotFound();
+        }
+
+        return Ok(TicketDetailResponse.From((await _ticketService.GetDetailAsync(pid, id))!));
+    }
+
+    // Takes every descendant with it.
+    [RequireProjectPermission(Permission.TicketsDelete)]
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> Delete([FromRoute] int pid, [FromRoute] int id)
+    {
+        bool deleted = await _ticketService.DeleteAsync(pid, id);
+        return deleted ? NoContent() : NotFound();
+    }
 }

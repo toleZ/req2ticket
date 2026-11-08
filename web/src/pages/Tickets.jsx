@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { useOutletContext } from 'react-router-dom'
-import { ArrowUpDown, Plus } from 'lucide-react'
+import { useSearchParams } from 'react-router-dom'
+import { AnimatePresence } from 'motion/react'
+import { Plus } from 'lucide-react'
 
 import { PageHeader } from '@/components/layout/PageHeader/PageHeader'
 import { CreateTicketModal } from '@/components/tickets/CreateTicketModal/CreateTicketModal'
@@ -9,119 +10,132 @@ import { TicketFilterBar } from '@/components/tickets/TicketFilterBar/TicketFilt
 import { TicketList } from '@/components/tickets/TicketList/TicketList'
 import { Button } from '@/components/ui/Button/Button'
 import { LoadState } from '@/components/ui/LoadState/LoadState'
-import { createTicket } from '@/lib/api'
-import { NO_SPRINT, TICKET_PRIORITY_OPTIONS, TICKET_STATUS_OPTIONS } from '@/lib/ticketOptions'
+import { SearchBox } from '@/components/ui/SearchBox/SearchBox'
+import { useCurrentProject } from '@/hooks/useCurrentProject'
+import { readSession } from '@/lib/auth'
+import { LIST_KEYS, SORT_OPTIONS, applyFilters, byPriority, withTicketNames } from '@/lib/backlogFilters'
+import { TICKET_STATUS_OPTIONS } from '@/lib/options'
+import { PERMISSIONS } from '@/lib/permissions'
+import { useEpics } from '@/lib/queries/epics'
+import { loadStateOf, retryAll } from '@/lib/queries/loadState'
+import { useMembers } from '@/lib/queries/members'
+import { useSprints } from '@/lib/queries/sprints'
+import { useTickets } from '@/lib/queries/tickets'
+import { changeParams, countActive, readFilters, setListParam } from '@/lib/urlFilters'
 
-/* The order comes from TICKET_PRIORITY_OPTIONS, which runs low to high, so the sort
-   subtracts the other way round. Deriving it instead of hand-writing a map keeps a newly
-   added priority from breaking the ordering silently. */
-function priorityRank(priority) {
-  return TICKET_PRIORITY_OPTIONS.findIndex((option) => option.value === priority)
-}
-
+/* The Backlog: every ticket of the project, grouped by status, with the filters in the URL.
+   It reads the same four lists as the rest of the project (the cache shares them), and the
+   ticket sheets fetch their own detail. */
 export function Tickets() {
-  const {
-    tickets,
-    setTickets,
-    epics,
-    sprints,
-    users,
-    loadState,
-    reload,
-    updateTicketAndStore,
-    deleteTicketAndStore,
-  } = useOutletContext()
+  const { projectId, can } = useCurrentProject()
+  const ticketsQuery = useTickets(projectId)
+  const epicsQuery = useEpics(projectId)
+  const sprintsQuery = useSprints(projectId)
+  const membersQuery = useMembers(projectId)
+  const loadState = loadStateOf(ticketsQuery, epicsQuery, sprintsQuery, membersQuery)
 
-  const [isModalOpen, setIsModalOpen] = useState(false)
+  const epics = epicsQuery.data ?? []
+  const sprints = sprintsQuery.data ?? []
+  const members = membersQuery.data ?? []
+  const tickets = withTicketNames(ticketsQuery.data ?? [], { epics, sprints, members })
 
-  /* The ticket open in the detail modal, held by id and not as an object: the real ticket is
-     looked up in `tickets` on every render, so after saving the modal sees what the API
-     returned — the new `updatedAt` included — without anyone refreshing it by hand. */
+  const canWrite = can(PERMISSIONS.TICKETS_WRITE)
+  const canDelete = can(PERMISSIONS.TICKETS_DELETE)
+
+  const [isCreateOpen, setIsCreateOpen] = useState(false)
+  /* What the create sheet starts with, and a counter that remounts it so it reads them: a
+     shortcut from a story ("Agregar tarea") presets the type, the parent, the epic and the sprint. */
+  const [createDefaults, setCreateDefaults] = useState(null)
+  const [createKey, setCreateKey] = useState(0)
+
+  /* The ticket open in its sheet, by id: the sheet fetches the rest itself. */
   const [detailTicketId, setDetailTicketId] = useState(null)
 
-  const [search, setSearch] = useState('')
-  const [assigneeFilter, setAssigneeFilter] = useState('')
-  const [epicFilter, setEpicFilter] = useState('')
-  const [sprintFilter, setSprintFilter] = useState('')
-  const [priorityFilter, setPriorityFilter] = useState('')
-  const [typeFilter, setTypeFilter] = useState('')
-  const [sortByPriority, setSortByPriority] = useState(false)
+  /* The filters are the URL (see lib/backlogFilters.js). Each change is a history entry, so
+     Back undoes it — except typing in the search, which replaces the entry instead of adding
+     one per key. */
+  const [params, setParams] = useSearchParams()
+  const filters = readFilters(params, LIST_KEYS, SORT_OPTIONS)
+  const activeCount = countActive(filters, LIST_KEYS)
 
-  // Appends what the POST returns, which already carries the id and code the backend assigned.
-  async function handleCreate(values) {
-    const created = await createTicket(values)
-    setTickets((prev) => [...prev, created])
+  function updateParams(change, replace = false) {
+    changeParams(setParams, change, replace)
   }
 
-  /* Recomputed on every render, and that is fine: a few hundred tickets at most.
-     <select> values are always strings, which is why the ids are compared with String(). */
-  const term = search.trim().toLowerCase()
+  /* The search box's text lives here (see SearchBox) and is written to the URL as you type. */
+  const [search, setSearch] = useState(filters.q)
 
-  const filteredTickets = tickets.filter((ticket) => {
-    if (term && !ticket.title.toLowerCase().includes(term)) return false
-    if (assigneeFilter && String(ticket.assigneeId) !== assigneeFilter) return false
-    if (epicFilter && String(ticket.epicId) !== epicFilter) return false
-    if (sprintFilter === NO_SPRINT && ticket.sprintId !== null) return false
-    if (sprintFilter && sprintFilter !== NO_SPRINT && String(ticket.sprintId) !== sprintFilter) {
-      return false
-    }
-    if (priorityFilter && ticket.priority !== priorityFilter) return false
-    if (typeFilter && ticket.type !== typeFilter) return false
-    return true
-  })
+  function handleSearchChange(text) {
+    setSearch(text)
+    updateParams((next) => (text ? next.set('q', text) : next.delete('q')), true)
+  }
 
-  const sections = TICKET_STATUS_OPTIONS.map((status) => {
+  function setList(key, values) {
+    updateParams((next) => setListParam(next, key, values))
+  }
+
+  function clearFilters() {
+    setSearch('')
+    updateParams((next) => ['q', 'mine', ...LIST_KEYS].forEach((key) => next.delete(key)))
+  }
+
+  function openCreate(defaults = null) {
+    setCreateDefaults(defaults)
+    setCreateKey(createKey + 1)
+    setIsCreateOpen(true)
+  }
+
+  /* From a ticket's sheet: close it and open the create sheet with what it already knows. */
+  function handleCreateChild(defaults) {
+    setDetailTicketId(null)
+    openCreate(defaults)
+  }
+
+  const filteredTickets = applyFilters(tickets, filters, readSession()?.user?.id)
+  const points = filteredTickets.reduce((sum, ticket) => sum + (ticket.points ?? 0), 0)
+
+  const visibleStatuses = filters.status.length
+    ? TICKET_STATUS_OPTIONS.filter((status) => filters.status.includes(status.value))
+    : TICKET_STATUS_OPTIONS
+
+  const sections = visibleStatuses.map((status) => {
     const sectionTickets = filteredTickets.filter((ticket) => ticket.status === status.value)
-    if (sortByPriority) {
-      sectionTickets.sort((a, b) => priorityRank(b.priority) - priorityRank(a.priority))
-    }
+    if (filters.sort === 'priority') sectionTickets.sort(byPriority)
     return { status, tickets: sectionTickets }
   })
 
-  /* Looked up here rather than held in state: if the ticket was deleted this becomes null and
-     the modal unmounts on its own, with no handler having to remember to close it. */
-  const detailTicket = tickets.find((ticket) => ticket.id === detailTicketId) ?? null
+  const countText =
+    filteredTickets.length === tickets.length
+      ? `${tickets.length} ${tickets.length === 1 ? 'ticket' : 'tickets'}`
+      : `${filteredTickets.length} de ${tickets.length} tickets`
 
-  const subtitle =
-    loadState === 'ready'
-      ? `${filteredTickets.length} de ${tickets.length} tickets del proyecto.`
-      : null
+  const meta = loadState === 'ready' ? `${countText} · ${points.toLocaleString('es-AR')} pts` : null
 
   return (
     <section>
-      <PageHeader title="Tickets" subtitle={subtitle}>
-        <Button
-          variant="neutral"
-          size="sm"
-          onClick={() => setSortByPriority(!sortByPriority)}
-          ariaPressed={sortByPriority}
-        >
-          <ArrowUpDown className="size-4" aria-hidden="true" />
-          Prioridad
-        </Button>
-        <Button size="sm" onClick={() => setIsModalOpen(true)}>
-          <Plus className="size-4" aria-hidden="true" />
-          Nuevo ticket
-        </Button>
+      <PageHeader title="Backlog" meta={meta}>
+        <SearchBox value={search} placeholder="Buscar por texto o código" onChange={handleSearchChange} />
+        {canWrite && (
+          <Button size="sm" onClick={() => openCreate()} className="shrink-0">
+            <Plus className="size-4" aria-hidden="true" />
+            Crear ticket
+          </Button>
+        )}
       </PageHeader>
 
       {loadState === 'ready' && (
         <TicketFilterBar
-          users={users}
+          filters={filters}
+          activeCount={activeCount}
           epics={epics}
           sprints={sprints}
-          search={search}
-          onSearchChange={setSearch}
-          assigneeFilter={assigneeFilter}
-          onAssigneeFilterChange={setAssigneeFilter}
-          epicFilter={epicFilter}
-          onEpicFilterChange={setEpicFilter}
-          sprintFilter={sprintFilter}
-          onSprintFilterChange={setSprintFilter}
-          priorityFilter={priorityFilter}
-          onPriorityFilterChange={setPriorityFilter}
-          typeFilter={typeFilter}
-          onTypeFilterChange={setTypeFilter}
+          users={members}
+          onListChange={setList}
+          onMineChange={(on) => updateParams((next) => (on ? next.set('mine', '1') : next.delete('mine')))}
+          onSortChange={(sort) =>
+            updateParams((next) => (sort === 'priority' ? next.set('sort', 'priority') : next.delete('sort')))
+          }
+          onClear={clearFilters}
         />
       )}
 
@@ -130,47 +144,56 @@ export function Tickets() {
         isEmpty={tickets.length === 0}
         loadingText="Cargando tickets…"
         errorText="No se pudieron cargar los tickets."
-        emptyText="Todavía no hay tickets cargados."
-        onRetry={reload}
+        emptyText={canWrite ? 'Todavía no hay tickets. Creá el primero.' : 'Todavía no hay tickets cargados.'}
+        onRetry={() => retryAll(ticketsQuery, epicsQuery, sprintsQuery, membersQuery)}
       />
 
       {/* There are tickets loaded but the filters left none. Different from the empty list
           above: here what needs changing are the filters. */}
       {loadState === 'ready' && tickets.length > 0 && filteredTickets.length === 0 && (
-        <p className="mt-2 max-w-prose text-body text-label-secondary">
-          Ningún ticket coincide con los filtros.
-        </p>
+        <div className="mt-2 flex flex-wrap items-center gap-3">
+          <p className="text-body text-label-secondary">Ningún ticket coincide con los filtros.</p>
+          {activeCount > 0 && (
+            <Button variant="neutral" size="sm" onClick={clearFilters}>
+              Limpiar filtros
+            </Button>
+          )}
+        </div>
       )}
 
       {loadState === 'ready' && filteredTickets.length > 0 && (
-        <TicketList sections={sections} onSelectTicket={(ticket) => setDetailTicketId(ticket.id)} />
-      )}
-
-      <CreateTicketModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onCreate={handleCreate}
-        epics={epics}
-        sprints={sprints}
-      />
-
-      {/* Mounted only while a ticket is chosen: that way every opening seeds the form from
-          scratch and no state from the previous one is left. The `key` is the same idea
-          written twice, and it is deliberate — the day you can jump from one ticket to another
-          without closing, it is the only thing stopping the second appearing with the first's
-          text. */}
-      {detailTicket && (
-        <TicketDetailModal
-          key={detailTicket.id}
-          ticket={detailTicket}
+        <TicketList
+          key={params.toString()}
+          sections={sections}
           epics={epics}
-          sprints={sprints}
-          users={users}
-          onClose={() => setDetailTicketId(null)}
-          onUpdateTicket={updateTicketAndStore}
-          onDeleteTicket={deleteTicketAndStore}
+          onSelectTicket={(ticket) => setDetailTicketId(ticket.id)}
         />
       )}
+
+      {canWrite && (
+        <CreateTicketModal
+          key={createKey}
+          projectId={projectId}
+          isOpen={isCreateOpen}
+          defaults={createDefaults ?? undefined}
+          onClose={() => setIsCreateOpen(false)}
+        />
+      )}
+
+      {/* Mounted only while a ticket is chosen, so every opening starts from scratch. */}
+      <AnimatePresence>
+        {detailTicketId && (
+          <TicketDetailModal
+            key={detailTicketId}
+            projectId={projectId}
+            ticketId={detailTicketId}
+            canWrite={canWrite}
+            canDelete={canDelete}
+            onClose={() => setDetailTicketId(null)}
+            onCreateChild={handleCreateChild}
+          />
+        )}
+      </AnimatePresence>
     </section>
   )
 }
