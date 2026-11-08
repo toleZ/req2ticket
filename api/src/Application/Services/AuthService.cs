@@ -3,8 +3,7 @@ using Domain.Interfaces;
 
 namespace Application.Services;
 
-// Owns credentials only. Issuing the token is TokenService's job, so this class stays
-// unaware of JWT and can be read as "is this password right" and nothing else.
+// Owns credentials and the caller's own account. Issuing the token is TokenService's job.
 public class AuthService
 {
     private readonly IUserRepository _userRepository;
@@ -16,34 +15,27 @@ public class AuthService
         _passwordHasher = passwordHasher;
     }
 
-    // Returns null when the credentials do not match. A failed login is normal flow,
-    // not an exception. The same null covers "no such email" and "wrong password", so
-    // the response can never be used to find out which emails exist.
+    // Null when the credentials do not match. The same null covers "no such email" and "wrong
+    // password", so the response never tells which emails exist.
     public async Task<User?> LoginAsync(string email, string password)
     {
-        // Lowercased because the stored address is: the column lost SQLite's NOCASE collation.
         User? user = await _userRepository.GetByEmailAsync(email.Trim().ToLowerInvariant());
         if (user is null)
         {
             return null;
         }
 
-        // Verify re-hashes the given password with the salt stored inside the hash and
-        // compares in constant time, so the password never reaches SQL or the query log.
         return _passwordHasher.Verify(password, user.PasswordHash) ? user : null;
     }
 
-    // New accounts get the lowest role. Handing out anything more is a deliberate act:
-    // someone with the Admin policy has to change it afterwards.
+    // A new account is a plain user with no projects: it can create one, or wait to be added.
     public async Task<User> RegisterAsync(string name, string email, string password)
     {
         string normalizedEmail = email.Trim().ToLowerInvariant();
 
-        // Check-then-act, like EpicService does with the epic code: the unique index on
-        // Email is the real guarantee, this is the part that produces a readable message.
         if (await _userRepository.ExistsByEmailAsync(normalizedEmail))
         {
-            throw new ArgumentException($"Ya existe un usuario con el email {normalizedEmail}.");
+            throw new ArgumentException($"A user with the email {normalizedEmail} already exists.");
         }
 
         var user = new User
@@ -51,10 +43,47 @@ public class AuthService
             Name = name.Trim(),
             Email = normalizedEmail,
             PasswordHash = _passwordHasher.Hash(password),
-            Role = UserRole.Viewer
+            PlatformRole = PlatformRole.User
         };
 
         await _userRepository.AddAsync(user);
         return user;
+    }
+
+    public async Task<User?> UpdateNameAsync(int userId, string name)
+    {
+        User? user = await _userRepository.GetByIdAsync(userId);
+        if (user is null)
+        {
+            return null;
+        }
+
+        user.Name = name.Trim();
+        await _userRepository.UpdateAsync(user);
+        return user;
+    }
+
+    // The other sessions keep their tokens until they expire; closing them is a separate feature.
+    public async Task<bool> ChangePasswordAsync(int userId, string currentPassword, string newPassword)
+    {
+        User? user = await _userRepository.GetByIdAsync(userId);
+        if (user is null)
+        {
+            return false;
+        }
+
+        if (!_passwordHasher.Verify(currentPassword, user.PasswordHash))
+        {
+            throw new ArgumentException("Current password is incorrect.");
+        }
+
+        if (currentPassword == newPassword)
+        {
+            throw new ArgumentException("The new password must be different from the current one.");
+        }
+
+        user.PasswordHash = _passwordHasher.Hash(newPassword);
+        await _userRepository.UpdateAsync(user);
+        return true;
     }
 }

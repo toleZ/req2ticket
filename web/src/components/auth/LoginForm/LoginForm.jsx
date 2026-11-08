@@ -7,19 +7,8 @@ import { FormError } from '@/components/ui/FormError/FormError'
 import { PasswordField } from '@/components/ui/Field/PasswordField'
 import { errorMessage } from '@/lib/errors'
 import { validateLoginForm } from '@/lib/validate'
-import { INITIAL_VALUES } from './LoginForm.data'
-
-/* Every key here has to match the field's `name` in the form exactly: handleChange uses
-   `e.target.name` to know what to update. If they do not match, the field silently stops
-   accepting input and nothing raises an error. */
-
-/* Demo account credentials: the button below fills them in for the user.
-
-   Every seeded account shares this password and the email is the role in lowercase
-   (admin@, productowner@, scrummaster@, developer@, superadmin@), so switching roles
-   while developing means editing the local part of what this button typed. See
-   api/src/Infrastructure/SeedData.cs — this has to match it. */
-const DEMO_ACCOUNT = { email: 'admin@req2ticket.com', password: 'Passw0rd!' }
+import { DEMO_ACCOUNTS, DEMO_PASSWORD, INITIAL_VALUES } from './LoginForm.data' // DEMO — borrar antes de prod
+import { DEMO_BOX, DEMO_CHIP, REMEMBER } from './LoginForm.styles'
 
 export function LoginForm({ onSubmit }) {
   const [values, setValues] = useState(INITIAL_VALUES)
@@ -40,8 +29,9 @@ export function LoginForm({ onSubmit }) {
     }
   }
 
-  function fillDemoAccount() {
-    setValues({ ...values, email: DEMO_ACCOUNT.email, password: DEMO_ACCOUNT.password })
+  // DEMO — borrar antes de prod.
+  function fillDemoAccount(email) {
+    setValues({ ...values, email, password: DEMO_PASSWORD })
     setErrors({})
     setFormError('')
   }
@@ -58,7 +48,8 @@ export function LoginForm({ onSubmit }) {
     try {
       await onSubmit(values)
     } catch (err) {
-      setFormError(errorMessage(err))
+      // A wrong email or password is the API's 401; said in Spanish, without telling which.
+      setFormError(err?.status === 401 ? 'El email o la contraseña no son correctos.' : errorMessage(err))
     } finally {
       setSubmitting(false)
     }
@@ -104,7 +95,7 @@ export function LoginForm({ onSubmit }) {
 
         {/* Unticked, the session lives in sessionStorage and dies when the tab closes. Ticked,
             it goes to localStorage and survives closing the browser. */}
-        <label htmlFor="remember" className="flex items-center gap-2 text-subheadline text-label">
+        <label htmlFor="remember" className={REMEMBER}>
           <input
             id="remember"
             name="remember"
@@ -121,18 +112,21 @@ export function LoginForm({ onSubmit }) {
         </Button>
       </form>
 
-      <button
-        type="button"
-        onClick={fillDemoAccount}
-        className="mt-4 flex w-full items-start gap-2 rounded-control bg-fill-tertiary p-3 text-left text-footnote text-label-secondary transition-colors hover:bg-fill-secondary"
-      >
-        <Sparkles className="mt-0.5 size-4 shrink-0 text-blue" aria-hidden="true" />
-        <span>
-          <span className="font-medium text-label">Cuenta de demostración. </span>
-          Pulsá aquí para entrar como admin. Los demás roles comparten la contraseña y el
-          correo es el rol: developer@, productowner@, scrummaster@, superadmin@.
-        </span>
-      </button>
+      {/* DEMO — borrar antes de prod: this block, the import of DEMO_ACCOUNTS and fillDemoAccount. */}
+      <div className={DEMO_BOX}>
+        <p className="flex items-center gap-1.5">
+          <Sparkles className="size-4 shrink-0 text-blue" aria-hidden="true" />
+          <span className="font-medium text-label">Cuentas de demostración.</span> Elegí un rol para completar el
+          formulario.
+        </p>
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {DEMO_ACCOUNTS.map((account) => (
+            <button key={account.email} type="button" onClick={() => fillDemoAccount(account.email)} className={DEMO_CHIP}>
+              {account.label}
+            </button>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }

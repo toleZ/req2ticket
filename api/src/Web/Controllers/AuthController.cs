@@ -20,8 +20,7 @@ public class AuthController : ControllerBase
         _tokenService = tokenService;
     }
 
-    // [AllowAnonymous] is what makes this reachable: Program.cs sets a fallback policy that
-    // demands a token everywhere else, so without it logging in would require being logged in.
+    // [AllowAnonymous] because the fallback policy demands a token everywhere else.
     [AllowAnonymous]
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
@@ -29,30 +28,19 @@ public class AuthController : ControllerBase
         User? user = await _authService.LoginAsync(request.Email, request.Password);
         if (user is null)
         {
-            // Unauthorized(object) returns this body as-is rather than a ProblemDetails,
-            // which is the { message } shape the front end already knows how to read.
-            return Unauthorized(new { message = "Email o contraseña incorrectos." });
+            return Unauthorized(new { message = "Wrong email or password." });
         }
 
         return Ok(BuildAuthResponse(user));
     }
 
+    // Registering leaves the caller logged in, with no projects yet: they create one or get added.
     [AllowAnonymous]
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request)
     {
-        try
-        {
-            User created = await _authService.RegisterAsync(request.Name, request.Email, request.Password);
-
-            // Returns a token so registering leaves the caller logged in, like the login
-            // endpoint does. The account starts as Viewer: it can read, not write.
-            return Ok(BuildAuthResponse(created));
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        User created = await _authService.RegisterAsync(request.Name, request.Email, request.Password);
+        return Ok(BuildAuthResponse(created));
     }
 
     private AuthResponse BuildAuthResponse(User user)

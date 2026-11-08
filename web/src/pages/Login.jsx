@@ -1,8 +1,9 @@
 import { useNavigate } from 'react-router-dom'
 
 import { LoginForm } from '@/components/auth/LoginForm/LoginForm'
-import { login } from '@/lib/api'
+import { login } from '@/lib/api/auth'
 import { saveSession } from '@/lib/auth'
+import { queryClient } from '@/lib/queries/queryClient'
 
 export function Login() {
   const navigate = useNavigate()
@@ -14,6 +15,10 @@ export function Login() {
     // The API returns { token, expiresAt, user }; the checkbox decides where it is stored.
     saveSession(session, values.remember)
 
+    // Nothing cached may belong to whoever was here before.
+    queryClient.clear()
+
+    // "/" opens the last project used, or the first one, or the "no projects yet" screen.
     navigate('/')
   }
 

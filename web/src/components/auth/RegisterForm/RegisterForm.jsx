@@ -10,6 +10,16 @@ import { errorMessage } from '@/lib/errors'
 import { validateRegisterForm } from '@/lib/validate'
 import { INITIAL_VALUES } from './RegisterForm.data'
 
+/* What the API's field messages (English) mean here. Only the fields of this form; anything else
+   would already have been caught by validateRegisterForm. */
+function translateFieldErrors(fieldErrors) {
+  const errors = {}
+  if (fieldErrors.name) errors.name = 'El nombre tiene que tener entre 2 y 80 caracteres'
+  if (fieldErrors.email) errors.email = 'Ingresá un email válido'
+  if (fieldErrors.password) errors.password = 'La contraseña no cumple las reglas de abajo'
+  return errors
+}
+
 /* Every key here has to match the field's `name` in the form exactly: handleChange uses
    `e.target.name` to know what to update. If they do not match, the field silently stops
    accepting input and nothing raises an error. */
@@ -43,7 +53,16 @@ export function RegisterForm({ onSubmit }) {
     try {
       await onSubmit(values)
     } catch (err) {
-      setFormError(errorMessage(err))
+      /* The API names the fields it refused (an email already in use is a 400 with a message):
+         each goes under its own field, the rest above the form. */
+      const fieldErrors = err?.fieldErrors ?? {}
+      if (/already exists/i.test(err?.message ?? '')) {
+        setErrors({ email: 'Ya hay una cuenta con ese email' })
+      } else if (Object.keys(fieldErrors).length > 0) {
+        setErrors(translateFieldErrors(fieldErrors))
+      } else {
+        setFormError(errorMessage(err))
+      }
     } finally {
       setSubmitting(false)
     }
@@ -95,6 +114,7 @@ export function RegisterForm({ onSubmit }) {
           autoComplete="new-password"
           placeholder="••••••••"
           value={values.password}
+          showRules
           error={errors.password}
           onChange={handleChange}
         />
