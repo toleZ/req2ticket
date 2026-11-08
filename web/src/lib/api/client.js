@@ -1,9 +1,11 @@
 /* The only place that knows how to talk to the network: the base URL, the token header,
    how an error is read, and the four verbs everything else is built on.
 
-   Nothing outside lib/api/ imports this file. The entity modules next to it wrap these
-   helpers, and components reach those through '@/lib/api' — that is what keeps fetch out
-   of the components. */
+   Nothing outside lib/api/ imports this file. The entity modules next to it (epics.js,
+   tickets.js…) wrap these helpers, and the hooks in lib/queries/ import those directly:
+   `import { getSprints } from '@/lib/api/sprints'`. Components use the hooks, never these
+   functions — that is what keeps fetch out of the components. The two exceptions are the
+   login and register pages, which call auth.js directly: there is nothing to cache there. */
 
 import { clearSession, getToken } from '@/lib/auth'
 import { FALLBACK_ERROR } from '@/lib/errors'
@@ -13,7 +15,7 @@ import { FALLBACK_ERROR } from '@/lib/errors'
    it for each environment. It ends up in the public JS, so it must never hold a secret. */
 const API_URL = import.meta.env.VITE_API_URL
 
-/* The four verbs, and the whole point of this file: every function in epics.js,
+/* The five verbs, and the whole point of this file: every function in epics.js,
    tickets.js and the rest is one of these plus a path. */
 
 export function get(path) {
@@ -28,17 +30,36 @@ export function put(path, payload) {
   return send('PUT', path, payload)
 }
 
+export function patch(path, payload) {
+  return send('PATCH', path, payload)
+}
+
 /* `del` and not `delete` because `delete` is a reserved word in JavaScript. */
 export function del(path) {
   return send('DELETE', path)
 }
 
-/* Everything below is the plumbing behind those four. send() is the whole trip; the
+/* What every failed request throws. `message` is already the text to show on screen (what
+   errorMessage() in lib/errors.js reads), and two extras for the screens that need them:
+
+     status       the HTTP status, or 0 when the server could not be reached. The query
+                  client reads it to decide whether retrying makes sense (a 404 never will).
+     fieldErrors  { title: 'Title is required.', 'bug.stepsToReproduce': '…' } when the API
+                  rejected specific fields, so a form can put each message under its field.
+                  The keys are the same names the form sends. */
+export class ApiError extends Error {
+  constructor(message, status, fieldErrors = {}) {
+    super(message)
+    this.name = 'ApiError'
+    this.status = status
+    this.fieldErrors = fieldErrors
+  }
+}
+
+/* Everything below is the plumbing behind those verbs. send() is the whole trip; the
    helpers under it are the fiddly parts pulled out so send() stays readable. */
 
-/* Sends the request and returns the parsed body. When anything goes wrong it throws an
-   Error whose `message` is already the text to show on screen — that is what
-   errorMessage() in lib/errors.js expects, and what every catch in the components reads. */
+/* Sends the request and returns the parsed body, or throws an ApiError. */
 async function send(method, path, payload) {
   // Read once: the 401 check below needs to know whether we actually sent a token.
   const token = getToken()
@@ -49,7 +70,7 @@ async function send(method, path, payload) {
     response = await fetch(`${API_URL}${path}`, buildOptions(method, payload, token))
   } catch {
     // fetch only rejects when there was no response at all: API down, DNS, CORS.
-    throw new Error('No se pudo conectar con el servidor. ¿Está levantada la API?')
+    throw new ApiError('No se pudo conectar con el servidor. ¿Está levantada la API?', 0)
   }
 
   const body = await readBody(response)
@@ -63,7 +84,7 @@ async function send(method, path, payload) {
       window.location.assign('/login')
     }
 
-    throw new Error(readError(body))
+    throw new ApiError(readError(body), response.status, readFieldErrors(body))
   }
 
   return body
@@ -108,4 +129,18 @@ function readError(body) {
   }
 
   return FALLBACK_ERROR
+}
+
+/* ProblemDetails' `errors` as { field: firstMessage }. ASP.NET prefixes JSON errors with "$."
+   ("$.title"); dropping it leaves the same name the form sent. The "$" key alone is a broken
+   body, not a field, and stays out. */
+function readFieldErrors(body) {
+  if (!body?.errors) return {}
+
+  const fields = {}
+  Object.entries(body.errors).forEach(([key, messages]) => {
+    const field = key.replace(/^\$\.?/, '')
+    if (field && messages.length > 0) fields[field] = messages[0]
+  })
+  return fields
 }

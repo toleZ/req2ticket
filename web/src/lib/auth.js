@@ -43,6 +43,22 @@ export function saveSession(session, remember) {
   }
 }
 
+/* Replaces the stored user (after changing your name) in whichever storage holds the session,
+   so "Mantener sesión" keeps meaning what it meant. */
+export function updateSessionUser(user) {
+  for (const storage of STORAGES()) {
+    const session = readFrom(storage)
+    if (!session) continue
+
+    try {
+      storage.setItem(STORAGE_KEY, JSON.stringify({ ...session, user }))
+    } catch {
+      // Nothing to do: the session keeps the old name until the next login.
+    }
+    return
+  }
+}
+
 export function clearSession() {
   for (const storage of STORAGES()) {
     try {
