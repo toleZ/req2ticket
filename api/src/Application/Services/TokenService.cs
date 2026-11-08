@@ -43,9 +43,9 @@ public class TokenService
                 ["sub"] = user.Id.ToString(CultureInfo.InvariantCulture),
                 ["name"] = user.Name,
                 ["email"] = user.Email,
-                // Same spelling as the role in every JSON response, and the same string the
-                // policies in Program.cs compare against.
-                ["role"] = RoleNames.Of(user.Role)
+                // Only the platform role ("user" or "superAdmin"). The role inside each project is
+                // read from the database on every request, so it never goes stale in a token.
+                ["role"] = EnumNames.Of(user.PlatformRole)
             }
         };
 

@@ -26,41 +26,22 @@ public class User
     [JsonIgnore]
     public string PasswordHash { get; set; } = string.Empty;
 
-    // Viewer is the default on purpose: a code path that forgets to assign a role grants
-    // read-only access rather than the ability to edit.
-    public UserRole Role { get; set; } = UserRole.Viewer;
+    // Only the platform role lives on the user. What someone may do inside a project is their
+    // ProjectMember.Role there, which is why the same person can be Admin in one project and
+    // Viewer in another.
+    public PlatformRole PlatformRole { get; set; } = PlatformRole.User;
 }
 
-// The names follow Scrum, since that is what the app models: epics, tickets and sprints.
-// SuperAdmin administers the platform; Admin administers this workspace.
-//
-// Declared from least to most privilege, which puts Viewer at 0. That is not cosmetic:
-// enums are stored as INTEGER, so 0 is what a row lands on when nobody assigns a role —
-// a column default, a raw INSERT, a future migration. Least privilege has to be the value
-// you get by accident. For the same reason, new roles go at the position their privilege
-// deserves, and doing so renumbers the ones after it: that needs a data migration, not just
-// a new member.
-[JsonConverter(typeof(StringOnlyEnumConverter<UserRole>))]
-public enum UserRole
+// User is 0 on purpose: enums are stored as INTEGER, so 0 is what a row lands on when nobody
+// assigns a role. Least privilege has to be the value you get by accident.
+[JsonConverter(typeof(StringOnlyEnumConverter<PlatformRole>))]
+public enum PlatformRole
 {
-    [JsonStringEnumMemberName("viewer")]
-    Viewer,
+    [JsonStringEnumMemberName("user")]
+    User,
 
-    [JsonStringEnumMemberName("qa")]
-    Qa,
-
-    [JsonStringEnumMemberName("developer")]
-    Developer,
-
-    [JsonStringEnumMemberName("scrumMaster")]
-    ScrumMaster,
-
-    [JsonStringEnumMemberName("productOwner")]
-    ProductOwner,
-
-    [JsonStringEnumMemberName("admin")]
-    Admin,
-
+    // Admin of every project, member or not, plus the platform itself: managing users and
+    // deleting projects for good.
     [JsonStringEnumMemberName("superAdmin")]
     SuperAdmin
 }

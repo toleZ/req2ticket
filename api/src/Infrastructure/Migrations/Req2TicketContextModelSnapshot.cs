@@ -35,8 +35,8 @@ namespace Infrastructure.Migrations
 
                     b.Property<string>("Code")
                         .IsRequired()
-                        .HasMaxLength(13)
-                        .HasColumnType("character varying(13)");
+                        .HasMaxLength(24)
+                        .HasColumnType("character varying(24)");
 
                     b.Property<string>("Description")
                         .HasMaxLength(2000)
@@ -47,10 +47,16 @@ namespace Infrastructure.Migrations
                         .HasMaxLength(120)
                         .HasColumnType("character varying(120)");
 
+                    b.Property<int>("Number")
+                        .HasColumnType("integer");
+
                     b.Property<int?>("OwnerId")
                         .HasColumnType("integer");
 
                     b.Property<int>("Priority")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ProjectId")
                         .HasColumnType("integer");
 
                     b.Property<int>("Status")
@@ -63,97 +69,79 @@ namespace Infrastructure.Migrations
 
                     b.HasIndex("OwnerId");
 
-                    b.ToTable("Epics");
+                    b.HasIndex("ProjectId", "Number")
+                        .IsUnique();
 
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            AccentColor = 0,
-                            Code = "EPIC-7F3A2B9K",
-                            Description = "Login, registro y recuperación de contraseña.",
-                            Name = "Autenticación",
-                            OwnerId = 1,
-                            Priority = 2,
-                            Status = 1
-                        },
-                        new
-                        {
-                            Id = 2,
-                            AccentColor = 1,
-                            Code = "EPIC-M4XQ8T2V",
-                            Description = "Columnas configurables y drag & drop.",
-                            Name = "Tablero Kanban",
-                            OwnerId = 2,
-                            Priority = 1,
-                            Status = 0
-                        },
-                        new
-                        {
-                            Id = 3,
-                            AccentColor = 2,
-                            Code = "EPIC-9DZP5R3W",
-                            Description = "Planificación, capacidad del equipo y cierre de sprint.",
-                            Name = "Gestión de sprints",
-                            OwnerId = 3,
-                            Priority = 2,
-                            Status = 1
-                        },
-                        new
-                        {
-                            Id = 4,
-                            AccentColor = 3,
-                            Code = "EPIC-2H6NKY4S",
-                            Description = "Alta, edición y estimación en puntos.",
-                            Name = "Historias de usuario",
-                            OwnerId = 4,
-                            Priority = 3,
-                            Status = 1
-                        },
-                        new
-                        {
-                            Id = 5,
-                            AccentColor = 4,
-                            Code = "EPIC-QB8V3JM7",
-                            Description = "Velocity, burndown y lead time por equipo.",
-                            Name = "Panel de métricas",
-                            OwnerId = 1,
-                            Priority = 1,
-                            Status = 0
-                        },
-                        new
-                        {
-                            Id = 6,
-                            AccentColor = 5,
-                            Code = "EPIC-5T9WGX2A",
-                            Description = "Avisos por email y centro de notificaciones in-app.",
-                            Name = "Notificaciones",
-                            OwnerId = 2,
-                            Priority = 0,
-                            Status = 0
-                        },
-                        new
-                        {
-                            Id = 7,
-                            AccentColor = 7,
-                            Code = "EPIC-3RJ7C4ZP",
-                            Description = "Carga de documentos y extracción automática de tickets.",
-                            Name = "Importador de requerimientos",
-                            OwnerId = 3,
-                            Priority = 3,
-                            Status = 1
-                        },
-                        new
-                        {
-                            Id = 8,
-                            AccentColor = 9,
-                            Code = "EPIC-K2M5NQ8D",
-                            Description = "Tema claro/oscuro con preferencia persistida.",
-                            Name = "Modo oscuro",
-                            OwnerId = 4,
-                            Priority = 0,
-                            Status = 2
-                        });
+                    b.ToTable("Epics");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Project", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTimeOffset?>("ArchivedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasMaxLength(6)
+                        .HasColumnType("character varying(6)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<int>("NextBugNumber")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("NextEpicNumber")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("NextFixNumber")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("NextTaskNumber")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("NextUserStoryNumber")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Key")
+                        .IsUnique();
+
+                    b.ToTable("Projects");
+                });
+
+            modelBuilder.Entity("Domain.Entities.ProjectMember", b =>
+                {
+                    b.Property<int>("ProjectId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Role")
+                        .HasColumnType("integer");
+
+                    b.HasKey("ProjectId", "UserId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("ProjectMembers");
                 });
 
             modelBuilder.Entity("Domain.Entities.Sprint", b =>
@@ -179,6 +167,9 @@ namespace Infrastructure.Migrations
                         .HasMaxLength(120)
                         .HasColumnType("character varying(120)");
 
+                    b.Property<int>("ProjectId")
+                        .HasColumnType("integer");
+
                     b.Property<DateOnly>("StartDate")
                         .HasColumnType("date");
 
@@ -187,39 +178,12 @@ namespace Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Sprints");
+                    b.HasIndex("ProjectId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Sprints_OneActivePerProject")
+                        .HasFilter("\"Status\" = 1");
 
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            Capacity = 13,
-                            EndDate = new DateOnly(2026, 8, 5),
-                            Goal = "Cerrar el bloque de autenticación y dejar el listado de facturas en producción.",
-                            Name = "Sprint 6",
-                            StartDate = new DateOnly(2026, 7, 22),
-                            Status = 2
-                        },
-                        new
-                        {
-                            Id = 2,
-                            Capacity = 34,
-                            EndDate = new DateOnly(2026, 8, 19),
-                            Goal = "Segundo factor operativo y centro de incidencias abierto a los primeros clientes.",
-                            Name = "Sprint 7",
-                            StartDate = new DateOnly(2026, 8, 5),
-                            Status = 1
-                        },
-                        new
-                        {
-                            Id = 3,
-                            Capacity = 30,
-                            EndDate = new DateOnly(2026, 9, 2),
-                            Goal = "Pagos con tarjeta y panel de administración de cuentas.",
-                            Name = "Sprint 8",
-                            StartDate = new DateOnly(2026, 8, 19),
-                            Status = 0
-                        });
+                    b.ToTable("Sprints");
                 });
 
             modelBuilder.Entity("Domain.Entities.Ticket", b =>
@@ -235,8 +199,8 @@ namespace Infrastructure.Migrations
 
                     b.Property<string>("Code")
                         .IsRequired()
-                        .HasMaxLength(13)
-                        .HasColumnType("character varying(13)");
+                        .HasMaxLength(24)
+                        .HasColumnType("character varying(24)");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -248,16 +212,16 @@ namespace Infrastructure.Migrations
                     b.Property<int>("EpicId")
                         .HasColumnType("integer");
 
-                    b.Property<string>("ExtraFields")
-                        .HasColumnType("text");
+                    b.Property<int>("Number")
+                        .HasColumnType("integer");
 
                     b.Property<int?>("ParentId")
                         .HasColumnType("integer");
 
-                    b.Property<int>("Points")
+                    b.Property<int>("Priority")
                         .HasColumnType("integer");
 
-                    b.Property<int>("Priority")
+                    b.Property<int>("ProjectId")
                         .HasColumnType("integer");
 
                     b.Property<int?>("ReporterId")
@@ -295,182 +259,12 @@ namespace Infrastructure.Migrations
 
                     b.HasIndex("SprintId");
 
-                    b.ToTable("Tickets");
+                    b.HasIndex("ProjectId", "Type", "Number")
+                        .IsUnique();
 
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            AssigneeId = 1,
-                            Code = "UH-2F8K3M9Q",
-                            CreatedAt = new DateTimeOffset(new DateTime(2026, 7, 22, 9, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            EpicId = 1,
-                            ExtraFields = "{\"acceptanceCriteria\":[{\"text\":\"Las credenciales válidas devuelven un token\",\"done\":true},{\"text\":\"Las credenciales inválidas devuelven 401\",\"done\":true},{\"text\":\"El token expira a las 8 horas\",\"done\":true}],\"definitionOfReady\":[{\"text\":\"Diseño del formulario aprobado\",\"done\":true}],\"definitionOfDone\":[{\"text\":\"Probado en Postman\",\"done\":true}]}",
-                            Points = 5,
-                            Priority = 2,
-                            ReporterId = 2,
-                            SprintId = 1,
-                            Status = 5,
-                            Title = "Inicio de sesión con email y contraseña",
-                            Type = 0,
-                            UpdatedAt = new DateTimeOffset(new DateTime(2026, 8, 5, 17, 30, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
-                        },
-                        new
-                        {
-                            Id = 2,
-                            AssigneeId = 1,
-                            Code = "TASK-7H4N2P6R",
-                            CreatedAt = new DateTimeOffset(new DateTime(2026, 7, 22, 9, 15, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            Description = "Validar credenciales contra el hash BCrypt y firmar el JWT.",
-                            EpicId = 1,
-                            ExtraFields = "{\"checklist\":[{\"text\":\"Verificar el hash con BCrypt\",\"done\":true},{\"text\":\"Firmar el token con HMAC-SHA256\",\"done\":true}]}",
-                            ParentId = 1,
-                            Points = 0,
-                            Priority = 2,
-                            ReporterId = 1,
-                            SprintId = 1,
-                            Status = 5,
-                            Title = "Endpoint POST /api/auth/login",
-                            Type = 1,
-                            UpdatedAt = new DateTimeOffset(new DateTime(2026, 8, 4, 12, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
-                        },
-                        new
-                        {
-                            Id = 3,
-                            AssigneeId = 4,
-                            Code = "UH-9D5Q8T3W",
-                            CreatedAt = new DateTimeOffset(new DateTime(2026, 8, 5, 10, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            EpicId = 1,
-                            ExtraFields = "{\"acceptanceCriteria\":[{\"text\":\"El enlace caduca a la hora\",\"done\":true},{\"text\":\"Un email inexistente no revela que no existe\",\"done\":false},{\"text\":\"El enlace solo puede usarse una vez\",\"done\":false}],\"definitionOfReady\":[],\"definitionOfDone\":[]}",
-                            Points = 3,
-                            Priority = 1,
-                            ReporterId = 2,
-                            SprintId = 2,
-                            Status = 3,
-                            Title = "Recuperación de contraseña por email",
-                            Type = 0,
-                            UpdatedAt = new DateTimeOffset(new DateTime(2026, 8, 12, 11, 20, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
-                        },
-                        new
-                        {
-                            Id = 4,
-                            AssigneeId = 2,
-                            Code = "UH-3K7V2X5Z",
-                            CreatedAt = new DateTimeOffset(new DateTime(2026, 8, 6, 14, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            EpicId = 2,
-                            ExtraFields = "{\"acceptanceCriteria\":[{\"text\":\"Se puede agregar una columna\",\"done\":false},{\"text\":\"Se puede renombrar una columna\",\"done\":false},{\"text\":\"Se puede reordenar una columna\",\"done\":false},{\"text\":\"No se puede borrar una columna con tickets\",\"done\":false}],\"definitionOfReady\":[],\"definitionOfDone\":[]}",
-                            Points = 8,
-                            Priority = 1,
-                            ReporterId = 2,
-                            Status = 0,
-                            Title = "Columnas configurables en el tablero",
-                            Type = 0,
-                            UpdatedAt = new DateTimeOffset(new DateTime(2026, 8, 6, 14, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
-                        },
-                        new
-                        {
-                            Id = 5,
-                            AssigneeId = 3,
-                            Code = "UH-5M9R4H2N",
-                            CreatedAt = new DateTimeOffset(new DateTime(2026, 8, 5, 9, 30, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            EpicId = 3,
-                            ExtraFields = "{\"acceptanceCriteria\":[{\"text\":\"La capacidad se carga por sprint\",\"done\":true},{\"text\":\"Se avisa cuando los puntos la superan\",\"done\":true},{\"text\":\"El aviso no bloquea la planificación\",\"done\":false}],\"definitionOfReady\":[],\"definitionOfDone\":[]}",
-                            Points = 5,
-                            Priority = 2,
-                            ReporterId = 3,
-                            SprintId = 2,
-                            Status = 2,
-                            Title = "Planificación de sprint con capacidad del equipo",
-                            Type = 0,
-                            UpdatedAt = new DateTimeOffset(new DateTime(2026, 8, 14, 16, 45, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
-                        },
-                        new
-                        {
-                            Id = 6,
-                            AssigneeId = 3,
-                            Code = "BUG-8P2W6D4K",
-                            CreatedAt = new DateTimeOffset(new DateTime(2026, 8, 11, 8, 45, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            Description = "La curva queda plana aunque el trabajo se haya terminado.",
-                            EpicId = 3,
-                            ExtraFields = "{\"severity\":\"major\",\"stepsToReproduce\":\"1. Cerrar un ticket que está en el backlog.\\n2. Abrir el burndown del sprint activo.\",\"expectedResult\":\"La curva baja por los puntos cerrados.\",\"actualResult\":\"La curva queda plana.\",\"environment\":\"Local, PostgreSQL\"}",
-                            Points = 2,
-                            Priority = 3,
-                            ReporterId = 2,
-                            SprintId = 2,
-                            Status = 2,
-                            Title = "El burndown no descuenta los tickets cerrados fuera del sprint",
-                            Type = 2,
-                            UpdatedAt = new DateTimeOffset(new DateTime(2026, 8, 13, 10, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
-                        },
-                        new
-                        {
-                            Id = 7,
-                            AssigneeId = 3,
-                            Code = "FIX-4T6Z9M3V",
-                            CreatedAt = new DateTimeOffset(new DateTime(2026, 8, 13, 10, 5, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            EpicId = 3,
-                            ExtraFields = "{\"rootCause\":\"El cálculo cachea los puntos al abrir el sprint y no vuelve a leerlos.\",\"solution\":\"Recalcular al vuelo a partir de los tickets del sprint.\",\"verificationSteps\":[{\"text\":\"Mover un ticket cerrado al backlog y ver bajar la curva\",\"done\":false},{\"text\":\"Reabrir un ticket y ver subir la curva\",\"done\":false}],\"regressionRisk\":\"medium\"}",
-                            ParentId = 6,
-                            Points = 1,
-                            Priority = 3,
-                            ReporterId = 3,
-                            SprintId = 2,
-                            Status = 4,
-                            Title = "Recalcular el burndown al mover un ticket de sprint",
-                            Type = 3,
-                            UpdatedAt = new DateTimeOffset(new DateTime(2026, 8, 13, 10, 5, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
-                        },
-                        new
-                        {
-                            Id = 8,
-                            AssigneeId = 2,
-                            Code = "TASK-6X3H8P5Q",
-                            CreatedAt = new DateTimeOffset(new DateTime(2026, 8, 7, 11, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            EpicId = 4,
-                            ExtraFields = "{\"checklist\":[{\"text\":\"Filtro por responsable\",\"done\":false},{\"text\":\"Filtro por prioridad\",\"done\":false}]}",
-                            Points = 2,
-                            Priority = 1,
-                            ReporterId = 4,
-                            Status = 1,
-                            Title = "Filtro de tickets por responsable y prioridad",
-                            Type = 1,
-                            UpdatedAt = new DateTimeOffset(new DateTime(2026, 8, 7, 11, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
-                        },
-                        new
-                        {
-                            Id = 10,
-                            AssigneeId = 2,
-                            Code = "TASK-9J4R7B2X",
-                            CreatedAt = new DateTimeOffset(new DateTime(2026, 8, 8, 9, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            Description = "Se descartó: la librería actual ya cubre el caso.",
-                            EpicId = 2,
-                            ExtraFields = "{\"checklist\":[]}",
-                            Points = 3,
-                            Priority = 0,
-                            ReporterId = 2,
-                            SprintId = 2,
-                            Status = 6,
-                            Title = "Migrar el tablero a drag & drop nativo",
-                            Type = 1,
-                            UpdatedAt = new DateTimeOffset(new DateTime(2026, 8, 15, 15, 30, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
-                        },
-                        new
-                        {
-                            Id = 9,
-                            AssigneeId = 4,
-                            Code = "UH-2N7K4V9M",
-                            CreatedAt = new DateTimeOffset(new DateTime(2026, 7, 23, 13, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            EpicId = 8,
-                            ExtraFields = "{\"acceptanceCriteria\":[{\"text\":\"La preferencia sobrevive a recargar la página\",\"done\":true},{\"text\":\"Sin preferencia guardada se usa la del sistema\",\"done\":true}],\"definitionOfReady\":[],\"definitionOfDone\":[]}",
-                            Points = 2,
-                            Priority = 0,
-                            ReporterId = 1,
-                            SprintId = 1,
-                            Status = 5,
-                            Title = "Persistencia de preferencia de tema claro/oscuro",
-                            Type = 0,
-                            UpdatedAt = new DateTimeOffset(new DateTime(2026, 8, 4, 9, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
-                        });
+                    b.ToTable("Tickets", (string)null);
+
+                    b.UseTptMappingStrategy();
                 });
 
             modelBuilder.Entity("Domain.Entities.User", b =>
@@ -496,7 +290,7 @@ namespace Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
-                    b.Property<int>("Role")
+                    b.Property<int>("PlatformRole")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
@@ -505,48 +299,132 @@ namespace Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("Users");
+                });
 
-                    b.HasData(
-                        new
+            modelBuilder.Entity("Domain.Entities.Workflow", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ProjectId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProjectId")
+                        .IsUnique();
+
+                    b.ToTable("Workflows");
+                });
+
+            modelBuilder.Entity("Domain.Entities.WorkflowTransition", b =>
+                {
+                    b.Property<int>("WorkflowId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("FromStatus")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ToStatus")
+                        .HasColumnType("integer");
+
+                    b.HasKey("WorkflowId", "FromStatus", "ToStatus");
+
+                    b.ToTable("WorkflowTransitions", null, t =>
                         {
-                            Id = 1,
-                            Email = "admin@req2ticket.com",
-                            Name = "Admin",
-                            PasswordHash = "$2a$11$OxumkutAnNycObUAp.sI5OR8/FoDacrtay0b2z61feEKJxGR5Tzd6",
-                            Role = 5
-                        },
-                        new
-                        {
-                            Id = 2,
-                            Email = "productowner@req2ticket.com",
-                            Name = "Product Owner",
-                            PasswordHash = "$2a$11$OxumkutAnNycObUAp.sI5OR8/FoDacrtay0b2z61feEKJxGR5Tzd6",
-                            Role = 4
-                        },
-                        new
-                        {
-                            Id = 3,
-                            Email = "scrummaster@req2ticket.com",
-                            Name = "Scrum Master",
-                            PasswordHash = "$2a$11$OxumkutAnNycObUAp.sI5OR8/FoDacrtay0b2z61feEKJxGR5Tzd6",
-                            Role = 3
-                        },
-                        new
-                        {
-                            Id = 4,
-                            Email = "developer@req2ticket.com",
-                            Name = "Developer",
-                            PasswordHash = "$2a$11$OxumkutAnNycObUAp.sI5OR8/FoDacrtay0b2z61feEKJxGR5Tzd6",
-                            Role = 2
-                        },
-                        new
-                        {
-                            Id = 5,
-                            Email = "superadmin@req2ticket.com",
-                            Name = "Super Admin",
-                            PasswordHash = "$2a$11$OxumkutAnNycObUAp.sI5OR8/FoDacrtay0b2z61feEKJxGR5Tzd6",
-                            Role = 6
+                            t.HasCheckConstraint("CK_WorkflowTransitions_FromNotTo", "\"FromStatus\" <> \"ToStatus\"");
                         });
+                });
+
+            modelBuilder.Entity("Domain.Entities.Bug", b =>
+                {
+                    b.HasBaseType("Domain.Entities.Ticket");
+
+                    b.Property<string>("ActualResult")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("Environment")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("ExpectedResult")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<int>("Severity")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("StepsToReproduce")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.ToTable("Bugs", (string)null);
+                });
+
+            modelBuilder.Entity("Domain.Entities.Fix", b =>
+                {
+                    b.HasBaseType("Domain.Entities.Ticket");
+
+                    b.Property<int>("RegressionRisk")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("RootCause")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("Solution")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("VerificationSteps")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.ToTable("Fixes", (string)null);
+                });
+
+            modelBuilder.Entity("Domain.Entities.TicketTask", b =>
+                {
+                    b.HasBaseType("Domain.Entities.Ticket");
+
+                    b.Property<string>("Checklist")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<int?>("Points")
+                        .HasColumnType("integer");
+
+                    b.ToTable("Tasks", (string)null);
+                });
+
+            modelBuilder.Entity("Domain.Entities.UserStory", b =>
+                {
+                    b.HasBaseType("Domain.Entities.Ticket");
+
+                    b.Property<string>("AcceptanceCriteria")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<string>("DefinitionOfDone")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<string>("DefinitionOfReady")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<int?>("Points")
+                        .HasColumnType("integer");
+
+                    b.ToTable("UserStories", (string)null);
                 });
 
             modelBuilder.Entity("Domain.Entities.Epic", b =>
@@ -556,7 +434,41 @@ namespace Infrastructure.Migrations
                         .HasForeignKey("OwnerId")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.HasOne("Domain.Entities.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("Owner");
+                });
+
+            modelBuilder.Entity("Domain.Entities.ProjectMember", b =>
+                {
+                    b.HasOne("Domain.Entities.Project", "Project")
+                        .WithMany("Members")
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Project");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Sprint", b =>
+                {
+                    b.HasOne("Domain.Entities.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Domain.Entities.Ticket", b =>
@@ -575,7 +487,13 @@ namespace Infrastructure.Migrations
                     b.HasOne("Domain.Entities.Ticket", "Parent")
                         .WithMany()
                         .HasForeignKey("ParentId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("Domain.Entities.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("Domain.Entities.User", "Reporter")
                         .WithMany()
@@ -596,6 +514,70 @@ namespace Infrastructure.Migrations
                     b.Navigation("Reporter");
 
                     b.Navigation("Sprint");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Workflow", b =>
+                {
+                    b.HasOne("Domain.Entities.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Domain.Entities.WorkflowTransition", b =>
+                {
+                    b.HasOne("Domain.Entities.Workflow", null)
+                        .WithMany("Transitions")
+                        .HasForeignKey("WorkflowId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Domain.Entities.Bug", b =>
+                {
+                    b.HasOne("Domain.Entities.Ticket", null)
+                        .WithOne()
+                        .HasForeignKey("Domain.Entities.Bug", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Domain.Entities.Fix", b =>
+                {
+                    b.HasOne("Domain.Entities.Ticket", null)
+                        .WithOne()
+                        .HasForeignKey("Domain.Entities.Fix", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Domain.Entities.TicketTask", b =>
+                {
+                    b.HasOne("Domain.Entities.Ticket", null)
+                        .WithOne()
+                        .HasForeignKey("Domain.Entities.TicketTask", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Domain.Entities.UserStory", b =>
+                {
+                    b.HasOne("Domain.Entities.Ticket", null)
+                        .WithOne()
+                        .HasForeignKey("Domain.Entities.UserStory", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Domain.Entities.Project", b =>
+                {
+                    b.Navigation("Members");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Workflow", b =>
+                {
+                    b.Navigation("Transitions");
                 });
 #pragma warning restore 612, 618
         }

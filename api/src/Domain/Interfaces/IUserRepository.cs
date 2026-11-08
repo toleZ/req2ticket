@@ -8,6 +8,6 @@ public interface IUserRepository : IBaseRepository<User>
 
     Task<bool> ExistsByEmailAsync(string email);
 
-    // Exists for one rule only: never leave the system without a superAdmin.
-    Task<int> CountByRoleAsync(UserRole role);
+    // Exists for one rule only: never leave the platform without a SuperAdmin.
+    Task<int> CountByRoleAsync(PlatformRole role);
 }

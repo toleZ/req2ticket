@@ -1,39 +1,67 @@
 using Application.Services;
-using Domain.Common;
-using Domain.Entities;
 using Domain.Interfaces;
 using Infrastructure.Repositories;
+using Infrastructure.Seeding;
 using Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Metadata;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text.Json.Serialization;
 using System.Text.Json;
 using System.Text;
+using Web.Authorization;
+using Web.Filters;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
-// Enums travel as strings in both directions ("medium"), not as ints.
-// This covers serialization only: to get the OpenAPI schema right too, each enum also
-// carries [JsonConverter(typeof(JsonStringEnumConverter<T>))] on the type itself.
-builder.Services.AddControllers()
+builder.Services.AddControllers(mvcOptions =>
+    {
+        // One place turns broken rules into 400/403/409. See ApiExceptionFilter.
+        mvcOptions.Filters.Add<ApiExceptionFilter>();
+
+        // Validation errors are keyed by the JSON name ("bug.stepsToReproduce"), not the C# one
+        // ("Bug.StepsToReproduce"), so the front end can put each message under its own field.
+        mvcOptions.ModelMetadataDetailsProviders.Add(new SystemTextJsonValidationMetadataProvider());
+    })
     .AddJsonOptions(jsonOptions =>
-        jsonOptions.JsonSerializerOptions.Converters.Add(
-            new JsonStringEnumConverter(JsonNamingPolicy.CamelCase)));
+    {
+        // Enums travel as strings in both directions ("medium"), not as ints.
+        jsonOptions.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
+
+        /* An unknown property is a 400, not silence. Without this, "bug" sent on a task, a typo like
+           "titel", or a "status" in a ticket's PUT would be dropped quietly and the client would
+           believe it had been saved. */
+        jsonOptions.JsonSerializerOptions.UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow;
+    });
 
 #region Dependency Injection
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IProjectRepository, ProjectRepository>();
+builder.Services.AddScoped<IProjectMemberRepository, ProjectMemberRepository>();
 builder.Services.AddScoped<IEpicRepository, EpicRepository>();
 builder.Services.AddScoped<ITicketRepository, TicketRepository>();
 builder.Services.AddScoped<ISprintRepository, SprintRepository>();
+builder.Services.AddScoped<IWorkflowRepository, WorkflowRepository>();
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+builder.Services.AddScoped<ProjectService>();
+builder.Services.AddScoped<ProjectAccessService>();
+builder.Services.AddScoped<MemberService>();
 builder.Services.AddScoped<EpicService>();
 builder.Services.AddScoped<TicketService>();
 builder.Services.AddScoped<SprintService>();
+builder.Services.AddScoped<WorkflowService>();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<DemoSeeder>();
+builder.Services.AddSingleton(builder.Configuration.GetSection("Seed").Get<SeedOptions>() ?? new SeedOptions());
+
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<CurrentUser>();
 
 // Stateless and thread safe, so one instance for the whole app is enough.
 builder.Services.AddSingleton<PasswordHasher>();
@@ -47,14 +75,14 @@ builder.Services.AddSingleton<TokenService>();
 // message that says how to fix it, instead of turning the first login into a 500.
 string jwtKey = builder.Configuration["Jwt:Key"]
     ?? throw new InvalidOperationException(
-        "Falta la configuración Jwt:Key. En desarrollo: " +
-        "dotnet user-secrets set \"Jwt:Key\" \"<al menos 32 caracteres>\" --project src/Web");
+        "Jwt:Key is missing. In development: " +
+        "dotnet user-secrets set \"Jwt:Key\" \"<at least 32 characters>\" --project src/Web");
 
 // HMAC-SHA256 refuses to sign with a key shorter than its own output. Checking the length
 // here turns a confusing runtime exception into a startup error.
 if (Encoding.UTF8.GetByteCount(jwtKey) < 32)
 {
-    throw new InvalidOperationException("Jwt:Key debe tener al menos 32 bytes (32 caracteres ASCII).");
+    throw new InvalidOperationException("Jwt:Key must be at least 32 bytes (32 ASCII characters).");
 }
 
 var jwtSettings = new JwtSettings(
@@ -99,25 +127,8 @@ builder.Services.AddAuthorization(authorizationOptions =>
         .RequireAuthenticatedUser()
         .Build();
 
-    // Opens the door of /api/users to both administrative roles. Which of the two may do what
-    // to a given user is UserService's call: a policy only knows the role of the caller.
-    authorizationOptions.AddPolicy(
-        "CanManageUsers",
-        policy => policy.RequireRole(RoleNames.Of(UserRole.SuperAdmin), RoleNames.Of(UserRole.Admin)));
-
-    // Everyone except Viewer, listed by exclusion so a new role can edit by default and
-    // read-only stays the deliberate exception.
-    authorizationOptions.AddPolicy(
-        "CanEditEpics",
-        policy => policy.RequireRole(RoleNames.AllExcept(UserRole.Viewer)));
-
-    authorizationOptions.AddPolicy(
-        "CanEditTickets",
-        policy => policy.RequireRole(RoleNames.AllExcept(UserRole.Viewer)));
-
-    authorizationOptions.AddPolicy(
-        "CanEditSprints",
-        policy => policy.RequireRole(RoleNames.AllExcept(UserRole.Viewer)));
+    // No role policies: what someone may do depends on the project, so it is decided by the
+    // [RequireProjectPermission] filters (Web/Authorization), which read the role from the database.
 });
 
 #endregion
@@ -145,6 +156,14 @@ builder.Services.AddHealthChecks()
     .AddDbContextCheck<Req2TicketContext>();
 
 var app = builder.Build();
+
+/* Demo data and the initial SuperAdmin (OPS-1), driven by the Seed:* settings. After Build() on
+   purpose: `dotnet ef` stops the host right at Build(), so this never runs while creating or
+   applying migrations, and it skips itself if the database still has migrations pending. */
+using (IServiceScope scope = app.Services.CreateScope())
+{
+    await scope.ServiceProvider.GetRequiredService<DemoSeeder>().RunAsync();
+}
 
 if (app.Environment.IsDevelopment())
 {
