@@ -1,21 +1,37 @@
-import { SprintCard } from '@/components/sprints/SprintCard/SprintCard'
+import { SprintRow } from '@/components/sprints/SprintRow/SprintRow'
 
 /**
- * The sprint list. Cards, not rows, so the gap is wider than the epic and ticket lists.
+ * The sprint list, with the same rows and spacing as the epic list.
  *
- * `tickets` is every ticket in the project: each card gets its own already-filtered slice.
+ * `tickets` is every ticket in the project: each row gets its own already-filtered slice.
  * Tickets with no sprint are not shown here — they belong to SprintBacklog, further down
- * the page.
+ * the page. The rest goes to every row as it is (see SprintRow).
  */
-export function SprintList({ sprints, tickets, onUpdateSprint, onDeleteSprint, onSelectTicket }) {
+export function SprintList({
+  sprints,
+  tickets,
+  activeSprint,
+  canManage,
+  backlogPath,
+  onSelectSprint,
+  onStartSprint,
+  onCompleteSprint,
+  onDeleteSprint,
+  onSelectTicket,
+}) {
   return (
-    <ul className="mt-4 flex flex-col gap-4">
+    <ul className="mt-4 flex flex-col gap-2">
       {sprints.map((sprint) => (
-        <SprintCard
+        <SprintRow
           key={sprint.id}
           sprint={sprint}
           tickets={tickets.filter((ticket) => ticket.sprintId === sprint.id)}
-          onUpdateSprint={onUpdateSprint}
+          activeSprint={activeSprint}
+          canManage={canManage}
+          backlogPath={backlogPath}
+          onSelectSprint={onSelectSprint}
+          onStartSprint={onStartSprint}
+          onCompleteSprint={onCompleteSprint}
           onDeleteSprint={onDeleteSprint}
           onSelectTicket={onSelectTicket}
         />

@@ -1,34 +1,38 @@
 import { del, get, post, put } from './client'
 
-export function getEpics() {
-  return get('/api/epics')
+/* The list is light (EpicSummary: no description, with ticketCount, openTicketsCount and
+   doneTicketsCount); the detail adds description and ownerName. */
+export function getEpics(projectId) {
+  return get(`/api/projects/${projectId}/epics`)
 }
 
-export function createEpic(values) {
-  return post('/api/epics', {
-    name: values.name,
+export function getEpic(projectId, epicId) {
+  return get(`/api/projects/${projectId}/epics/${epicId}`)
+}
+
+function toPayload(values) {
+  return {
+    name: values.name.trim(),
     description: values.description || null,
-    accentColor: values.accentColor,
+    accentColor: values.accentColor || null,
     priority: values.priority,
     status: values.status,
     ownerId: values.ownerId ? Number(values.ownerId) : null,
-  })
+  }
 }
 
-/* The backend's PUT replaces the whole epic, so `patch` is merged over `epic` (the one we
-   already hold in memory) to avoid wiping the fields that did not change. */
-export function updateEpic(epic, patch) {
-  const merged = { ...epic, ...patch }
-  return put(`/api/epics/${epic.id}`, {
-    name: merged.name,
-    description: merged.description || null,
-    accentColor: merged.accentColor,
-    priority: merged.priority,
-    status: merged.status,
-    ownerId: merged.ownerId ? Number(merged.ownerId) : null,
-  })
+/* Answers the epic's detail, as saved. */
+export function createEpic(projectId, values) {
+  return post(`/api/projects/${projectId}/epics`, toPayload(values))
 }
 
-export function deleteEpic(id) {
-  return del(`/api/epics/${id}`)
+/* The PUT replaces the whole epic, so `patch` is merged over `epic`. Pass the DETAIL, not the
+   list's summary: the summary has no description, and merging over it would erase it.
+   Answers the detail as saved. */
+export function updateEpic(projectId, epic, patch) {
+  return put(`/api/projects/${projectId}/epics/${epic.id}`, toPayload({ ...epic, ...patch }))
+}
+
+export function deleteEpic(projectId, epicId) {
+  return del(`/api/projects/${projectId}/epics/${epicId}`)
 }

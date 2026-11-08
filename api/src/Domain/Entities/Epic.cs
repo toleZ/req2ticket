@@ -9,10 +9,15 @@ public class Epic
     [Key]
     public int Id { get; set; }
 
-    // Public identifier, assigned by the service on create. It never changes and is
-    // never accepted from the client.
+    // Set by the service from the route, never from the body.
+    public int ProjectId { get; set; }
+
+    // Position in the project's epic sequence. With the key it builds Code (R2T-EPIC-3).
+    public int Number { get; set; }
+
+    // Assigned once on create, never accepted from the client.
     [Required]
-    [StringLength(EpicCode.Length)]
+    [StringLength(WorkItemCode.MaxLength)]
     public string Code { get; set; } = string.Empty;
 
     [Required]
@@ -26,8 +31,10 @@ public class Epic
 
     public EpicPriority Priority { get; set; } = EpicPriority.Medium;
 
+    // Closing is manual and only allowed once every ticket is done or cancelled (EpicService).
     public EpicStatus Status { get; set; } = EpicStatus.Backlog;
 
+    // Has to be a member of the project.
     public int? OwnerId { get; set; }
 
     public User? Owner { get; set; }

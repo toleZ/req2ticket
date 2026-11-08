@@ -1,6 +1,6 @@
 import { cn } from '@/lib/cn'
-import { ACCENT_COLORS } from '@/lib/epicOptions'
-import { SELECTED, SIZE_CLASSES, SWATCH } from './AccentColorPicker.styles'
+import { ACCENT_COLORS } from '@/lib/options'
+import { HIT_AREA, ROW, SELECTED, SIZE_CLASSES, SWATCH } from './AccentColorPicker.styles'
 /**
  * The epic's accent colour, as the row of swatches from the design.
  *
@@ -12,27 +12,26 @@ import { SELECTED, SIZE_CLASSES, SWATCH } from './AccentColorPicker.styles'
  * modal a smaller side-column caption.
  *
  * The classes come from ACCENT_COLORS' `dotClass` and not from a `bg-${color}` template, for
- * the reason lib/epicOptions.js spells out: Tailwind reads the code as text.
+ * the reason lib/options.js spells out: Tailwind reads the code as text.
  */
 export function AccentColorPicker({ value, onChange, disabled = false, size = 'md' }) {
   return (
-    <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Color de acento">
+    <div className={ROW} role="radiogroup" aria-label="Color de acento">
       {ACCENT_COLORS.map((color) => (
         <button
           key={color.value}
           type="button"
           role="radio"
           aria-checked={value === color.value}
-          aria-label={color.value}
+          aria-label={color.label}
           disabled={disabled}
           onClick={() => onChange(color.value)}
-          className={cn(
-            SWATCH,
-            SIZE_CLASSES[size],
-            color.dotClass,
-            value === color.value && SELECTED,
-          )}
-        />
+          className={HIT_AREA}
+        >
+          <span
+            className={cn(SWATCH, SIZE_CLASSES[size], color.dotClass, value === color.value && SELECTED)}
+          />
+        </button>
       ))}
     </div>
   )

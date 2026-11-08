@@ -5,6 +5,13 @@ export const SIZE_CLASSES = {
   sm: 'size-6',
 }
 
-export const SWATCH = 'shrink-0 rounded-full transition-transform duration-fast'
+/* The button is the tap area and the dot sits inside it: 44px below lg, where the pointer is
+   a finger, and just the dot from lg up. The row's gap only opens from lg up, because below
+   it the 44px areas already space the dots. */
+export const ROW = 'flex flex-wrap lg:gap-2'
+
+export const HIT_AREA = 'grid size-11 shrink-0 place-items-center rounded-full disabled:opacity-50 lg:size-auto'
+
+export const SWATCH = 'block shrink-0 rounded-full transition-transform duration-fast'
 
 export const SELECTED = 'scale-110 ring-2 ring-label ring-offset-2 ring-offset-elevated'

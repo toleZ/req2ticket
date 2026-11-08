@@ -1,119 +1,84 @@
 using Application.Services;
+using Domain.Common;
 using Domain.Entities;
-using Microsoft.AspNetCore.Authorization;
+using Domain.ReadModels;
 using Microsoft.AspNetCore.Mvc;
+using Web.Authorization;
 using Web.DTOs;
 
 namespace Web.Controllers;
 
-// Reading only needs a valid token, which the fallback policy in Program.cs already demands.
-// Writing carries an explicit policy, so a Viewer gets 403 instead of changing the backlog.
-[Route("api/[controller]")]
+// The list returns light summaries with their counts; the detail adds the description (DATA-1).
+[Route("api/projects/{pid:int}/epics")]
 [ApiController]
+[RequireProjectMember]
 public class EpicsController : ControllerBase
 {
     private readonly EpicService _epicService;
-    private readonly TicketService _ticketService;
 
-    public EpicsController(EpicService epicService, TicketService ticketService)
+    public EpicsController(EpicService epicService)
     {
         _epicService = epicService;
-        _ticketService = ticketService;
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll()
-    {
-        List<Epic> epics = await _epicService.GetAllAsync();
-        return Ok(epics.Select(EpicResponse.FromEntity));
-    }
+    public async Task<IActionResult> GetAll([FromRoute] int pid) =>
+        Ok(await _epicService.GetSummariesAsync(pid));
 
-    // The :int constraint keeps /api/epics/abc from matching and failing model binding
-    // with a 400; without it, a bad id looks like a validation error instead of a 404.
     [HttpGet("{id:int}")]
-    public async Task<IActionResult> GetById([FromRoute] int id)
+    public async Task<IActionResult> GetById([FromRoute] int pid, [FromRoute] int id)
     {
-        Epic? epic = await _epicService.GetByIdAsync(id);
-        if (epic is null)
-        {
-            return NotFound();
-        }
-
-        return Ok(EpicResponse.FromEntity(epic));
+        EpicDetailResponse? detail = await BuildDetailAsync(pid, await _epicService.GetDetailAsync(pid, id));
+        return detail is null ? NotFound() : Ok(detail);
     }
 
     [HttpGet("code/{code}")]
-    public async Task<IActionResult> GetByCode([FromRoute] string code)
+    public async Task<IActionResult> GetByCode([FromRoute] int pid, [FromRoute] string code)
     {
-        Epic? epic = await _epicService.GetByCodeAsync(code);
-        if (epic is null)
-        {
-            return NotFound();
-        }
-
-        return Ok(EpicResponse.FromEntity(epic));
+        EpicDetailResponse? detail = await BuildDetailAsync(pid, await _epicService.GetByCodeAsync(pid, code));
+        return detail is null ? NotFound() : Ok(detail);
     }
 
-    // 404 when the epic does not exist, so an empty list always means "no tickets" and
-    // never "wrong id".
-    [HttpGet("{id:int}/tickets")]
-    public async Task<IActionResult> GetTickets([FromRoute] int id)
-    {
-        Epic? epic = await _epicService.GetByIdAsync(id);
-        if (epic is null)
-        {
-            return NotFound();
-        }
-
-        List<Ticket> tickets = await _ticketService.GetByEpicIdAsync(id);
-        return Ok(tickets.Select(TicketResponse.FromEntity));
-    }
-
-    [Authorize(Policy = "CanEditEpics")]
+    [RequireProjectPermission(Permission.EpicsManage)]
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] EpicCreateRequest request)
+    public async Task<IActionResult> Create([FromRoute] int pid, [FromBody] EpicWriteRequest request)
     {
-        try
-        {
-            Epic created = await _epicService.CreateAsync(request.ToEntity());
-            return CreatedAtAction(nameof(GetById), new { id = created.Id }, EpicResponse.FromEntity(created));
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        Epic created = await _epicService.CreateAsync(pid, request.ToEntity());
+        EpicDetailResponse detail = (await BuildDetailAsync(pid, await _epicService.GetDetailAsync(pid, created.Id)))!;
+        return CreatedAtAction(nameof(GetById), new { pid, id = created.Id }, detail);
     }
 
-    [Authorize(Policy = "CanEditEpics")]
+    // Answers with the detail as saved, so the client never needs a second GET.
+    [RequireProjectPermission(Permission.EpicsManage)]
     [HttpPut("{id:int}")]
-    public async Task<IActionResult> Update([FromRoute] int id, [FromBody] EpicUpdateRequest request)
+    public async Task<IActionResult> Update([FromRoute] int pid, [FromRoute] int id, [FromBody] EpicWriteRequest request)
     {
-        try
-        {
-            bool updated = await _epicService.UpdateAsync(id, request.ToEntity());
-            if (!updated)
-            {
-                return NotFound();
-            }
-
-            return NoContent();
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
-    }
-
-    [Authorize(Policy = "CanEditEpics")]
-    [HttpDelete("{id:int}")]
-    public async Task<IActionResult> Delete([FromRoute] int id)
-    {
-        bool deleted = await _epicService.DeleteAsync(id);
-        if (!deleted)
+        bool updated = await _epicService.UpdateAsync(pid, id, request.ToEntity());
+        if (!updated)
         {
             return NotFound();
         }
 
-        return NoContent();
+        return Ok(await BuildDetailAsync(pid, await _epicService.GetDetailAsync(pid, id)));
+    }
+
+    // Takes its tickets with it.
+    [RequireProjectPermission(Permission.EpicsManage)]
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> Delete([FromRoute] int pid, [FromRoute] int id)
+    {
+        bool deleted = await _epicService.DeleteAsync(pid, id);
+        return deleted ? NoContent() : NotFound();
+    }
+
+    private async Task<EpicDetailResponse?> BuildDetailAsync(int projectId, Epic? epic)
+    {
+        if (epic is null)
+        {
+            return null;
+        }
+
+        EpicSummary summary = (await _epicService.GetSummaryAsync(projectId, epic.Id))!;
+        return EpicDetailResponse.From(epic, summary);
     }
 }

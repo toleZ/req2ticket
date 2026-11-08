@@ -1,57 +1,89 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
-import { AccentColorPicker } from '@/components/epics/AccentColorPicker/AccentColorPicker'
 import { Badge } from '@/components/ui/Badge/Badge'
 import { DetailFooter } from '@/components/ui/DetailFooter/DetailFooter'
 import { DetailHeader } from '@/components/ui/DetailHeader/DetailHeader'
 import { DetailLayout } from '@/components/ui/DetailLayout/DetailLayout'
-import { DetailRow } from '@/components/ui/DetailRow/DetailRow'
-import { DetailSelect } from '@/components/ui/DetailRow/DetailSelect'
-import { InlineTitleField } from '@/components/ui/InlineTitleField/InlineTitleField'
 import { Modal } from '@/components/ui/Modal/Modal'
-import { ProgressBar } from '@/components/ui/ProgressBar/ProgressBar'
+import { toneOptions } from '@/components/ui/Select/Select.options'
+import { toast } from '@/components/ui/Toast/toast'
 import { cn } from '@/lib/cn'
-import { ACCENT_COLORS, EPIC_PRIORITY_OPTIONS, EPIC_STATUS_OPTIONS } from '@/lib/epicOptions'
+import { ACCENT_COLORS, EPIC_STATUS_OPTIONS, findOption } from '@/lib/options'
 import { errorMessage } from '@/lib/errors'
-import { findOption } from '@/lib/options'
+import { useDeleteEpic, useEpic, useUpdateEpic } from '@/lib/queries/epics'
 import { summarizeTickets } from '@/lib/ticketStats'
 import { validateEpicForm } from '@/lib/validate'
-import { CONTROL_TEXTAREA, FIELD_LABEL, SIDE_CAPTION } from './EpicDetailModal.styles'
-import { toDetailValues } from './EpicDetailModal.helpers'
+import { EpicMainFields } from './EpicMainFields'
+import { EpicSideFields } from './EpicSideFields'
+import { openTicketsReason, toDetailValues } from './EpicDetailModal.helpers'
+
 /**
  * An epic's record. Same skeleton as TicketDetailModal — `lg` sheet, two columns, a footer
- * with three faces — and for the same reasons; the long comments are over there.
+ * with three faces.
  *
- * It does not show the epic's ticket list: the expanded row already does that, and there each
- * one can be clicked too. Repeating it here would be a second copy that also led nowhere,
- * because opening a ticket's modal from inside this one would leave two modal sheets stacked,
- * with two focus traps listening for the same Escape.
+ * It reads the epic itself (useEpic): it opens at once with the row from the list and the
+ * description arrives a moment later. What you type is kept apart from the epic (`edits`) and
+ * laid over it, so the form never has to be "seeded" when the full detail arrives.
+ *
+ * `canManage` is the epics.manage permission. Without it every field is plain text and there
+ * is nothing to save or delete (AUTH-1). `openTicketsHref` is the Backlog filtered to this
+ * epic's open tickets, for the "why can't I close it" link.
+ *
+ * It does not list the epic's tickets: the expanded row already does, and opening a ticket
+ * from in here would stack two modal sheets, and one Escape would close both.
+ *
+ * This file keeps the state and the saving; the two columns are EpicSideFields and
+ * EpicMainFields, which only draw what they get.
  */
-export function EpicDetailModal({ epic, tickets, users, onClose, onUpdateEpic, onDeleteEpic }) {
-  const [values, setValues] = useState(() => toDetailValues(epic))
+export function EpicDetailModal({ projectId, epicId, tickets, members, canManage, openTicketsHref, onClose }) {
+  const { data: epic, isPlaceholderData } = useEpic(projectId, epicId)
+  const updateEpic = useUpdateEpic(projectId)
+  const deleteEpic = useDeleteEpic(projectId)
+
+  const [edits, setEdits] = useState({})
   const [errors, setErrors] = useState({})
-  const [dirty, setDirty] = useState(false)
-  const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
   const [footerMode, setFooterMode] = useState('edit')
+  const formRef = useRef(null)
 
+  /* The footer's first button is "Cancelar" in every mode. When the delete question appears the
+     focus moves there, so an Enter pressed in a hurry never deletes (FIX-3). */
+  useEffect(() => {
+    if (footerMode === 'confirmDelete') formRef.current?.lastElementChild?.querySelector('button')?.focus()
+  }, [footerMode])
+
+  // Deleted while open (here or in another tab): the page closes the sheet; nothing to draw.
+  if (!epic) return null
+
+  const submitting = updateEpic.isPending || deleteEpic.isPending
+  const values = { ...toDetailValues(epic), ...edits }
+  const dirty = Object.keys(edits).length > 0
   const accent = findOption(ACCENT_COLORS, values.accentColor)
-  const status = findOption(EPIC_STATUS_OPTIONS, values.status)
+  const status = findOption(EPIC_STATUS_OPTIONS, epic.status)
   const stats = summarizeTickets(tickets)
+  const isClosed = epic.status === 'closed'
+  const openCount = epic.openTicketsCount ?? 0
+  const closeBlocked = openCount > 0
+
+  /* Closing waits for every ticket to be done or cancelled (DEC-5): the option stays visible,
+     disabled, with the reason. */
+  const statusOptions = toneOptions(EPIC_STATUS_OPTIONS).map((option) =>
+    option.value === 'closed' && closeBlocked && !isClosed
+      ? { ...option, disabled: true, description: openTicketsReason(openCount) }
+      : option,
+  )
 
   function handleChange(e) {
-    const nextValues = { ...values, [e.target.name]: e.target.value }
-    setValues(nextValues)
-    setDirty(true)
-
-    if (errors[e.target.name]) {
-      setErrors({ ...errors, [e.target.name]: validateEpicForm(nextValues)[e.target.name] })
-    }
+    handleFieldChange(e.target.name, e.target.value)
   }
 
-  function handleAccentChange(accentColor) {
-    setValues({ ...values, accentColor })
-    setDirty(true)
+  function handleFieldChange(name, value) {
+    const nextEdits = { ...edits, [name]: value }
+    setEdits(nextEdits)
+
+    if (errors[name]) {
+      setErrors({ ...errors, [name]: validateEpicForm({ ...values, [name]: value })[name] })
+    }
   }
 
   function handleRequestClose() {
@@ -70,51 +102,73 @@ export function EpicDetailModal({ epic, tickets, users, onClose, onUpdateEpic, o
     onClose()
   }
 
+  async function save(patch) {
+    setFormError('')
+    try {
+      await updateEpic.mutateAsync({ epic, patch })
+      return true
+    } catch (err) {
+      setFormError(errorMessage(err))
+      return false
+    }
+  }
+
   async function handleSubmit(e) {
     e.preventDefault()
+    if (!canManage || isPlaceholderData) return
 
     const found = validateEpicForm(values)
     setErrors(found)
     if (Object.keys(found).length) return
 
-    setFormError('')
-    setSubmitting(true)
-    try {
-      await onUpdateEpic(epic, {
-        /* `\s+` and not `trim()` alone: a line break pasted from the clipboard is the only one
-           that can get in (Enter is blocked), and it has no place in a name. */
-        name: values.name.replace(/\s+/g, ' ').trim(),
-        description: values.description.trim(),
-        accentColor: values.accentColor,
-        priority: values.priority,
-        status: values.status,
-        ownerId: values.ownerId,
-      })
-      onClose()
-    } catch (err) {
-      setFormError(errorMessage(err))
-    } finally {
-      setSubmitting(false)
+    const saved = await save({
+      /* `\s+` and not `trim()` alone: a line break pasted from the clipboard has no place in a name. */
+      name: values.name.replace(/\s+/g, ' ').trim(),
+      description: values.description.trim(),
+      accentColor: values.accentColor,
+      priority: values.priority,
+      status: values.status,
+      ownerId: values.ownerId,
+    })
+    if (saved) onClose()
+  }
+
+  // "Cerrar épica" and "Reabrir" save the status alone, right away, keeping any other edit pending.
+  async function handleSetStatus(nextStatus) {
+    const saved = await save({ status: nextStatus })
+    if (saved) {
+      const rest = { ...edits }
+      delete rest.status
+      setEdits(rest)
+      toast.success(nextStatus === 'closed' ? `${epic.name} quedó cerrada` : `${epic.name} se reabrió`)
     }
   }
 
   async function handleDelete() {
     setFormError('')
-    setSubmitting(true)
     try {
-      // The page removes the epic from the list, and with that this modal goes on its own.
-      await onDeleteEpic(epic)
+      await deleteEpic.mutateAsync(epic.id)
+      toast.success(
+        epic.ticketCount > 0
+          ? `Épica ${epic.name} borrada, con sus ${epic.ticketCount} tickets`
+          : `Épica ${epic.name} borrada`,
+      )
+      onClose()
     } catch (err) {
       setFormError(errorMessage(err))
       setFooterMode('edit')
-    } finally {
-      setSubmitting(false)
     }
   }
 
+  const ticketWord = epic.ticketCount === 1 ? 'su ticket' : `sus ${epic.ticketCount} tickets`
+
   return (
-    <Modal isOpen onClose={handleRequestClose} size="lg" ariaLabel={`${epic.code}: ${epic.name}`}>
-      <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col" noValidate>
+    <Modal isOpen onClose={handleRequestClose} size="lg">
+      <form ref={formRef} onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col" noValidate>
+        {/* Same as the ticket sheet: the title is an editable field, so a hidden heading. */}
+        <h2 className="sr-only">
+          {epic.code}: {epic.name}
+        </h2>
         <DetailHeader
           leading={
             accent && (
@@ -127,141 +181,66 @@ export function EpicDetailModal({ epic, tickets, users, onClose, onUpdateEpic, o
           code={epic.code}
           badge={status && <Badge tone={status.tone}>{status.label}</Badge>}
           deleteLabel="Eliminar épica"
-          disabled={submitting}
-          onDelete={() => setFooterMode('confirmDelete')}
+          disabled={submitting || isPlaceholderData}
+          onDelete={canManage ? () => setFooterMode('confirmDelete') : undefined}
           onClose={handleRequestClose}
         />
 
         <DetailLayout
           side={
-            <>
-              <DetailRow label="Estado" htmlFor={`epic-${epic.id}-status`}>
-                <DetailSelect
-                  id={`epic-${epic.id}-status`}
-                  name="status"
-                  value={values.status}
-                  disabled={submitting}
-                  onChange={handleChange}
-                >
-                  {EPIC_STATUS_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </DetailSelect>
-              </DetailRow>
-
-              <DetailRow label="Prioridad" htmlFor={`epic-${epic.id}-priority`}>
-                <DetailSelect
-                  id={`epic-${epic.id}-priority`}
-                  name="priority"
-                  value={values.priority}
-                  disabled={submitting}
-                  onChange={handleChange}
-                >
-                  {EPIC_PRIORITY_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </DetailSelect>
-              </DetailRow>
-
-              <DetailRow label="Responsable" htmlFor={`epic-${epic.id}-owner`}>
-                <DetailSelect
-                  id={`epic-${epic.id}-owner`}
-                  name="ownerId"
-                  value={values.ownerId}
-                  disabled={submitting}
-                  onChange={handleChange}
-                >
-                  <option value="">Sin asignar</option>
-                  {users.map((user) => (
-                    <option key={user.id} value={user.id}>
-                      {user.name}
-                    </option>
-                  ))}
-                </DetailSelect>
-              </DetailRow>
-
-              {/* Stacked and not in a detail row: ten swatches do not fit beside the label. */}
-              <div className="py-1">
-                <p className={SIDE_CAPTION}>Color</p>
-                <AccentColorPicker
-                  value={values.accentColor}
-                  disabled={submitting}
-                  size="sm"
-                  onChange={handleAccentChange}
-                />
-              </div>
-
-              {/* No dates block, unlike the ticket modal: EpicResponse carries neither createdAt
-                  nor updatedAt — the Epic entity simply has no such columns. It is not an
-                  oversight, do not go looking for them. */}
-            </>
+            <EpicSideFields
+              epic={epic}
+              values={values}
+              statusOptions={statusOptions}
+              members={members}
+              canManage={canManage}
+              submitting={submitting}
+              isPlaceholderData={isPlaceholderData}
+              isClosed={isClosed}
+              openCount={openCount}
+              openTicketsHref={openTicketsHref}
+              onFieldChange={handleFieldChange}
+              onSetStatus={handleSetStatus}
+            />
           }
         >
-          <InlineTitleField
-            name="name"
-            ariaLabel="Nombre"
-            value={values.name}
-            disabled={submitting}
-            error={errors.name}
+          <EpicMainFields
+            epic={epic}
+            values={values}
+            errors={errors}
+            stats={stats}
+            canManage={canManage}
+            submitting={submitting}
+            isPlaceholderData={isPlaceholderData}
+            isClosed={isClosed}
             onChange={handleChange}
+            onSetStatus={handleSetStatus}
           />
-
-          <div>
-            <label htmlFor={`epic-${epic.id}-description`} className={FIELD_LABEL}>
-              Descripción
-            </label>
-            <textarea
-              id={`epic-${epic.id}-description`}
-              name="description"
-              rows={4}
-              value={values.description}
-              disabled={submitting}
-              onChange={handleChange}
-              className={CONTROL_TEXTAREA}
-            />
-          </div>
-
-          <div>
-            <p className="mb-1.5 text-subheadline font-medium text-label">Avance</p>
-            {stats.total === 0 ? (
-              <p className="text-footnote text-label-tertiary">
-                Esta épica todavía no tiene tickets.
-              </p>
-            ) : (
-              <>
-                <div className="flex items-center justify-between text-footnote text-label-secondary">
-                  <span>
-                    {stats.completed} de {stats.total} tickets completados
-                  </span>
-                  <span>
-                    {stats.pointsCompleted}/{stats.points} pts
-                  </span>
-                </div>
-                <ProgressBar value={stats.completed} max={stats.total} className="mt-1.5" />
-              </>
-            )}
-          </div>
         </DetailLayout>
 
-        <DetailFooter
-          mode={footerMode}
-          error={formError}
-          submitting={submitting}
-          confirmDeleteMessage={
-            <>
-              Se eliminan también sus {stats.total === 1 ? 'ticket' : 'tickets'}. No se puede
-              deshacer.
-            </>
-          }
-          onExitConfirm={() => setFooterMode('edit')}
-          onDelete={handleDelete}
-          onCancel={handleRequestClose}
-          onDiscard={onClose}
-        />
+        {canManage ? (
+          <DetailFooter
+            mode={footerMode}
+            error={formError}
+            submitting={submitting}
+            confirmDeleteMessage={
+              <>
+                Se va a borrar la épica <span className="font-medium text-label">{epic.name}</span>
+                {epic.ticketCount > 0 && ` y ${ticketWord}`}. No se puede deshacer.
+              </>
+            }
+            onExitConfirm={() => setFooterMode('edit')}
+            onDelete={handleDelete}
+            onCancel={handleRequestClose}
+            onDiscard={onClose}
+          />
+        ) : (
+          formError && (
+            <p role="alert" className="px-6 pb-4 text-footnote text-red-text">
+              {formError}
+            </p>
+          )
+        )}
       </form>
     </Modal>
   )

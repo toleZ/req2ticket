@@ -1,53 +1,88 @@
 using Domain.Common;
 using Domain.Entities;
 using Domain.Interfaces;
+using Domain.ReadModels;
 
 namespace Application.Services;
 
 public class EpicService
 {
-    // With 32^8 possible codes, two collisions in a row would mean a bug, not bad luck.
-    private const int MaxCodeAttempts = 5;
-
     private readonly IEpicRepository _epicRepository;
-    private readonly IUserRepository _userRepository;
+    private readonly IProjectRepository _projectRepository;
+    private readonly IProjectMemberRepository _memberRepository;
+    private readonly ITicketRepository _ticketRepository;
+    private readonly IUnitOfWork _unitOfWork;
 
-    public EpicService(IEpicRepository epicRepository, IUserRepository userRepository)
+    public EpicService(
+        IEpicRepository epicRepository,
+        IProjectRepository projectRepository,
+        IProjectMemberRepository memberRepository,
+        ITicketRepository ticketRepository,
+        IUnitOfWork unitOfWork)
     {
         _epicRepository = epicRepository;
-        _userRepository = userRepository;
+        _projectRepository = projectRepository;
+        _memberRepository = memberRepository;
+        _ticketRepository = ticketRepository;
+        _unitOfWork = unitOfWork;
     }
 
-    public async Task<List<Epic>> GetAllAsync() =>
-        await _epicRepository.GetAllAsync();
+    public async Task<List<EpicSummary>> GetSummariesAsync(int projectId) =>
+        await _epicRepository.GetSummariesAsync(projectId);
 
-    public async Task<Epic?> GetByIdAsync(int id) =>
-        await _epicRepository.GetByIdWithOwnerAsync(id);
+    public async Task<EpicSummary?> GetSummaryAsync(int projectId, int id) =>
+        await _epicRepository.GetSummaryAsync(projectId, id);
 
-    public async Task<Epic?> GetByCodeAsync(string code) =>
-        await _epicRepository.GetByCodeAsync(code);
+    public async Task<Epic?> GetDetailAsync(int projectId, int id) =>
+        await _epicRepository.GetDetailAsync(projectId, id);
 
-    public async Task<Epic> CreateAsync(Epic epic)
+    public async Task<Epic?> GetByCodeAsync(int projectId, string code) =>
+        await _epicRepository.GetByCodeAsync(projectId, code.Trim().ToUpperInvariant());
+
+    public async Task<Epic> CreateAsync(int projectId, Epic epic)
     {
-        await EnsureOwnerExistsAsync(epic.OwnerId);
+        await EnsureOwnerIsMemberAsync(projectId, epic.OwnerId);
 
-        epic.Code = await GenerateUniqueCodeAsync();
+        // Nothing is open in a new epic, so creating it closed would be legal but pointless.
+        if (epic.Status == EpicStatus.Closed)
+        {
+            throw new ArgumentException("A new epic can't start closed.");
+        }
+
+        Project project = await _projectRepository.GetByIdAsync(projectId)
+            ?? throw new ArgumentException("Project not found.");
+
+        // The number is taken and the epic inserted in one transaction: if the insert fails, the
+        // counter goes back too.
+        await using ITransactionScope transaction = await _unitOfWork.BeginTransactionAsync();
+
+        epic.ProjectId = projectId;
+        epic.Number = await _projectRepository.TakeNextNumberAsync(projectId, NumberedKind.Epic);
+        epic.Code = WorkItemCode.Format(project.Key, NumberedKind.Epic, epic.Number);
 
         await _epicRepository.AddAsync(epic);
+        await transaction.CommitAsync();
         return epic;
     }
 
-    public async Task<bool> UpdateAsync(int id, Epic changes)
+    public async Task<bool> UpdateAsync(int projectId, int id, Epic changes)
     {
-        Epic? epic = await _epicRepository.GetByIdAsync(id);
+        Epic? epic = await _epicRepository.GetInProjectAsync(projectId, id);
         if (epic is null)
         {
             return false;
         }
 
-        await EnsureOwnerExistsAsync(changes.OwnerId);
+        await EnsureOwnerIsMemberAsync(projectId, changes.OwnerId);
 
-        // Code is deliberately absent: it is assigned once on create and never updated.
+        // An epic closes by hand, and only once every ticket in it is done or cancelled (DEC-5).
+        if (changes.Status == EpicStatus.Closed && epic.Status != EpicStatus.Closed
+            && await _ticketRepository.CountOpenInEpicAsync(id) > 0)
+        {
+            throw new ArgumentException("The epic still has open tickets.");
+        }
+
+        // Code, Number and ProjectId are deliberately absent: assigned once on create.
         epic.Name = changes.Name;
         epic.Description = changes.Description;
         epic.AccentColor = changes.AccentColor;
@@ -59,9 +94,10 @@ public class EpicService
         return true;
     }
 
-    public async Task<bool> DeleteAsync(int id)
+    // Its tickets go with it: the database cascades.
+    public async Task<bool> DeleteAsync(int projectId, int id)
     {
-        Epic? epic = await _epicRepository.GetByIdAsync(id);
+        Epic? epic = await _epicRepository.GetInProjectAsync(projectId, id);
         if (epic is null)
         {
             return false;
@@ -71,34 +107,11 @@ public class EpicService
         return true;
     }
 
-    // The pre-check is check-then-act, so the unique index is the real guarantee: two racing
-    // writers get past this and the index stops them, as a 500 rather than a readable message.
-    // Catching DbUpdateException would drag EF Core into Application, which only knows Domain.
-    private async Task<string> GenerateUniqueCodeAsync()
+    private async Task EnsureOwnerIsMemberAsync(int projectId, int? ownerId)
     {
-        for (int attempt = 0; attempt < MaxCodeAttempts; attempt++)
+        if (ownerId is not null && !await _memberRepository.IsMemberAsync(projectId, ownerId.Value))
         {
-            string code = EpicCode.Generate();
-            if (!await _epicRepository.CodeExistsAsync(code))
-            {
-                return code;
-            }
-        }
-
-        throw new InvalidOperationException("No se pudo generar un código único para la épica.");
-    }
-
-    private async Task EnsureOwnerExistsAsync(int? ownerId)
-    {
-        if (ownerId is null)
-        {
-            return;
-        }
-
-        User? owner = await _userRepository.GetByIdAsync(ownerId.Value);
-        if (owner is null)
-        {
-            throw new ArgumentException($"No existe un usuario con Id {ownerId}.");
+            throw new ArgumentException("The owner has to be a member of the project.");
         }
     }
 }
