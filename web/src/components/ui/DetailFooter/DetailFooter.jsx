@@ -1,4 +1,4 @@
-import { FOOTER, NOTE } from './DetailFooter.styles'
+import { DELETE_NOTE, ERROR, FOOTER, NOTE } from './DetailFooter.styles'
 import { Button } from '@/components/ui/Button/Button'
 
 /**
@@ -6,8 +6,7 @@ import { Button } from '@/components/ui/Button/Button'
  * want to delete it?" and the "you have unsaved changes".
  *
  * All three live here rather than in a ConfirmModal on top, because two modals at once are two
- * live useFocusTraps, and that hook listens for Escape on `document`: one key press would close
- * both. Swapping the footer has no such problem, and it does not cover up what you are about
+ * useEscapeKey listeners on `document`: one Escape would close both. Swapping the footer has no such problem, and it does not cover up what you are about
  * to lose.
  *
  * **This component holds no state.** `mode` is the parent's own useState value, and the parent
@@ -40,7 +39,7 @@ export function DetailFooter({
   return (
     <div className={FOOTER}>
       {error && (
-        <p role="alert" className="mr-auto text-footnote text-red">
+        <p role="alert" className={ERROR}>
           {error}
         </p>
       )}
@@ -58,7 +57,7 @@ export function DetailFooter({
 
       {mode === 'confirmDelete' && (
         <>
-          <p className={NOTE}>{confirmDeleteMessage}</p>
+          <p className={DELETE_NOTE}>{confirmDeleteMessage}</p>
           <Button variant="ghost" onClick={onExitConfirm} disabled={submitting}>
             Cancelar
           </Button>

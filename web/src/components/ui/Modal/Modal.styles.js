@@ -3,8 +3,12 @@ export const SCRIM = 'fixed inset-0 z-40 bg-scrim'
 /* What the two sizes share. Watch what is NOT here: padding and overflow are exactly what
    tells them apart, so they live in SIZE_CLASSES. Repeating them up here and overriding them
    below would not work — this string is concatenated by hand, without twMerge, so both
-   classes would reach the DOM together and the CSS would decide the winner, not us. */
-export const PANEL_BASE = `fixed inset-4 z-50 m-auto max-h-[calc(100dvh-2rem)] w-full rounded-sheet
+   classes would reach the DOM together and the CSS would decide the winner, not us.
+
+   `w-auto`, not `w-full`: with `inset-4` a fixed panel of auto width fills the screen minus
+   16px each side, `max-w-*` caps it and `m-auto` centres it. `w-full` meant 100% of the
+   screen, which ignored the right inset and pushed the panel 16px past the edge on a phone. */
+export const PANEL_BASE = `fixed inset-4 z-50 m-auto max-h-[calc(100dvh-2rem)] w-auto rounded-sheet
   bg-elevated shadow-popover surface-highlight ring-[0.5px] ring-separator focus:outline-none`
 
 export const SIZE_CLASSES = {

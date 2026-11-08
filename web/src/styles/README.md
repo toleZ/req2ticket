@@ -55,8 +55,8 @@ the same name works in light and in dark.
 | Class | What for |
 | --- | --- |
 | `text-label` | Primary text. Black in light, white in dark. |
-| `text-label-secondary` | Supporting text, inactive items. |
-| `text-label-tertiary` | Placeholders, separators, the dimmest thing that is still readable. |
+| `text-label-secondary` | Supporting text and metadata: codes, dates, counts, points, hints. |
+| `text-label-tertiary` | Placeholders, icons and separators only. It is under 4.5:1, so never real text. |
 | `text-label-quaternary` | Disabled. Almost invisible on purpose. |
 
 ### Backgrounds
@@ -81,8 +81,13 @@ They are **flat, with no number**: write `text-red`, not `text-red-500`. Careful
 numbered classes (`text-blue-500`) also work because we never reset the palette, but they do not
 respect dark mode. Do not use them.
 
-All ten accents are in play: `Badge` maps each one to a tone (`bg-blue/12 text-blue` and so on),
-`ACCENT_COLORS` in `lib/epicOptions.js` uses them for the epic swatches, and the buttons written
+**Text in an accent colour uses its `-text` version:** `text-blue-text`, `text-red-text`, and so on
+for every accent (plus `text-gray-text`). The plain accents are Apple's exact colours and most of
+them are under 4.5:1 as text; the `-text` ones are darker in light and lighter in dark so they
+read. Fills, buttons and icons keep the plain accent (`bg-blue`, an icon's `text-blue`).
+
+All ten accents are in play: `Badge` maps each one to a tone (`bg-blue/12 text-blue-text` and so on),
+`ACCENT_COLORS` in `lib/options.js` uses them for the epic swatches, and the buttons written
 inline across the app use `bg-blue` for the primary action, `bg-red` for a destructive one and
 `bg-green` for confirming something (`ConfirmModal`).
 

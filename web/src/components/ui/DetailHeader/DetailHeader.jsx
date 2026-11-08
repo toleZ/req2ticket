@@ -15,8 +15,13 @@ import { IconButton } from '@/components/ui/IconButton/IconButton'
  * `leading` is a node because the two callers put different things there: the ticket shows its
  * type icon, the epic its accent dot.
  *
+ * `code` is optional: a sprint has none, so its sheet shows just the badge.
+ *
  * Note `disabled` reaches the delete button only. The close button is never disabled — while a
  * save is in flight you must still be able to give up on the sheet.
+ *
+ * Without `onDelete` there is no delete button (no permission: the action does not appear).
+ * `onCopied(code)` is optional, for a toast after copying.
  */
 export function DetailHeader({
   leading,
@@ -25,6 +30,7 @@ export function DetailHeader({
   deleteLabel,
   onDelete,
   onClose,
+  onCopied,
   disabled = false,
 }) {
   const [copied, setCopied] = useState(false)
@@ -45,6 +51,7 @@ export function DetailHeader({
     try {
       await navigator.clipboard.writeText(code)
       setCopied(true)
+      onCopied?.(code)
     } catch {
       setCopied(false)
     }
@@ -54,27 +61,33 @@ export function DetailHeader({
     <div className={HEADER}>
       {leading}
 
-      <button
-        type="button"
-        onClick={handleCopyCode}
-        aria-label={copied ? 'Código copiado' : `Copiar ${code}`}
-        className={CODE_BUTTON}
-      >
-        {code}
-        {copied ? (
-          <Check className="size-3.5 text-green" aria-hidden="true" />
-        ) : (
-          <Copy className="size-3.5" aria-hidden="true" />
-        )}
-      </button>
+      {code && (
+        <button
+          type="button"
+          onClick={handleCopyCode}
+          aria-label={copied ? 'Código copiado' : `Copiar ${code}`}
+          className={CODE_BUTTON}
+        >
+          {code}
+          {copied ? (
+            <Check className="size-3.5 animate-tick-in text-green" aria-hidden="true" />
+          ) : (
+            <Copy className="size-3.5" aria-hidden="true" />
+          )}
+        </button>
+      )}
 
       {badge}
 
       <span className="flex-1" />
 
-      <IconButton label={deleteLabel} variant="danger" disabled={disabled} onClick={onDelete}>
-        <Trash2 className="size-4" aria-hidden="true" />
-      </IconButton>
+      {/* Without onDelete there is no delete button: you may not delete it (AUTH-1 hides the
+          actions you cannot take), or it cannot be deleted at all (a started sprint). */}
+      {onDelete && (
+        <IconButton label={deleteLabel} variant="danger" disabled={disabled} onClick={onDelete}>
+          <Trash2 className="size-4" aria-hidden="true" />
+        </IconButton>
+      )}
 
       <IconButton label="Cerrar" onClick={onClose}>
         <X className="size-4.5" aria-hidden="true" />

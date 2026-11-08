@@ -2,16 +2,18 @@ import { useEffect } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 
 import { SidebarBody } from '@/components/layout/SidebarBody/SidebarBody'
-import { useFocusTrap } from '@/hooks/useFocusTrap'
+import { useEscapeKey } from '@/hooks/useEscapeKey'
 import { DRAWER_PANEL, DRAWER_SCRIM } from './MobileDrawer.styles'
 import { DESKTOP_QUERY } from './MobileDrawer.data'
 import { EASE_IOS, springSoft } from '@/lib/motion'
 
-export function MobileDrawer({ isOpen, onClose }) {
-  const panelRef = useFocusTrap(isOpen, onClose)
+/* `sidebarProps` are the same the rail gets (projects, badges…), minus the collapse button:
+   there is nothing to collapse in a drawer. */
+export function MobileDrawer({ isOpen, sidebarProps, onClose }) {
+  useEscapeKey(isOpen, onClose)
 
-  /* Crossing into the desktop breakpoint reveals the rail. Leaving the drawer mounted
-     would keep a focus trap alive over something nobody can see. */
+  /* Crossing into the desktop breakpoint reveals the rail, so the drawer has nothing left
+     to do: close it. */
   useEffect(() => {
     if (!isOpen) return
 
@@ -23,6 +25,17 @@ export function MobileDrawer({ isOpen, onClose }) {
     media.addEventListener('change', handleBreakpointChange)
     return () => media.removeEventListener('change', handleBreakpointChange)
   }, [isOpen, onClose])
+
+  /* Choosing a project or creating one also closes the drawer. */
+  function handleSelectProject(project) {
+    sidebarProps.onSelectProject(project)
+    onClose()
+  }
+
+  function handleCreateProject() {
+    sidebarProps.onCreateProject()
+    onClose()
+  }
 
   return (
     /* AnimatePresence keeps its children mounted after isOpen turns false, just long
@@ -40,11 +53,6 @@ export function MobileDrawer({ isOpen, onClose }) {
             onClick={onClose}
           />
           <motion.aside
-            ref={panelRef}
-            role="dialog"
-            aria-modal="true"
-            aria-label="Navegación"
-            tabIndex={-1}
             className={DRAWER_PANEL}
             /* No reduced-motion branch: MotionConfig in main.jsx drops the x and keeps
                the opacity, so this fades in place for anyone who asked for less motion. */
@@ -53,7 +61,12 @@ export function MobileDrawer({ isOpen, onClose }) {
             exit={{ x: '-100%', opacity: 0 }}
             transition={springSoft}
           >
-            <SidebarBody surface="drawer" onNavigate={onClose} />
+            <SidebarBody
+              {...sidebarProps}
+              onSelectProject={handleSelectProject}
+              onCreateProject={handleCreateProject}
+              onNavigate={onClose}
+            />
           </motion.aside>
         </>
       )}

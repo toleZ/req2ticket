@@ -13,15 +13,17 @@ import { FIELD_ERROR, LABEL, OPTIONAL } from './Field.styles'
  * TextField, TextAreaField or SelectField, which live next to this file and share its
  * stylesheet.
  */
-export function Field({ id, label, optional = false, error, children }) {
+/* `reserveError` keeps the error line's space even while there is no error, so a form that
+   shows its messages on submit does not grow and jump under the pointer. */
+export function Field({ id, label, optional = false, error, reserveError = false, children }) {
   return (
     <div>
       <label htmlFor={id} className={LABEL}>
         {label} {optional && <span className={OPTIONAL}>(opcional)</span>}
       </label>
       {children}
-      {error && (
-        <p id={`${id}-error`} className={FIELD_ERROR}>
+      {(error || reserveError) && (
+        <p id={`${id}-error`} className={reserveError ? `${FIELD_ERROR} min-h-[1lh]` : FIELD_ERROR}>
           {error}
         </p>
       )}

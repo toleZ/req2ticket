@@ -15,7 +15,17 @@ import { FIELD_ERROR, HEADING } from './InlineTitleField.styles'
  * Enter does nothing: a title carries no line breaks, and the caller's `.replace()` on submit
  * deals with any that get pasted in.
  */
-export function InlineTitleField({ name, ariaLabel, value, disabled = false, onChange, error }) {
+export function InlineTitleField({
+  id,
+  name,
+  ariaLabel,
+  placeholder,
+  required = false,
+  value,
+  disabled = false,
+  onChange,
+  error,
+}) {
   function handleKeyDown(e) {
     if (e.key === 'Enter') e.preventDefault()
   }
@@ -23,9 +33,14 @@ export function InlineTitleField({ name, ariaLabel, value, disabled = false, onC
   return (
     <div>
       <textarea
+        id={id}
         rows={1}
         name={name}
         aria-label={ariaLabel}
+        placeholder={placeholder}
+        aria-required={required || undefined}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error && id ? `${id}-error` : undefined}
         value={value}
         disabled={disabled}
         onChange={onChange}
@@ -33,7 +48,7 @@ export function InlineTitleField({ name, ariaLabel, value, disabled = false, onC
         className={HEADING}
       />
       {error && (
-        <p className={FIELD_ERROR} role="alert">
+        <p id={id ? `${id}-error` : undefined} className={FIELD_ERROR} role="alert">
           {error}
         </p>
       )}
