@@ -5,7 +5,7 @@ export const INITIAL_VALUES = {
   description: '',
   accentColor: 'blue',
   priority: 'medium',
-  status: 'backlog',
+  status: 'open',
   ownerId: '',
 }
 

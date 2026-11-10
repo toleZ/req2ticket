@@ -8,6 +8,12 @@ namespace Application.Services;
 // What the detail of a ticket shows besides the ticket itself.
 public sealed record TicketDetailView(Ticket Ticket, List<TicketRef> Children, int OpenChildrenCount, int DescendantCount);
 
+/* The rules of a ticket's family, said once here and enforced by every method below:
+     - a child has its parent's epic (the epic itself is optional);
+     - an open task is in its story's sprint;
+     - a closed parent never has open children;
+     - a ticket of a completed sprint keeps its status and its sprint (it is that sprint's history);
+     - nothing in a closed epic changes until the epic is reopened. */
 public class TicketService
 {
     private readonly ITicketRepository _ticketRepository;
@@ -57,7 +63,7 @@ public class TicketService
         ticket.ReporterId = reporterId;
         ticket.Status = TicketStatus.Todo;
 
-        await EnsureReferencesAreValidAsync(projectId, ticket, existing: null);
+        await ResolveReferencesAsync(projectId, ticket, existing: null);
 
         Project project = await _projectRepository.GetByIdAsync(projectId)
             ?? throw new ArgumentException("Project not found.");
@@ -77,7 +83,10 @@ public class TicketService
 
     /* Full replacement of everything the ticket owns except its identity (code, number, type,
        project), its reporter and its status. `changes` is a ticket of the type the client sent; if
-       that is not this ticket's type, the request is refused rather than silently converted. */
+       that is not this ticket's type, the request is refused rather than silently converted.
+
+       What follows the ticket: if its epic changes, its whole subtree goes to the new epic; if a
+       story changes sprint, its open tasks go with it. One transaction for all of it. */
     public async Task<bool> UpdateAsync(int projectId, int id, Ticket changes)
     {
         Ticket? ticket = await _ticketRepository.GetInProjectAsync(projectId, id);
@@ -92,7 +101,10 @@ public class TicketService
         }
 
         await EnsureEpicIsOpenAsync(ticket.EpicId);
-        await EnsureReferencesAreValidAsync(projectId, changes, existing: ticket);
+        await ResolveReferencesAsync(projectId, changes, existing: ticket);
+
+        bool epicChanged = ticket.EpicId != changes.EpicId;
+        bool sprintChanged = ticket.SprintId != changes.SprintId;
 
         ticket.Title = changes.Title;
         ticket.Description = changes.Description;
@@ -104,15 +116,23 @@ public class TicketService
         CopyTypeFields(changes, ticket);
         ticket.UpdatedAt = DateTimeOffset.UtcNow;
 
+        await using ITransactionScope transaction = await _unitOfWork.BeginTransactionAsync();
+
         await _ticketRepository.UpdateAsync(ticket);
+        await FollowParentAsync(ticket, epicChanged, sprintChanged);
+
+        await transaction.CommitAsync();
         return true;
     }
 
     /* The only way a ticket's status changes after it is created — the detail's selector and the
        board both come here, so every rule is checked once (ENT-3), in this order:
-         1. the move has to be in the project's workflow, if it has one;
-         2. done needs every child closed (done or cancelled);
-         3. the epic has to be open. */
+         1. the same status is a no-op;
+         2. a ticket of a completed sprint keeps its status;
+         3. the move has to be in the project's workflow, if it has one;
+         4. closing (done or cancelled) needs every child closed;
+         5. reopening needs the parent open;
+         6. the epic has to be open. */
     public async Task<bool> ChangeStatusAsync(int projectId, int id, TicketStatus status)
     {
         Ticket? ticket = await _ticketRepository.GetInProjectAsync(projectId, id);
@@ -126,6 +146,11 @@ public class TicketService
             return true;
         }
 
+        if (await IsInCompletedSprintAsync(projectId, ticket.SprintId))
+        {
+            throw new ArgumentException("The ticket belongs to a completed sprint.");
+        }
+
         Workflow? workflow = await _workflowRepository.GetByProjectAsync(projectId);
         if (!WorkflowService.IsAllowed(workflow, ticket.Status, status))
         {
@@ -133,9 +158,20 @@ public class TicketService
                 $"Transition from {EnumNames.Of(ticket.Status)} to {EnumNames.Of(status)} is not allowed.");
         }
 
-        if (status == TicketStatus.Done && await _ticketRepository.CountOpenChildrenAsync(id) > 0)
+        bool closing = TicketRules.IsOpen(ticket.Status) && !TicketRules.IsOpen(status);
+        if (closing && await _ticketRepository.CountOpenChildrenAsync(id) > 0)
         {
             throw new ArgumentException("Close its child tickets first.");
+        }
+
+        bool reopening = !TicketRules.IsOpen(ticket.Status) && TicketRules.IsOpen(status);
+        if (reopening && ticket.ParentId is not null)
+        {
+            Ticket? parent = await _ticketRepository.GetInProjectAsync(projectId, ticket.ParentId.Value);
+            if (parent is not null && !TicketRules.IsOpen(parent.Status))
+            {
+                throw new ArgumentException($"Reopen {parent.Code} first.");
+            }
         }
 
         await EnsureEpicIsOpenAsync(ticket.EpicId);
@@ -159,6 +195,8 @@ public class TicketService
         {
             return false;
         }
+
+        await EnsureEpicIsOpenAsync(ticket.EpicId);
 
         List<int> subtree = await CollectSubtreeAsync(id);
 
@@ -204,30 +242,65 @@ public class TicketService
         return ids;
     }
 
-    /* Everything a ticket points at has to be in the same project, and a few more rules:
-         - the epic has to be open (you cannot add work to a closed epic);
-         - the assignee has to be a member;
-         - the sprint has to be this project's and not completed;
-         - the parent follows AllowedParentTypes and sits in the same epic;
-         - a ticket with children cannot move to another epic (the children would be left behind).
-       `existing` is the ticket being updated, null when creating. */
-    private async Task EnsureReferencesAreValidAsync(int projectId, Ticket ticket, Ticket? existing)
+    // After the ticket itself is saved: its descendants take its new epic, and a story's open tasks
+    // its new sprint. Runs inside the caller's transaction.
+    private async Task FollowParentAsync(Ticket ticket, bool epicChanged, bool sprintChanged)
     {
-        Epic? epic = await _epicRepository.GetInProjectAsync(projectId, ticket.EpicId);
-        if (epic is null)
+        if (epicChanged)
         {
-            throw new ArgumentException("The epic doesn't exist in this project.");
+            List<int> descendants = (await CollectSubtreeAsync(ticket.Id)).Skip(1).ToList();
+            if (descendants.Count > 0)
+            {
+                await _ticketRepository.SetEpicAsync(descendants, ticket.EpicId);
+            }
         }
 
-        bool epicChanged = existing is null || existing.EpicId != ticket.EpicId;
-        if (epicChanged && epic.Status == EpicStatus.Closed)
+        if (sprintChanged && ticket.Type == TicketType.UserStory)
         {
-            throw new ArgumentException("The epic is closed. Reopen it to add tickets.");
+            await _ticketRepository.MoveOpenTasksOfAsync(ticket.Id, ticket.SprintId);
+        }
+    }
+
+    /* Everything a ticket points at has to be in the same project, and a few more rules. The
+       parent goes first because it decides two of the others:
+         - a child takes its parent's epic, whatever the client sent;
+         - a task with a story takes the story's sprint (the PUT always sends the sprint, so here
+           it is overwritten rather than refused);
+         - the epic, if any, has to be open when the ticket moves into it;
+         - the assignee has to be a member;
+         - the sprint has to be this project's and not completed, and a ticket of a completed
+           sprint cannot leave it.
+       `existing` is the ticket being updated, null when creating. */
+    private async Task ResolveReferencesAsync(int projectId, Ticket ticket, Ticket? existing)
+    {
+        Ticket? parent = await EnsureParentIsValidAsync(projectId, ticket, existing);
+        if (parent is not null)
+        {
+            ticket.EpicId = parent.EpicId;
+
+            // A new task, or one moving to another story, joins the story's sprint. Otherwise it
+            // stays where it is: its story moves it (FollowParentAsync), the form does not.
+            if (ticket.Type == TicketType.Task)
+            {
+                ticket.SprintId = existing is null || existing.ParentId != parent.Id
+                    ? parent.SprintId
+                    : existing.SprintId;
+            }
         }
 
-        if (existing is not null && epicChanged && (await _ticketRepository.GetChildIdsAsync(existing.Id)).Count > 0)
+        if (ticket.EpicId is not null)
         {
-            throw new ArgumentException("A ticket with children can't move to another epic.");
+            Epic? epic = await _epicRepository.GetInProjectAsync(projectId, ticket.EpicId.Value);
+            if (epic is null)
+            {
+                throw new ArgumentException("The epic doesn't exist in this project.");
+            }
+
+            bool epicChanged = existing is null || existing.EpicId != ticket.EpicId;
+            if (epicChanged && epic.Status == EpicStatus.Closed)
+            {
+                throw new ArgumentException("The epic is closed. Reopen it to add tickets.");
+            }
         }
 
         if (ticket.AssigneeId is not null && !await _memberRepository.IsMemberAsync(projectId, ticket.AssigneeId.Value))
@@ -235,27 +308,11 @@ public class TicketService
             throw new ArgumentException("The assignee has to be a member of the project.");
         }
 
-        // Only checked when the sprint changes: a ticket that already sits in a completed sprint can
-        // still be edited without being forced out of it.
-        if (ticket.SprintId is not null && ticket.SprintId != existing?.SprintId)
-        {
-            Sprint? sprint = await _sprintRepository.GetInProjectAsync(projectId, ticket.SprintId.Value);
-            if (sprint is null)
-            {
-                throw new ArgumentException("The sprint doesn't exist in this project.");
-            }
-
-            if (sprint.Status == SprintStatus.Completed)
-            {
-                throw new ArgumentException("Completed sprints can't receive tickets.");
-            }
-        }
-
-        await EnsureParentIsValidAsync(projectId, ticket, existing?.Id);
+        await EnsureSprintChangeIsAllowedAsync(projectId, existing?.SprintId, ticket.SprintId);
     }
 
     /* Which parent a ticket may hang from, by type:
-         userStory -> nothing (it hangs from an epic, which is EpicId)
+         userStory -> nothing (an epic, if any, is EpicId)
          task      -> a user story, or nothing
          bug       -> a user story, or nothing
          fix       -> a bug, always
@@ -268,7 +325,9 @@ public class TicketService
         _ => []
     };
 
-    private async Task EnsureParentIsValidAsync(int projectId, Ticket ticket, int? ticketId)
+    // Returns the parent, or null when the ticket has none. A closed parent can keep the children
+    // it has, but cannot receive new ones: that is only checked when the parent changes.
+    private async Task<Ticket?> EnsureParentIsValidAsync(int projectId, Ticket ticket, Ticket? existing)
     {
         if (ticket.ParentId is null)
         {
@@ -277,10 +336,10 @@ public class TicketService
                 throw new ArgumentException("A fix must hang from a bug.");
             }
 
-            return;
+            return null;
         }
 
-        if (ticketId is not null && ticket.ParentId == ticketId)
+        if (existing is not null && ticket.ParentId == existing.Id)
         {
             throw new ArgumentException("A ticket can't be its own parent.");
         }
@@ -299,16 +358,64 @@ public class TicketService
                 : $"A {EnumNames.Of(ticket.Type)} can only hang from a {EnumNames.Of(allowed[0])}.");
         }
 
-        if (parent.EpicId != ticket.EpicId)
+        bool parentChanged = existing?.ParentId != ticket.ParentId;
+        if (parentChanged && !TicketRules.IsOpen(parent.Status))
         {
-            throw new ArgumentException("A child ticket must be in the same epic as its parent.");
+            throw new ArgumentException("The parent ticket is closed. Reopen it to add children.");
+        }
+
+        return parent;
+    }
+
+    // The sprint a ticket leaves and the one it enters. A completed sprint is history: nothing
+    // leaves it and nothing enters it.
+    private async Task EnsureSprintChangeIsAllowedAsync(int projectId, int? fromSprintId, int? toSprintId)
+    {
+        if (fromSprintId == toSprintId)
+        {
+            return;
+        }
+
+        if (await IsInCompletedSprintAsync(projectId, fromSprintId))
+        {
+            throw new ArgumentException("Tickets of a completed sprint can't change sprint.");
+        }
+
+        if (toSprintId is not null)
+        {
+            Sprint? sprint = await _sprintRepository.GetInProjectAsync(projectId, toSprintId.Value);
+            if (sprint is null)
+            {
+                throw new ArgumentException("The sprint doesn't exist in this project.");
+            }
+
+            if (sprint.Status == SprintStatus.Completed)
+            {
+                throw new ArgumentException("Completed sprints can't receive tickets.");
+            }
         }
     }
 
-    // Tickets of a closed epic are read-only until the epic is reopened.
-    private async Task EnsureEpicIsOpenAsync(int epicId)
+    private async Task<bool> IsInCompletedSprintAsync(int projectId, int? sprintId)
     {
-        Epic? epic = await _epicRepository.GetByIdAsync(epicId);
+        if (sprintId is null)
+        {
+            return false;
+        }
+
+        Sprint? sprint = await _sprintRepository.GetInProjectAsync(projectId, sprintId.Value);
+        return sprint?.Status == SprintStatus.Completed;
+    }
+
+    // Tickets of a closed epic are read-only until the epic is reopened. No epic, nothing to check.
+    private async Task EnsureEpicIsOpenAsync(int? epicId)
+    {
+        if (epicId is null)
+        {
+            return;
+        }
+
+        Epic? epic = await _epicRepository.GetByIdAsync(epicId.Value);
         if (epic?.Status == EpicStatus.Closed)
         {
             throw new ArgumentException("The epic is closed. Reopen it to make changes.");

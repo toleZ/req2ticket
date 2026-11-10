@@ -20,9 +20,9 @@ import { OPEN_BUTTON, OPEN_CODE, OPEN_NAME, OWNER_NAME } from './EpicRow.styles'
  * EpicDetailModal, which also lets you touch the name, description, owner and colour.
  *
  * `epic` is the list's summary (no description). `ownerName` comes from the project's members,
- * and `backlogHref` is the Backlog filtered to this epic.
+ * and `ticketsHref` is the Tickets page filtered to this epic.
  */
-export function EpicRow({ epic, ownerName, tickets, backlogHref, onSelectEpic, onSelectTicket }) {
+export function EpicRow({ epic, ownerName, tickets, ticketsHref, onSelectEpic, onSelectTicket }) {
   const [isExpanded, setIsExpanded] = useState(false)
 
   const accent = findOption(ACCENT_COLORS, epic.accentColor)
@@ -130,7 +130,7 @@ export function EpicRow({ epic, ownerName, tickets, backlogHref, onSelectEpic, o
               ) : (
                 <TicketBreakdown
                   tickets={tickets}
-                  backlogHref={backlogHref}
+                  ticketsHref={ticketsHref}
                   aside={<EpicTypeProgress tickets={tickets} />}
                   onSelectTicket={onSelectTicket}
                 />

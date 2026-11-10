@@ -1,6 +1,6 @@
 import { Diamond, Shapes, User } from 'lucide-react'
 
-import { INITIAL_FILTERS, UNASSIGNED, countActiveFilters } from '@/components/board/board.helpers'
+import { INITIAL_FILTERS, NO_EPIC, UNASSIGNED, countActiveFilters } from '@/components/board/board.helpers'
 import { TicketTypeIcon } from '@/components/tickets/TicketTypeIcon/TicketTypeIcon'
 import { Avatar } from '@/components/ui/Avatar/Avatar'
 import { FilterChip } from '@/components/ui/FilterChip/FilterChip'
@@ -23,14 +23,17 @@ export function BoardFilters({ filters, epics, members, onChange }) {
     leading: <TicketTypeIcon type={type.value} className="size-4" />,
   }))
 
-  const epicOptions = epics.map((epic) => {
-    const accent = findOption(ACCENT_COLORS, epic.accentColor)
-    return {
-      value: String(epic.id),
-      label: epic.name,
-      leading: <span className={cn('size-2 shrink-0 rounded-full', accent ? accent.dotClass : 'bg-gray')} aria-hidden="true" />,
-    }
-  })
+  const epicOptions = [
+    { value: NO_EPIC, label: 'Sin épica' },
+    ...epics.map((epic) => {
+      const accent = findOption(ACCENT_COLORS, epic.accentColor)
+      return {
+        value: String(epic.id),
+        label: epic.name,
+        leading: <span className={cn('size-2 shrink-0 rounded-full', accent ? accent.dotClass : 'bg-gray')} aria-hidden="true" />,
+      }
+    }),
+  ]
 
   const assigneeOptions = [
     { value: UNASSIGNED, label: 'Sin asignar' },

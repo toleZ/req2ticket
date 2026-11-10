@@ -94,7 +94,7 @@ public class EpicService
         return true;
     }
 
-    // Its tickets go with it: the database cascades.
+    // Its tickets stay, without an epic: the database sets their EpicId to null.
     public async Task<bool> DeleteAsync(int projectId, int id)
     {
         Epic? epic = await _epicRepository.GetInProjectAsync(projectId, id);

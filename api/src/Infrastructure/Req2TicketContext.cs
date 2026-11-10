@@ -137,11 +137,11 @@ public class Req2TicketContext : DbContext
                 .HasForeignKey(t => t.ProjectId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // A ticket cannot outlive its epic.
+            // The epic is optional: deleting it leaves its tickets without one, never deletes them.
             ticket.HasOne(t => t.Epic)
                 .WithMany()
                 .HasForeignKey(t => t.EpicId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.SetNull);
 
             // Deleting a user leaves their tickets without assignee or reporter.
             ticket.HasOne(t => t.Assignee)
@@ -161,8 +161,8 @@ public class Req2TicketContext : DbContext
                 .OnDelete(DeleteBehavior.SetNull);
 
             /* NO ACTION and not RESTRICT or CASCADE. Deleting one ticket takes its descendants with
-               it, and TicketService does that explicitly so the rule is visible. But when an epic or
-               a project goes, the database cascades over parents and children in one statement: NO
+               it, and TicketService does that explicitly so the rule is visible. But when a project
+               goes, the database cascades over parents and children in one statement: NO
                ACTION checks the reference at the end of that statement, when both are gone, while
                RESTRICT would refuse halfway. */
             ticket.HasOne(t => t.Parent)

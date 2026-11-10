@@ -39,7 +39,7 @@ public record EpicWriteRequest
         Description = string.IsNullOrWhiteSpace(Description) ? null : Description,
         AccentColor = AccentColor,
         Priority = Priority ?? EpicPriority.Medium,
-        Status = Status ?? EpicStatus.Backlog,
+        Status = Status ?? EpicStatus.Open,
         OwnerId = OwnerId
     };
 }
@@ -101,6 +101,35 @@ public record SprintWriteRequest
         EndDate = EndDate!.Value,
         Capacity = Capacity
     };
+}
+
+/* The dates a sprint starts with: the planned ones are a guess, so starting confirms them. The end
+   can't be in the past. "Past" is measured against yesterday in UTC: the server does not know the
+   user's time zone, and in every one of them today is at least that. */
+public record SprintStartRequest : IValidatableObject
+{
+    [Required(ErrorMessage = "Start date is required.")]
+    public DateOnly? StartDate { get; init; }
+
+    [Required(ErrorMessage = "End date is required.")]
+    public DateOnly? EndDate { get; init; }
+
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        if (StartDate is null || EndDate is null)
+        {
+            yield break;
+        }
+
+        if (EndDate < StartDate)
+        {
+            yield return new ValidationResult("End date can't be before start date.", [nameof(EndDate)]);
+        }
+        else if (EndDate < DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-1)))
+        {
+            yield return new ValidationResult("End date can't be in the past.", [nameof(EndDate)]);
+        }
+    }
 }
 
 // Null sends the open tickets to the backlog.

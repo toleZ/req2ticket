@@ -26,7 +26,7 @@ function toPayload(values) {
     type: values.type,
     title: values.title.trim(),
     description: values.description || null,
-    epicId: Number(values.epicId),
+    epicId: values.epicId ? Number(values.epicId) : null,
     priority: values.priority,
     assigneeId: values.assigneeId ? Number(values.assigneeId) : null,
     sprintId: values.sprintId ? Number(values.sprintId) : null,
@@ -53,7 +53,6 @@ export function updateTicket(projectId, ticketId, ticketValues) {
 export function changeTicketStatus(projectId, ticketId, status) {
   return patch(`/api/projects/${projectId}/tickets/${ticketId}/status`, { status })
 }
-
 /* Takes every descendant with it. */
 export function deleteTicket(projectId, ticketId) {
   return del(`/api/projects/${projectId}/tickets/${ticketId}`)

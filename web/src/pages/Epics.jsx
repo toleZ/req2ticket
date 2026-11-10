@@ -25,7 +25,7 @@ import { useMembers } from '@/lib/queries/members'
 import { useTickets } from '@/lib/queries/tickets'
 import { changeParams, countActive, readFilters, setListParam } from '@/lib/urlFilters'
 
-/* The open statuses, for the "Ver tickets abiertos" link: the Backlog filtered to them. */
+/* The open statuses, for the "Ver tickets abiertos" link: the Tickets page filtered to them. */
 const OPEN_STATUSES = TICKET_STATUS_OPTIONS.map((option) => option.value).filter(isOpenStatus).join(',')
 
 export function Epics() {
@@ -40,7 +40,7 @@ export function Epics() {
   const members = membersQuery.data ?? []
   const loadState = loadStateOf(epicsQuery, ticketsQuery, membersQuery)
   const canManage = can(PERMISSIONS.EPICS_MANAGE)
-  const backlogPath = projectPath(projectKey, 'backlog')
+  const ticketsPath = projectPath(projectKey, 'tickets')
 
   const [isModalOpen, setIsModalOpen] = useState(false)
 
@@ -49,7 +49,7 @@ export function Epics() {
   const [detailEpicId, setDetailEpicId] = useState(null)
   const [detailTicketId, setDetailTicketId] = useState(null)
 
-  /* Filters in the URL, like the Backlog's (see lib/epicFilters.js and lib/urlFilters.js). */
+  /* Filters in the URL, like the Tickets page's (see lib/epicFilters.js and lib/urlFilters.js). */
   const [params, setParams] = useSearchParams()
   const filters = readFilters(params, LIST_KEYS, SORT_OPTIONS)
   const activeCount = countActive(filters, LIST_KEYS)
@@ -70,7 +70,7 @@ export function Epics() {
   }
 
   const visibleEpics = applyFilters(epics, filters, readSession()?.user?.id)
-  const activeEpics = visibleEpics.filter((epic) => epic.status === 'active').length
+  const openEpics = visibleEpics.filter((epic) => epic.status === 'open').length
   const countText =
     visibleEpics.length === epics.length
       ? `${epics.length} ${epics.length === 1 ? 'épica' : 'épicas'}`
@@ -84,7 +84,7 @@ export function Epics() {
 
   const detailEpicExists = epics.some((epic) => epic.id === detailEpicId)
 
-  const meta = loadState === 'ready' ? `${countText} · ${activeEpics} ${activeEpics === 1 ? 'activa' : 'activas'}` : null
+  const meta = loadState === 'ready' ? `${countText} · ${openEpics} ${openEpics === 1 ? 'abierta' : 'abiertas'}` : null
 
   return (
     <section>
@@ -117,7 +117,7 @@ export function Epics() {
         errorText="No se pudieron cargar las épicas."
         emptyText={
           canManage
-            ? 'Todavía no hay épicas. Creá la primera para empezar a cargar tickets.'
+            ? 'Todavía no hay épicas. Creá una para agrupar tickets que persiguen un mismo objetivo.'
             : 'Todavía no hay épicas cargadas.'
         }
         onRetry={() => retryAll(epicsQuery, ticketsQuery, membersQuery)}
@@ -139,7 +139,7 @@ export function Epics() {
           epics={visibleEpics}
           tickets={tickets}
           members={members}
-          backlogPath={backlogPath}
+          ticketsPath={ticketsPath}
           onSelectEpic={(epic) => setDetailEpicId(epic.id)}
           onSelectTicket={(ticket) => setDetailTicketId(ticket.id)}
         />
@@ -166,7 +166,7 @@ export function Epics() {
             tickets={tickets.filter((ticket) => ticket.epicId === detailEpicId)}
             members={members}
             canManage={canManage}
-            openTicketsHref={`${backlogPath}?epic=${detailEpicId}&status=${OPEN_STATUSES}`}
+            openTicketsHref={`${ticketsPath}?epic=${detailEpicId}&status=${OPEN_STATUSES}`}
             onClose={() => setDetailEpicId(null)}
           />
         )}

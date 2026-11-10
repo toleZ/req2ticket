@@ -32,7 +32,7 @@ public class Epic
     public EpicPriority Priority { get; set; } = EpicPriority.Medium;
 
     // Closing is manual and only allowed once every ticket is done or cancelled (EpicService).
-    public EpicStatus Status { get; set; } = EpicStatus.Backlog;
+    public EpicStatus Status { get; set; } = EpicStatus.Open;
 
     // Has to be a member of the project.
     public int? OwnerId { get; set; }
@@ -59,11 +59,8 @@ public enum EpicPriority
 [JsonConverter(typeof(StringOnlyEnumConverter<EpicStatus>))]
 public enum EpicStatus
 {
-    [JsonStringEnumMemberName("backlog")]
-    Backlog,
-
-    [JsonStringEnumMemberName("active")]
-    Active,
+    [JsonStringEnumMemberName("open")]
+    Open,
 
     [JsonStringEnumMemberName("closed")]
     Closed

@@ -8,6 +8,9 @@ export const SIDE_LABEL = cn(SHEET_LABEL, 'text-label-secondary')
 
 export const FIELD_ERROR = 'mt-1 animate-fade-in text-footnote text-red-text'
 
+/* A short explanation under a side field: why it reads as it does ("sigue a R2T-UH-3"). */
+export const SIDE_NOTE = 'mt-1 text-caption text-label-secondary'
+
 export const REQUIRED_NOTE = 'mr-auto text-caption text-label-secondary'
 
 export const SHEET_TEXTAREA = `w-full resize-none rounded-control border border-separator

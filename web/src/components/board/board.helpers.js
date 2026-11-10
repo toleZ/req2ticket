@@ -1,13 +1,15 @@
 import { TICKET_PRIORITY_OPTIONS, TICKET_STATUS_OPTIONS, rankOf } from '@/lib/options'
 
 /* The board's columns, in flow order. Cancelled is not a column: a ticket is cancelled from its
-   card's menu, and it leaves the board (it stays in the Backlog, in its own section). */
+   card's menu, and it leaves the board (it stays in Tickets, in its own section). */
 export const BOARD_COLUMNS = TICKET_STATUS_OPTIONS.filter((option) => option.value !== 'cancelled')
 
 export const INITIAL_FILTERS = { mine: false, types: [], epics: [], assignees: [] }
 
-/* Value used by the assignee filter for "nobody assigned", which has no id of its own. */
+/* Value used by the assignee filter for "nobody assigned", and by the epic filter for "no
+   epic": neither has an id of its own. */
 export const UNASSIGNED = 'none'
+export const NO_EPIC = 'none'
 
 /* The tickets the filters let through. Plain checks on purpose: each filter that is empty lets
    everything through. */
@@ -15,7 +17,10 @@ export function filterBoardTickets(tickets, filters, currentUserId) {
   return tickets.filter((ticket) => {
     if (filters.mine && ticket.assigneeId !== currentUserId) return false
     if (filters.types.length > 0 && !filters.types.includes(ticket.type)) return false
-    if (filters.epics.length > 0 && !filters.epics.includes(String(ticket.epicId))) return false
+    if (filters.epics.length > 0) {
+      const epic = ticket.epicId === null ? NO_EPIC : String(ticket.epicId)
+      if (!filters.epics.includes(epic)) return false
+    }
     if (filters.assignees.length > 0) {
       const assignee = ticket.assigneeId === null ? UNASSIGNED : String(ticket.assigneeId)
       if (!filters.assignees.includes(assignee)) return false

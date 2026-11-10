@@ -6,9 +6,9 @@ import { ACCENT_COLORS, findOption, SPRINT_STATUS_OPTIONS } from '@/lib/options'
    epic, a sprint or a person looks the same in every picker. The values are strings, like a
    <select>'s, because that is what the forms keep. */
 
-// Epics carry their accent colour as a dot. No empty option: a ticket always has an epic.
-export function epicPickerOptions(epics) {
-  return epics.map((epic) => {
+// Epics carry their accent colour as a dot. `emptyLabel` adds a first "no epic" option.
+export function epicPickerOptions(epics, emptyLabel) {
+  const options = epics.map((epic) => {
     const accent = findOption(ACCENT_COLORS, epic.accentColor)
     return {
       value: String(epic.id),
@@ -21,6 +21,8 @@ export function epicPickerOptions(epics) {
       ),
     }
   })
+
+  return emptyLabel ? [{ value: '', label: emptyLabel }, ...options] : options
 }
 
 // Sprints show their status on the right, so a closed one is not picked by mistake.

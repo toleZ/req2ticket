@@ -35,8 +35,9 @@ public record TicketWriteRequest : IValidatableObject
     [StringLength(2000, ErrorMessage = "Description can't be longer than 2000 characters.")]
     public string? Description { get; init; }
 
-    [Range(1, int.MaxValue, ErrorMessage = "Epic is required.")]
-    public int EpicId { get; init; }
+    // Optional. A child's epic is its parent's, whatever is sent here.
+    [Range(1, int.MaxValue, ErrorMessage = "Epic is not valid.")]
+    public int? EpicId { get; init; }
 
     [JsonConverter(typeof(StringOnlyEnumConverter<TicketPriority>))]
     [EnumDataType(typeof(TicketPriority), ErrorMessage = "Priority is not valid.")]
@@ -244,7 +245,7 @@ public record TicketDetailResponse(
     TicketType Type,
     string Title,
     string? Description,
-    int EpicId,
+    int? EpicId,
     string? EpicCode,
     string? EpicName,
     EpicStatus? EpicStatus,

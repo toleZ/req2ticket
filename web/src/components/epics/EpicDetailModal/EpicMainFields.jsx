@@ -12,7 +12,7 @@ import { FIELD_LABEL, PROGRESS_META, SECTION_LABEL } from './EpicDetailModal.sty
 /**
  * The main column of an epic's sheet: the "closed" banner, the name, the description and the
  * progress of its tickets. No state of its own: `onChange` is a plain input handler (it reads
- * `e.target.name`), and "Reabrir" calls `onSetStatus('active')`.
+ * `e.target.name`), and "Reabrir" calls `onSetStatus('open')`.
  */
 export function EpicMainFields({
   epic,
@@ -39,7 +39,7 @@ export function EpicMainFields({
                 size="sm"
                 variant="neutral"
                 disabled={submitting || isPlaceholderData}
-                onClick={() => onSetStatus('active')}
+                onClick={() => onSetStatus('open')}
               >
                 Reabrir
               </Button>

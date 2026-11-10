@@ -31,8 +31,8 @@ export const HAS_POINTS = {
 export const MAX_CHECKLIST_ITEMS = 30
 
 /* Which types a ticket may hang from, same rule as TicketService.AllowedParentTypes: a story
-   hangs from nothing (it hangs from its epic), tasks and bugs from a story, and a fix always
-   from a bug. The parent also has to be in the same epic. */
+   hangs from nothing (at most from an epic), tasks and bugs from a story, and a fix always from a
+   bug. A child takes its parent's epic, and a task its story's sprint. */
 export const PARENT_TYPES = {
   userStory: [],
   task: ['userStory'],
@@ -164,7 +164,7 @@ export function ticketToFormValues(ticket) {
     type: ticket.type,
     title: ticket.title,
     description: ticket.description ?? '',
-    epicId: ticket.epicId,
+    epicId: ticket.epicId ?? '',
     priority: ticket.priority,
     assigneeId: ticket.assigneeId ?? '',
     sprintId: ticket.sprintId ?? '',

@@ -96,9 +96,9 @@ export const EPIC_PRIORITY_OPTIONS = [
   { value: 'urgent', label: 'Urgente', tone: 'red' },
 ]
 
+/* Two states: an epic is open until it is closed by hand, once all its tickets are closed. */
 export const EPIC_STATUS_OPTIONS = [
-  { value: 'backlog', label: 'Backlog', tone: 'gray' },
-  { value: 'active', label: 'Activa', tone: 'blue' },
+  { value: 'open', label: 'Abierta', tone: 'blue' },
   { value: 'closed', label: 'Cerrada', tone: 'green' },
 ]
 
@@ -170,3 +170,9 @@ export const PERMISSION_LABELS = {
 
 /* The platform role of a user. Only SuperAdmin means anything: it is Admin in every project. */
 export const PLATFORM_SUPER_ADMIN = 'superAdmin'
+
+/* The platform role, apart from the project roles: a SuperAdmin manages users and projects. */
+export const PLATFORM_ROLE_OPTIONS = [
+  { value: 'user', label: 'Usuario', tone: 'neutral' },
+  { value: PLATFORM_SUPER_ADMIN, label: 'SuperAdmin', tone: 'purple' },
+]

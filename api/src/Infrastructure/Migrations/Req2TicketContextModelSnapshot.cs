@@ -209,7 +209,7 @@ namespace Infrastructure.Migrations
                         .HasMaxLength(2000)
                         .HasColumnType("character varying(2000)");
 
-                    b.Property<int>("EpicId")
+                    b.Property<int?>("EpicId")
                         .HasColumnType("integer");
 
                     b.Property<int>("Number")
@@ -481,8 +481,7 @@ namespace Infrastructure.Migrations
                     b.HasOne("Domain.Entities.Epic", "Epic")
                         .WithMany()
                         .HasForeignKey("EpicId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("Domain.Entities.Ticket", "Parent")
                         .WithMany()

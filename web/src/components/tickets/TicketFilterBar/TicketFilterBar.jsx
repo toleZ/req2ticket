@@ -57,16 +57,19 @@ export function TicketFilterBar({ filters, activeCount, epics, sprints, users, o
       key: 'epic',
       label: 'Épica',
       searchable: true,
-      options: epics.map((epic) => ({
-        value: String(epic.id),
-        label: epic.name,
-        leading: (
-          <span
-            className={cn('size-2 shrink-0 rounded-full', findOption(ACCENT_COLORS, epic.accentColor)?.dotClass ?? 'bg-gray')}
-            aria-hidden="true"
-          />
-        ),
-      })),
+      options: [
+        { value: NONE, label: 'Sin épica' },
+        ...epics.map((epic) => ({
+          value: String(epic.id),
+          label: epic.name,
+          leading: (
+            <span
+              className={cn('size-2 shrink-0 rounded-full', findOption(ACCENT_COLORS, epic.accentColor)?.dotClass ?? 'bg-gray')}
+              aria-hidden="true"
+            />
+          ),
+        })),
+      ],
     },
     {
       key: 'sprint',

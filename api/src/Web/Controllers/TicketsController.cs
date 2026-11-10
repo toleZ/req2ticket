@@ -78,7 +78,6 @@ public class TicketsController : ControllerBase
 
         return Ok(TicketDetailResponse.From((await _ticketService.GetDetailAsync(pid, id))!));
     }
-
     // Takes every descendant with it.
     [RequireProjectPermission(Permission.TicketsDelete)]
     [HttpDelete("{id:int}")]

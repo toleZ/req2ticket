@@ -64,7 +64,8 @@ export function invalidateAfterEpicSave(queryClient, projectId, before, after) {
   if (!before || before.ownerId !== after.ownerId) refreshList(queryClient, keys.members(projectId))
 }
 
-/* Deleting an epic deletes its tickets: everything a ticket change touches. */
+/* Deleting an epic leaves its tickets without one: their epicId changes, and so does every
+   count a ticket change touches. */
 export function invalidateAfterEpicDelete(queryClient, projectId) {
   invalidateAfterTicketCreatedOrDeleted(queryClient, projectId)
 }

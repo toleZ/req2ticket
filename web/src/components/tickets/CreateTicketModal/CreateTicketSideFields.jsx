@@ -1,10 +1,18 @@
 import { TicketPointsField } from '@/components/tickets/TicketPointsField/TicketPointsField'
-import { epicsForTicket, parentPickerOptions, sprintsForTicket } from '@/components/tickets/TicketPickers/TicketPickers'
+import {
+  epicName,
+  epicsForTicket,
+  parentOf,
+  parentPickerOptions,
+  sprintName,
+  sprintsForTicket,
+} from '@/components/tickets/TicketPickers/TicketPickers'
+import { ReadOnlyValue } from '@/components/ui/ReadOnlyValue/ReadOnlyValue'
 import { SegmentedField } from '@/components/ui/SegmentedField/SegmentedField'
 import { Select } from '@/components/ui/Select/Select'
 import { epicPickerOptions, sprintPickerOptions, toneOptions, userPickerOptions } from '@/components/ui/Select/Select.options'
 import { RequiredMark } from '@/components/ui/SheetField/SheetField'
-import { FIELD_ERROR, SIDE_LABEL } from '@/components/ui/SheetField/SheetField.styles'
+import { FIELD_ERROR, SIDE_LABEL, SIDE_NOTE } from '@/components/ui/SheetField/SheetField.styles'
 import { TICKET_PRIORITY_OPTIONS } from '@/lib/options'
 import { HAS_POINTS, PARENT_TYPES, TYPE_SELECT } from '@/lib/ticketTypes'
 
@@ -30,6 +38,8 @@ export function CreateTicketSideFields({
   const typeSelect = TYPE_SELECT[type]
   const hasParent = PARENT_TYPES[type].length > 0
   const parentRequired = type === 'fix'
+  const parent = hasParent ? parentOf(tickets, values.parentId) : null
+  const taskOfStory = type === 'task' && parent !== null
 
   return (
     <div className="flex flex-col gap-4">
@@ -73,34 +83,13 @@ export function CreateTicketSideFields({
             disabled={submitting}
             onChange={(points) => onFieldChange('points', points)}
           />
+          {taskOfStory && <p className={SIDE_NOTE}>No suman al sprint: la historia ya los cubre.</p>}
         </div>
       )}
 
-      <div className="hairline-t pt-4">
-        <label htmlFor="ticket-epic" className={SIDE_LABEL}>
-          Épica<RequiredMark />
-        </label>
-        <Select
-          id="ticket-epic"
-          value={values.epicId}
-          options={epicPickerOptions(epicsForTicket(epics))}
-          placeholder="Elegí una épica"
-          searchable
-          searchLabel="Buscar épica"
-          noResults="Ninguna épica abierta coincide"
-          disabled={submitting}
-          error={errors.epicId}
-          onChange={(value) => onFieldChange('epicId', value)}
-        />
-        {errors.epicId && (
-          <p id="ticket-epic-error" className={FIELD_ERROR}>
-            {errors.epicId}
-          </p>
-        )}
-      </div>
-
+      {/* The parent first: it decides the epic (always) and the sprint (for a task). */}
       {hasParent && (
-        <div>
+        <div className="hairline-t pt-4">
           <label htmlFor="ticket-parent" className={SIDE_LABEL}>
             {type === 'fix' ? 'Bug que arregla' : 'Historia'}
             {parentRequired && <RequiredMark />}
@@ -108,12 +97,12 @@ export function CreateTicketSideFields({
           <Select
             id="ticket-parent"
             value={values.parentId}
-            options={parentPickerOptions(tickets, { type, epicId: values.epicId }, parentRequired ? undefined : 'Ninguna')}
-            placeholder={values.epicId ? 'Elegí un ticket' : 'Primero elegí la épica'}
+            options={parentPickerOptions(tickets, { type }, parentRequired ? undefined : 'Ninguna')}
+            placeholder="Elegí un ticket"
             searchable
             searchLabel="Buscar ticket"
-            noResults={type === 'fix' ? 'No hay bugs en esta épica' : 'No hay historias en esta épica'}
-            disabled={submitting || !values.epicId}
+            noResults={type === 'fix' ? 'No hay bugs abiertos' : 'No hay historias abiertas'}
+            disabled={submitting}
             error={errors.parentId}
             onChange={(value) => onFieldChange('parentId', value)}
           />
@@ -125,20 +114,48 @@ export function CreateTicketSideFields({
         </div>
       )}
 
+      <div className={hasParent ? undefined : 'hairline-t pt-4'}>
+        <label htmlFor="ticket-epic" className={SIDE_LABEL}>
+          Épica
+        </label>
+        {parent ? (
+          <ReadOnlyValue id="ticket-epic">
+            {epicName(epics, parent.epicId)} · de {parent.code}
+          </ReadOnlyValue>
+        ) : (
+          <Select
+            id="ticket-epic"
+            value={values.epicId}
+            options={epicPickerOptions(epicsForTicket(epics), 'Sin épica')}
+            searchable
+            searchLabel="Buscar épica"
+            noResults="Ninguna épica abierta coincide"
+            disabled={submitting}
+            onChange={(value) => onFieldChange('epicId', value)}
+          />
+        )}
+      </div>
+
       <div>
         <label htmlFor="ticket-sprint" className={SIDE_LABEL}>
           Sprint
         </label>
-        <Select
-          id="ticket-sprint"
-          value={values.sprintId}
-          options={sprintPickerOptions(sprintsForTicket(sprints), 'Sin sprint (backlog)')}
-          searchable
-          searchLabel="Buscar sprint"
-          noResults="Ningún sprint coincide"
-          disabled={submitting}
-          onChange={(value) => onFieldChange('sprintId', value)}
-        />
+        {taskOfStory ? (
+          <ReadOnlyValue id="ticket-sprint">
+            {sprintName(sprints, parent.sprintId)} · sigue a {parent.code}
+          </ReadOnlyValue>
+        ) : (
+          <Select
+            id="ticket-sprint"
+            value={values.sprintId}
+            options={sprintPickerOptions(sprintsForTicket(sprints), 'Sin sprint (backlog)')}
+            searchable
+            searchLabel="Buscar sprint"
+            noResults="Ningún sprint coincide"
+            disabled={submitting}
+            onChange={(value) => onFieldChange('sprintId', value)}
+          />
+        )}
       </div>
 
       <div>

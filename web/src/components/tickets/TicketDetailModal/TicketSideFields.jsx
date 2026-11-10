@@ -1,9 +1,17 @@
 import { TicketPointsField } from '@/components/tickets/TicketPointsField/TicketPointsField'
-import { epicsForTicket, parentPickerOptions, sprintsForTicket } from '@/components/tickets/TicketPickers/TicketPickers'
+import {
+  epicName,
+  epicsForTicket,
+  parentOf,
+  parentPickerOptions,
+  sprintName,
+  sprintsForTicket,
+} from '@/components/tickets/TicketPickers/TicketPickers'
 import { TicketTypeIcon } from '@/components/tickets/TicketTypeIcon/TicketTypeIcon'
 import { DetailRow } from '@/components/ui/DetailRow/DetailRow'
 import { ReadOnlyValue } from '@/components/ui/ReadOnlyValue/ReadOnlyValue'
 import { Select } from '@/components/ui/Select/Select'
+import { SIDE_NOTE } from '@/components/ui/SheetField/SheetField.styles'
 import { epicPickerOptions, sprintPickerOptions, toneOptions, userPickerOptions } from '@/components/ui/Select/Select.options'
 import { Tooltip } from '@/components/ui/Tooltip/Tooltip'
 import { formatDateTime, timeAgo } from '@/lib/dates'
@@ -34,6 +42,7 @@ export function TicketSideFields({
   tickets,
   statusError,
   changingStatus,
+  context,
   onFieldChange,
   onTypeFieldChange,
   onStatusChange,
@@ -45,8 +54,14 @@ export function TicketSideFields({
   const typeSelect = TYPE_SELECT[ticket.type]
   const hasParent = PARENT_TYPES[ticket.type].length > 0
 
+  // What the family rules decide here: the parent gives the epic, a story gives its task the
+  // sprint, and a completed sprint freezes the status and the sprint (the API says the same).
+  const parent = hasParent ? parentOf(tickets, values.parentId) : null
+  const taskOfStory = ticket.type === 'task' && parent !== null
+  const frozen = context.sprintCompleted
+
   // toneOptions adds each status's dot; the reason a status is off rides along from statusOptions.
-  const statusChoices = statusOptions(ticket, workflow)
+  const statusChoices = statusOptions(ticket, workflow, context)
   const statusSelectOptions = toneOptions(statusChoices).map((option, index) => ({
     ...option,
     disabled: statusChoices[index].disabled,
@@ -68,10 +83,14 @@ export function TicketSideFields({
 
       <DetailRow label="Estado" htmlFor={id('status')}>
         <div className="w-full min-w-0">
-          {finalStatus || readOnly ? (
+          {finalStatus || readOnly || frozen ? (
             <ReadOnlyValue id={id('status')}>
               {status?.label}
-              {finalStatus && <span className="text-label-secondary"> · Estado final</span>}
+              {frozen ? (
+                <span className="text-label-secondary"> · Sprint completado</span>
+              ) : (
+                finalStatus && <span className="text-label-secondary"> · Estado final</span>
+              )}
             </ReadOnlyValue>
           ) : (
             <Select
@@ -116,22 +135,6 @@ export function TicketSideFields({
         </DetailRow>
       )}
 
-      <DetailRow label="Épica" htmlFor={id('epic')}>
-        <div className="w-full min-w-0">
-          <Select
-            id={id('epic')}
-            value={String(values.epicId)}
-            options={epicPickerOptions(epicsForTicket(epics, ticket.epicId))}
-            searchable
-            searchLabel="Buscar épica"
-            noResults="Ninguna épica abierta coincide"
-            readOnly={readOnly}
-            disabled={submitting}
-            onChange={(value) => onFieldChange('epicId', value)}
-          />
-        </div>
-      </DetailRow>
-
       {hasParent && (
         <DetailRow label={ticket.type === 'fix' ? 'Bug' : 'Historia'} htmlFor={id('parent')}>
           <div className="w-full min-w-0">
@@ -140,13 +143,13 @@ export function TicketSideFields({
               value={String(values.parentId)}
               options={parentPickerOptions(
                 tickets,
-                { type: ticket.type, epicId: values.epicId, ticketId: ticket.id },
+                { type: ticket.type, ticketId: ticket.id, currentParentId: ticket.parentId },
                 ticket.type === 'fix' ? undefined : 'Ninguna',
               )}
               placeholder="Elegí un ticket"
               searchable
               searchLabel="Buscar ticket"
-              noResults="Ninguno en esta épica"
+              noResults="Ninguno abierto coincide"
               readOnly={readOnly}
               disabled={submitting}
               error={errors.parentId}
@@ -157,19 +160,51 @@ export function TicketSideFields({
         </DetailRow>
       )}
 
+      {/* After the parent: with one, the epic is the parent's and reads as text. */}
+      <DetailRow label="Épica" htmlFor={id('epic')}>
+        <div className="w-full min-w-0">
+          {parent ? (
+            <ReadOnlyValue id={id('epic')}>
+              {epicName(epics, parent.epicId)} · de {parent.code}
+            </ReadOnlyValue>
+          ) : (
+            <Select
+              id={id('epic')}
+              value={String(values.epicId)}
+              options={epicPickerOptions(epicsForTicket(epics, ticket.epicId), 'Sin épica')}
+              searchable
+              searchLabel="Buscar épica"
+              noResults="Ninguna épica abierta coincide"
+              readOnly={readOnly}
+              disabled={submitting}
+              onChange={(value) => onFieldChange('epicId', value)}
+            />
+          )}
+        </div>
+      </DetailRow>
+
       <DetailRow label="Sprint" htmlFor={id('sprint')}>
         <div className="w-full min-w-0">
-          <Select
-            id={id('sprint')}
-            value={String(values.sprintId)}
-            options={sprintPickerOptions(sprintsForTicket(sprints, ticket.sprintId), 'Sin sprint')}
-            searchable
-            searchLabel="Buscar sprint"
-            noResults="Ningún sprint coincide"
-            readOnly={readOnly}
-            disabled={submitting}
-            onChange={(value) => onFieldChange('sprintId', value)}
-          />
+          {frozen || taskOfStory ? (
+            <ReadOnlyValue id={id('sprint')}>
+              {sprintName(sprints, taskOfStory ? parent.sprintId : ticket.sprintId)}
+              <span className="text-label-secondary">
+                {frozen ? ' · completado' : ` · sigue a ${parent.code}`}
+              </span>
+            </ReadOnlyValue>
+          ) : (
+            <Select
+              id={id('sprint')}
+              value={String(values.sprintId)}
+              options={sprintPickerOptions(sprintsForTicket(sprints, ticket.sprintId), 'Sin sprint')}
+              searchable
+              searchLabel="Buscar sprint"
+              noResults="Ningún sprint coincide"
+              readOnly={readOnly}
+              disabled={submitting}
+              onChange={(value) => onFieldChange('sprintId', value)}
+            />
+          )}
         </div>
       </DetailRow>
 
@@ -200,6 +235,7 @@ export function TicketSideFields({
             disabled={submitting}
             onChange={(points) => onFieldChange('points', points)}
           />
+          {taskOfStory && <p className={SIDE_NOTE}>No suman al sprint: la historia ya los cubre.</p>}
         </div>
       )}
 

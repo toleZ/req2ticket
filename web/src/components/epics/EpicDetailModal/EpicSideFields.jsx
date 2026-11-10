@@ -3,10 +3,11 @@ import { Link } from 'react-router-dom'
 import { AccentColorPicker } from '@/components/epics/AccentColorPicker/AccentColorPicker'
 import { Button } from '@/components/ui/Button/Button'
 import { DetailRow } from '@/components/ui/DetailRow/DetailRow'
+import { ReadOnlyValue } from '@/components/ui/ReadOnlyValue/ReadOnlyValue'
 import { Select } from '@/components/ui/Select/Select'
 import { toneOptions, userPickerOptions } from '@/components/ui/Select/Select.options'
 import { Tooltip } from '@/components/ui/Tooltip/Tooltip'
-import { EPIC_PRIORITY_OPTIONS } from '@/lib/options'
+import { EPIC_PRIORITY_OPTIONS, EPIC_STATUS_OPTIONS, findOption } from '@/lib/options'
 import { SIDE_CAPTION } from './EpicDetailModal.styles'
 import { openTicketsReason } from './EpicDetailModal.helpers'
 
@@ -18,7 +19,6 @@ import { openTicketsReason } from './EpicDetailModal.helpers'
 export function EpicSideFields({
   epic,
   values,
-  statusOptions,
   members,
   canManage,
   submitting,
@@ -33,16 +33,13 @@ export function EpicSideFields({
 
   return (
     <>
+      {/* Two states, and each change has its own button ("Cerrar épica" below, "Reabrir" in the
+          banner): the status reads as text. */}
       <DetailRow label="Estado" htmlFor={`epic-${epic.id}-status`}>
         <div className="w-full min-w-0">
-          <Select
-            id={`epic-${epic.id}-status`}
-            value={values.status}
-            options={statusOptions}
-            readOnly={!canManage}
-            disabled={submitting}
-            onChange={(value) => onFieldChange('status', value)}
-          />
+          <ReadOnlyValue id={`epic-${epic.id}-status`}>
+            {findOption(EPIC_STATUS_OPTIONS, epic.status)?.label}
+          </ReadOnlyValue>
         </div>
       </DetailRow>
 

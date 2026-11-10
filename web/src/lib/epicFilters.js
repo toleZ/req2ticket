@@ -12,9 +12,9 @@ export const SORT_OPTIONS = [
   { value: 'name', label: 'Nombre' },
 ]
 
-/* "Estado" puts the work in progress first (active, then backlog, then closed); ties go to
-   the most urgent, then alphabetical. */
-const STATUS_ORDER = ['active', 'backlog', 'closed']
+/* "Estado" puts the open ones first, then the closed; ties go to the most urgent, then
+   alphabetical. */
+const STATUS_ORDER = ['open', 'closed']
 const byPriority = (a, b) => rankOf(EPIC_PRIORITY_OPTIONS, b.priority) - rankOf(EPIC_PRIORITY_OPTIONS, a.priority)
 const byName = (a, b) => a.name.localeCompare(b.name, 'es')
 

@@ -17,7 +17,8 @@ public abstract class Ticket
     [Key]
     public int Id { get; set; }
 
-    // Set by the service from the route, never from the body. Same value as the epic's project.
+    // Set by the service from the route, never from the body. Same value as the epic's project, if
+    // it has one.
     public int ProjectId { get; set; }
 
     // The position in this project's sequence for this type (ENT-4). With the project key and
@@ -41,8 +42,9 @@ public abstract class Ticket
     [StringLength(2000)]
     public string? Description { get; set; }
 
-    // A ticket always belongs to an epic of its own project.
-    public int EpicId { get; set; }
+    // Optional: null means "no epic". A child always has its parent's epic (TicketService sets it),
+    // so a story, its tasks and bugs and their fixes are always in the same one.
+    public int? EpicId { get; set; }
 
     public Epic? Epic { get; set; }
 

@@ -52,6 +52,9 @@ public class TicketRepository : BaseRepository<Ticket>, ITicketRepository
         await _dbSet.CountAsync(t =>
             t.EpicId == epicId && t.Status != TicketStatus.Done && t.Status != TicketStatus.Cancelled);
 
+    public async Task<int> CountInSprintAsync(int sprintId) =>
+        await _dbSet.CountAsync(t => t.SprintId == sprintId);
+
     // Only Tickets columns change, so the UPDATE touches one table even with TPT.
     public async Task<int> MoveOpenTicketsAsync(int sprintId, int? targetSprintId) =>
         await _dbSet
@@ -65,6 +68,21 @@ public class TicketRepository : BaseRepository<Ticket>, ITicketRepository
             .Where(t => t.ProjectId == projectId && t.AssigneeId == userId)
             .ExecuteUpdateAsync(setters => setters
                 .SetProperty(t => t.AssigneeId, (int?)null)
+                .SetProperty(t => t.UpdatedAt, DateTimeOffset.UtcNow));
+
+    public async Task SetEpicAsync(List<int> ticketIds, int? epicId) =>
+        await _dbSet
+            .Where(t => ticketIds.Contains(t.Id))
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(t => t.EpicId, epicId)
+                .SetProperty(t => t.UpdatedAt, DateTimeOffset.UtcNow));
+
+    public async Task MoveOpenTasksOfAsync(int storyId, int? sprintId) =>
+        await _dbSet
+            .Where(t => t.ParentId == storyId && t.Type == TicketType.Task
+                && t.Status != TicketStatus.Done && t.Status != TicketStatus.Cancelled)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(t => t.SprintId, sprintId)
                 .SetProperty(t => t.UpdatedAt, DateTimeOffset.UtcNow));
 
     /* One row per ticket, read in a single SELECT. Points and the lists live in the type tables, so
@@ -132,7 +150,7 @@ public class TicketRepository : BaseRepository<Ticket>, ITicketRepository
         string Title,
         TicketStatus Status,
         TicketPriority Priority,
-        int EpicId,
+        int? EpicId,
         int? AssigneeId,
         int? SprintId,
         int? ParentId,

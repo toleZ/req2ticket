@@ -27,6 +27,7 @@ public sealed record ProjectAccess(
 }
 
 // One row of "my projects". MyRole is null when a SuperAdmin sees a project they are not in.
+// MemberCount and AdminCount feed the SuperAdmin's list: a project with no Admin needs one.
 public sealed record ProjectListItem(
     int Id,
     string Key,
@@ -34,7 +35,9 @@ public sealed record ProjectListItem(
     string? Description,
     DateTimeOffset? ArchivedAt,
     DateTimeOffset CreatedAt,
-    ProjectRole? MyRole);
+    ProjectRole? MyRole,
+    int MemberCount,
+    int AdminCount);
 
 /* The light version of a ticket, for lists and the board. No description and no lists: the
    detail brings those. ChecklistDone/Total are the progress of the type's main list
@@ -46,7 +49,7 @@ public sealed record TicketSummary(
     string Title,
     TicketStatus Status,
     TicketPriority Priority,
-    int EpicId,
+    int? EpicId,
     int? AssigneeId,
     int? SprintId,
     int? ParentId,

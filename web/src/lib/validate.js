@@ -75,7 +75,7 @@ export function validateEpicForm(values) {
 }
 
 /* The same rules as the API (ENT-2, ENT-6), so the form says it before the round trip. The keys
-   are the form's: `title`, `epicId`, `parentId`, and the type's fields by their own name
+   are the form's: `title`, `parentId`, and the type's fields by their own name
    (`stepsToReproduce`) — the form puts each message under its field. */
 export function validateTicketForm(values) {
   const errors = {}
@@ -85,10 +85,6 @@ export function validateTicketForm(values) {
     errors.title = 'Ingresá un título para el ticket'
   } else if (title.length < 3 || title.length > 160) {
     errors.title = 'El título tiene que tener entre 3 y 160 caracteres'
-  }
-
-  if (!values.epicId) {
-    errors.epicId = 'Elegí una épica'
   }
 
   // A bug without steps cannot be worked on.
@@ -119,6 +115,29 @@ export function validateMemberForm(values, takenEmails) {
   }
 
   if (!values.role) errors.role = 'Elegí un rol'
+
+  return errors
+}
+
+/* A user created or edited by a SuperAdmin (Administración): the same rules as the registration.
+   Editing, the password may stay empty — that keeps the current one. */
+export function validateUserForm(values, isEditing) {
+  const errors = {}
+  const name = values.name.trim()
+
+  if (!name) {
+    errors.name = 'Ingresá el nombre'
+  } else if (name.length < 2 || name.length > 80) {
+    errors.name = 'El nombre tiene que tener entre 2 y 80 caracteres'
+  }
+
+  const email = emailError(values.email, 'Ingresá el email')
+  if (email) errors.email = email
+
+  if (!isEditing || values.password) {
+    const password = newPasswordError(values.password)
+    if (password) errors.password = password
+  }
 
   return errors
 }

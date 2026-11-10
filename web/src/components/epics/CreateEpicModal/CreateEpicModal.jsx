@@ -10,11 +10,10 @@ import { IconButton } from '@/components/ui/IconButton/IconButton'
 import { InlineTitleField } from '@/components/ui/InlineTitleField/InlineTitleField'
 import { Modal } from '@/components/ui/Modal/Modal'
 import { Select } from '@/components/ui/Select/Select'
-import { SegmentedField } from '@/components/ui/SegmentedField/SegmentedField'
 import { RequiredMark, RequiredNote, SheetField } from '@/components/ui/SheetField/SheetField'
 import { SHEET_TEXTAREA, SIDE_LABEL } from '@/components/ui/SheetField/SheetField.styles'
 import { cn } from '@/lib/cn'
-import { ACCENT_COLORS, EPIC_PRIORITY_OPTIONS, EPIC_STATUS_OPTIONS, findOption } from '@/lib/options'
+import { ACCENT_COLORS, EPIC_PRIORITY_OPTIONS, findOption } from '@/lib/options'
 import { errorMessage } from '@/lib/errors'
 import { toneOptions, userPickerOptions } from '@/components/ui/Select/Select.options'
 import { validateEpicForm } from '@/lib/validate'
@@ -113,17 +112,7 @@ export function CreateEpicModal({ isOpen, members, onClose, onCreate }) {
         <DetailLayout
           side={
             <div className="flex flex-col gap-4">
-              <SheetField label="Estado">
-                <SegmentedField
-                  name="epic-status"
-                  legend="Estado"
-                  options={CREATE_STATUS_OPTIONS}
-                  value={values.status}
-                  disabled={submitting}
-                  onChange={(value) => setField('status', value)}
-                />
-              </SheetField>
-
+              {/* No status: every epic is born open. */}
               <SheetField label="Prioridad" htmlFor="epic-priority">
                 <Select
                   id="epic-priority"
@@ -212,6 +201,3 @@ export function CreateEpicModal({ isOpen, members, onClose, onCreate }) {
     </Modal>
   )
 }
-
-// A new epic has nothing open in it, so it cannot start closed (the API refuses it too).
-const CREATE_STATUS_OPTIONS = EPIC_STATUS_OPTIONS.filter((option) => option.value !== 'closed')

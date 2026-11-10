@@ -5,7 +5,6 @@ import { DetailFooter } from '@/components/ui/DetailFooter/DetailFooter'
 import { DetailHeader } from '@/components/ui/DetailHeader/DetailHeader'
 import { DetailLayout } from '@/components/ui/DetailLayout/DetailLayout'
 import { Modal } from '@/components/ui/Modal/Modal'
-import { toneOptions } from '@/components/ui/Select/Select.options'
 import { toast } from '@/components/ui/Toast/toast'
 import { cn } from '@/lib/cn'
 import { ACCENT_COLORS, EPIC_STATUS_OPTIONS, findOption } from '@/lib/options'
@@ -15,7 +14,7 @@ import { summarizeTickets } from '@/lib/ticketStats'
 import { validateEpicForm } from '@/lib/validate'
 import { EpicMainFields } from './EpicMainFields'
 import { EpicSideFields } from './EpicSideFields'
-import { openTicketsReason, toDetailValues } from './EpicDetailModal.helpers'
+import { toDetailValues } from './EpicDetailModal.helpers'
 
 /**
  * An epic's record. Same skeleton as TicketDetailModal — `lg` sheet, two columns, a footer
@@ -63,15 +62,6 @@ export function EpicDetailModal({ projectId, epicId, tickets, members, canManage
   const stats = summarizeTickets(tickets)
   const isClosed = epic.status === 'closed'
   const openCount = epic.openTicketsCount ?? 0
-  const closeBlocked = openCount > 0
-
-  /* Closing waits for every ticket to be done or cancelled (DEC-5): the option stays visible,
-     disabled, with the reason. */
-  const statusOptions = toneOptions(EPIC_STATUS_OPTIONS).map((option) =>
-    option.value === 'closed' && closeBlocked && !isClosed
-      ? { ...option, disabled: true, description: openTicketsReason(openCount) }
-      : option,
-  )
 
   function handleChange(e) {
     handleFieldChange(e.target.name, e.target.value)
@@ -191,7 +181,6 @@ export function EpicDetailModal({ projectId, epicId, tickets, members, canManage
             <EpicSideFields
               epic={epic}
               values={values}
-              statusOptions={statusOptions}
               members={members}
               canManage={canManage}
               submitting={submitting}

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { motion } from 'motion/react'
 import { X } from 'lucide-react'
 
+import { withParent } from '@/components/tickets/TicketPickers/TicketPickers'
 import { TicketTypeFields } from '@/components/tickets/TicketTypeFields/TicketTypeFields'
 import { TicketTypeIcon } from '@/components/tickets/TicketTypeIcon/TicketTypeIcon'
 import { Button } from '@/components/ui/Button/Button'
@@ -56,13 +57,8 @@ export function CreateTicketModal({ projectId, isOpen, onClose, defaults, onCrea
   const type = values.type
 
   function setField(name, value) {
-    const nextValues = { ...values, [name]: value }
-
-    // The parent has to be in the same epic: changing the epic drops a parent from another one.
-    if (name === 'epicId' && values.parentId) {
-      const parent = tickets.find((ticket) => String(ticket.id) === values.parentId)
-      if (String(parent?.epicId) !== value) nextValues.parentId = ''
-    }
+    // Choosing a parent brings its epic (and a story's sprint, for a task): see withParent.
+    const nextValues = name === 'parentId' ? withParent(values, tickets, value) : { ...values, [name]: value }
 
     setValues(nextValues)
     if (errors[name]) setErrors({ ...errors, [name]: validateTicketForm(nextValues)[name] })
