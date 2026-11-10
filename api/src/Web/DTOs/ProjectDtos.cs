@@ -45,7 +45,9 @@ public record ProjectListResponse(
     bool IsArchived,
     DateTimeOffset? ArchivedAt,
     DateTimeOffset CreatedAt,
-    ProjectRole? MyRole)
+    ProjectRole? MyRole,
+    int MemberCount,
+    int AdminCount)
 {
     public static ProjectListResponse FromReadModel(ProjectListItem project) => new(
         project.Id,
@@ -55,7 +57,9 @@ public record ProjectListResponse(
         project.ArchivedAt is not null,
         project.ArchivedAt,
         project.CreatedAt,
-        project.MyRole);
+        project.MyRole,
+        project.MemberCount,
+        project.AdminCount);
 }
 
 /* The project opened, with what the caller may do in it. MyPermissions is what the front end asks

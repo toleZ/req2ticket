@@ -42,7 +42,9 @@ public class ProjectRepository : BaseRepository<Project>, IProjectRepository
                 p.Description,
                 p.ArchivedAt,
                 p.CreatedAt,
-                p.Members.Where(m => m.UserId == userId).Select(m => (ProjectRole?)m.Role).FirstOrDefault()))
+                p.Members.Where(m => m.UserId == userId).Select(m => (ProjectRole?)m.Role).FirstOrDefault(),
+                p.Members.Count(),
+                p.Members.Count(m => m.Role == ProjectRole.Admin)))
             .ToListAsync();
     }
 

@@ -5,13 +5,14 @@
    closing the drawer around it, and focus or a click leaving the menu closes it too. In the
    collapsed rail it opens to the right, beside the avatar, instead of upwards. */
 import { useRef, useState } from 'react'
-import { ChevronDown, CircleUser, LogOut } from 'lucide-react'
+import { ChevronDown, CircleUser, LogOut, Shield } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 
 import { Avatar } from '@/components/ui/Avatar/Avatar'
 import { readSession } from '@/lib/auth'
 import { cn } from '@/lib/cn'
-import { ACCOUNT_ITEM } from '@/lib/navItems'
+import { ACCOUNT_ITEM, ADMIN_ITEM } from '@/lib/navItems'
+import { PLATFORM_SUPER_ADMIN } from '@/lib/options'
 import { signOut } from '@/lib/queries/session'
 import { AVATAR_RING, CHEVRON, ITEM, MENU, TRIGGER, TRIGGER_COMPACT } from './UserMenu.styles'
 
@@ -83,6 +84,20 @@ export function UserMenu({ isCollapsed = false, onNavigate }) {
             <CircleUser className="size-4 text-label-secondary" aria-hidden="true" />
             {ACCOUNT_ITEM.label}
           </Link>
+
+          {user.platformRole === PLATFORM_SUPER_ADMIN && (
+            <Link
+              to={`/${ADMIN_ITEM.to}`}
+              onClick={() => {
+                setOpen(false)
+                onNavigate?.()
+              }}
+              className={ITEM}
+            >
+              <Shield className="size-4 text-label-secondary" aria-hidden="true" />
+              {ADMIN_ITEM.label}
+            </Link>
+          )}
 
           <div className="my-1 h-px bg-separator" />
 

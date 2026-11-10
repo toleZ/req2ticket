@@ -10,6 +10,7 @@
 export const keys = {
   me: ['me'],
   roles: ['roles'],
+  users: ['users'],
   projects: ['projects', 'list'],
   project: (projectId) => ['projects', projectId],
   members: (projectId) => ['projects', projectId, 'members'],
