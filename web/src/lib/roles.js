@@ -9,7 +9,10 @@ export function compareMembers(a, b) {
   return a.name.localeCompare(b.name, 'es')
 }
 
-/* How many Admins the project has: the last one can be neither removed nor demoted. */
+/* Why the last Admin's controls are off: removing, demoting or leaving. */
+export const LAST_ADMIN_REASON = 'Tiene que quedar al menos un Admin'
+
+/* How many Admins the project has: the last one can be neither removed nor demoted, nor leave. */
 export function countAdmins(members) {
   return members.filter((member) => member.role === 'admin').length
 }

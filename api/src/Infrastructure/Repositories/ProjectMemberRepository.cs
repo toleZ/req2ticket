@@ -29,6 +29,15 @@ public class ProjectMemberRepository : IProjectMemberRepository
     public async Task<int> CountWithRoleAsync(int projectId, ProjectRole role) =>
         await _context.ProjectMembers.CountAsync(m => m.ProjectId == projectId && m.Role == role);
 
+    public async Task<List<string>> GetKeysWhereOnlyAdminAsync(int userId) =>
+        await _context.Projects
+            .AsNoTracking()
+            .Where(p => p.Members.Any(m => m.UserId == userId && m.Role == ProjectRole.Admin)
+                && p.Members.Count(m => m.Role == ProjectRole.Admin) == 1)
+            .OrderBy(p => p.Key)
+            .Select(p => p.Key)
+            .ToListAsync();
+
     public async Task AddAsync(ProjectMember member)
     {
         await _context.ProjectMembers.AddAsync(member);

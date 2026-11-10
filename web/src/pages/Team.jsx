@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { AnimatePresence } from 'motion/react'
-import { ChevronDown, Eye, UserPlus } from 'lucide-react'
+import { ChevronDown, Eye, LogOut, UserPlus } from 'lucide-react'
 
 import { PageHeader } from '@/components/layout/PageHeader/PageHeader'
 import { MemberList } from '@/components/team/MemberList/MemberList'
@@ -14,16 +14,17 @@ import { normalize } from '@/components/ui/FilterChip/FilterChip.helpers'
 import { LoadState } from '@/components/ui/LoadState/LoadState'
 import { SearchBox } from '@/components/ui/SearchBox/SearchBox'
 import { toast } from '@/components/ui/Toast/toast'
+import { Tooltip } from '@/components/ui/Tooltip/Tooltip'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { readSession } from '@/lib/auth'
 import { cn } from '@/lib/cn'
 import { errorMessage } from '@/lib/errors'
 import { findOption, ROLE_OPTIONS, SPRINT_ACTIVE } from '@/lib/options'
 import { PERMISSIONS } from '@/lib/permissions'
-import { useAddMember, useChangeMemberRole, useMembers, useRemoveMember } from '@/lib/queries/members'
+import { useAddMember, useChangeMemberRole, useLeaveProject, useMembers, useRemoveMember } from '@/lib/queries/members'
 import { useSprints } from '@/lib/queries/sprints'
 import { useTickets } from '@/lib/queries/tickets'
-import { compareMembers, countAdmins } from '@/lib/roles'
+import { compareMembers, countAdmins, LAST_ADMIN_REASON } from '@/lib/roles'
 import { changeParams } from '@/lib/urlFilters'
 
 /* "4 tickets y 1 épica": the counts the API gives each member, in words. */
@@ -49,6 +50,8 @@ export function Team() {
   const addMember = useAddMember(projectId)
   const changeRole = useChangeMemberRole(projectId)
   const removeMember = useRemoveMember(projectId)
+  const leaveProject = useLeaveProject(projectId)
+  const navigate = useNavigate()
 
   /* The search and the role filter live in the URL like the other lists', so a reload or the
      back button keeps them. The text is also held in state: a box bound only to the URL lost
@@ -62,11 +65,15 @@ export function Team() {
   // By id, so the confirmation reads the member as the list holds them now.
   const [removeId, setRemoveId] = useState(null)
   const [selfDemotion, setSelfDemotion] = useState(null)
+  const [isLeaveOpen, setIsLeaveOpen] = useState(false)
 
   const meId = readSession()?.user?.id
   const canManage = can(PERMISSIONS.MEMBERS_MANAGE)
   const list = members.data ?? []
   const adminCount = countAdmins(list)
+  // A SuperAdmin may look at a project without being in it: then there is nothing to leave.
+  const me = list.find((member) => member.id === meId) ?? null
+  const iAmLastAdmin = me?.role === 'admin' && adminCount === 1
   const loadState = members.isError ? 'error' : members.isPending ? 'loading' : 'ready'
 
   function handleSearchChange(text) {
@@ -132,6 +139,14 @@ export function Team() {
     }
   }
 
+  /* After leaving, this project is not mine any more: "/" opens another one (or says I have
+     none). The project list is already fresh when the mutation resolves (useLeaveProject). */
+  async function handleLeave() {
+    await leaveProject.mutateAsync()
+    toast.success(`Saliste de ${project.name}`)
+    navigate('/', { replace: true })
+  }
+
   async function handleRemove(member) {
     await removeMember.mutateAsync(member.id)
     toast.success(`${member.name} ya no es parte del proyecto`)
@@ -144,6 +159,21 @@ export function Team() {
   return (
     <section>
       <PageHeader title="Equipo" meta={meta}>
+        {/* Any member may leave; the last Admin may not, or nobody could manage the project. */}
+        {me &&
+          (iAmLastAdmin ? (
+            <Tooltip label={LAST_ADMIN_REASON} wrapsDisabled align="end">
+              <Button size="sm" variant="neutral" disabled className="shrink-0">
+                <LogOut className="size-4" aria-hidden="true" />
+                Salir del proyecto
+              </Button>
+            </Tooltip>
+          ) : (
+            <Button size="sm" variant="neutral" onClick={() => setIsLeaveOpen(true)} className="shrink-0">
+              <LogOut className="size-4" aria-hidden="true" />
+              Salir del proyecto
+            </Button>
+          ))}
         {canManage && (
           <Button size="sm" onClick={() => setIsAddOpen(true)} className="shrink-0">
             <UserPlus className="size-4" aria-hidden="true" />
@@ -238,6 +268,20 @@ export function Team() {
           </ConfirmModal>
         )}
       </AnimatePresence>
+
+      <ConfirmModal
+        isOpen={isLeaveOpen}
+        title="Salir del proyecto"
+        confirmLabel="Salir del proyecto"
+        pendingLabel="Saliendo…"
+        onClose={() => setIsLeaveOpen(false)}
+        onConfirm={handleLeave}
+      >
+        <p>
+          Vas a dejar de ver <strong className="font-semibold text-label">{project?.name}</strong>.{' '}
+          {me && assignedText(me)} Para volver, alguien con rol Admin te tiene que agregar de nuevo.
+        </p>
+      </ConfirmModal>
 
       <AnimatePresence>
         {selfDemotion && (

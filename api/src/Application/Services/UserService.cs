@@ -5,15 +5,18 @@ namespace Application.Services;
 
 /* The platform's user directory, managed only by a SuperAdmin (the filter on UsersController
    decides that). Roles inside projects are not here: they are memberships, see MemberService.
-   What remains here are the two guards a SuperAdmin needs against themselves. */
+   What remains here are the guards a SuperAdmin needs against themselves, and one for the
+   projects: deleting a user never leaves a project without an Admin. */
 public class UserService
 {
     private readonly IUserRepository _userRepository;
+    private readonly IProjectMemberRepository _memberRepository;
     private readonly PasswordHasher _passwordHasher;
 
-    public UserService(IUserRepository userRepository, PasswordHasher passwordHasher)
+    public UserService(IUserRepository userRepository, IProjectMemberRepository memberRepository, PasswordHasher passwordHasher)
     {
         _userRepository = userRepository;
+        _memberRepository = memberRepository;
         _passwordHasher = passwordHasher;
     }
 
@@ -95,6 +98,14 @@ public class UserService
         }
 
         await EnsureNotLastSuperAdminAsync(user);
+
+        // The same rule as removing a member (MemberService), across every project at once.
+        List<string> onlyAdminOf = await _memberRepository.GetKeysWhereOnlyAdminAsync(id);
+        if (onlyAdminOf.Count > 0)
+        {
+            throw new ArgumentException(
+                $"{user.Name} is the only Admin of {string.Join(", ", onlyAdminOf)}. Assign another Admin first.");
+        }
 
         await _userRepository.DeleteAsync(id);
         return true;

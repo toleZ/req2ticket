@@ -17,6 +17,10 @@ public interface IProjectMemberRepository
 
     Task<int> CountWithRoleAsync(int projectId, ProjectRole role);
 
+    // The keys of the projects where this user is the only Admin: deleting them would leave those
+    // projects with nobody to manage them.
+    Task<List<string>> GetKeysWhereOnlyAdminAsync(int userId);
+
     Task AddAsync(ProjectMember member);
 
     Task UpdateAsync(ProjectMember member);

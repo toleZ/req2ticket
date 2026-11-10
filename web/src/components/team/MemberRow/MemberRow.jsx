@@ -7,9 +7,8 @@ import { Select } from '@/components/ui/Select/Select'
 import { toneOptions } from '@/components/ui/Select/Select.options'
 import { Tooltip } from '@/components/ui/Tooltip/Tooltip'
 import { findOption, ROLE_OPTIONS } from '@/lib/options'
+import { LAST_ADMIN_REASON } from '@/lib/roles'
 import { ACTIONS, CELL, EMAIL, NAME, ROLE_CELL, ROW } from './MemberRow.styles'
-
-const LAST_ADMIN_REASON = 'Tiene que quedar al menos un Admin'
 
 /* Highest role first in the inline select, the order the list reads in. */
 const ROLE_SELECT_OPTIONS = toneOptions([...ROLE_OPTIONS].reverse())

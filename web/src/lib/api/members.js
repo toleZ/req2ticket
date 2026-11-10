@@ -18,3 +18,8 @@ export function changeMemberRole(projectId, userId, role) {
 export function removeMember(projectId, userId) {
   return del(`/api/projects/${projectId}/members/${userId}`)
 }
+
+/* Leaving the project yourself: any role may, except its last Admin (400). */
+export function leaveProject(projectId) {
+  return del(`/api/projects/${projectId}/members/me`)
+}

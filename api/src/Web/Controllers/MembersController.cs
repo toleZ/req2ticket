@@ -14,10 +14,14 @@ namespace Web.Controllers;
 public class MembersController : ControllerBase
 {
     private readonly MemberService _memberService;
+    private readonly ProjectAccessService _accessService;
+    private readonly CurrentUser _currentUser;
 
-    public MembersController(MemberService memberService)
+    public MembersController(MemberService memberService, ProjectAccessService accessService, CurrentUser currentUser)
     {
         _memberService = memberService;
+        _accessService = accessService;
+        _currentUser = currentUser;
     }
 
     [HttpGet]
@@ -45,6 +49,22 @@ public class MembersController : ControllerBase
     public async Task<IActionResult> Remove([FromRoute] int pid, [FromRoute] int userId)
     {
         bool removed = await _memberService.RemoveAsync(pid, userId);
+        return removed ? NoContent() : NotFound();
+    }
+
+    /* Leaving the project: any member may, except its last Admin (MemberService refuses that).
+       No permission to check, so the filter does not look at archiving — this does, because
+       leaving changes the project too (it unassigns your tickets). */
+    [HttpDelete("me")]
+    public async Task<IActionResult> Leave([FromRoute] int pid)
+    {
+        ProjectAccess? access = await _accessService.GetAsync(pid, _currentUser.Id);
+        if (access is { IsArchived: true })
+        {
+            return BadRequest(new { message = "Project is archived." });
+        }
+
+        bool removed = await _memberService.RemoveAsync(pid, _currentUser.Id);
         return removed ? NoContent() : NotFound();
     }
 }

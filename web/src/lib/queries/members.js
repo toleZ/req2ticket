@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
-import { addMember, changeMemberRole, getMembers, removeMember } from '@/lib/api/members'
+import { addMember, changeMemberRole, getMembers, leaveProject, removeMember } from '@/lib/api/members'
 import { invalidateAfterMemberRemove, invalidateAfterMemberSave } from './invalidate'
 import { keys } from './keys'
 
@@ -31,6 +31,21 @@ export function useChangeMemberRole(projectId) {
   return useMutation({
     mutationFn: ({ userId, role }) => changeMemberRole(projectId, userId, role),
     onSuccess: (_, { userId }) => invalidateAfterMemberSave(queryClient, projectId, userId),
+  })
+}
+
+/* Leaving the project. On success my list of projects is fetched again BEFORE the caller moves
+   on (the await on invalidateQueries waits for it), so "/" picks a project I am still in, and
+   everything cached of the one I left is dropped. */
+export function useLeaveProject(projectId) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: () => leaveProject(projectId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: keys.projects, exact: true })
+      queryClient.removeQueries({ queryKey: keys.project(projectId) })
+    },
   })
 }
 
