@@ -1,4 +1,4 @@
-import { CircleUser, Diamond, LayoutGrid, List, RotateCw, Settings, SquareKanban, User } from 'lucide-react'
+import { CircleUser, Diamond, LayoutGrid, List, RotateCw, Settings, Shield, SquareKanban, User } from 'lucide-react'
 
 import { SPRINT_ACTIVE } from '@/lib/options'
 
@@ -6,15 +6,16 @@ import { SPRINT_ACTIVE } from '@/lib/options'
    breadcrumb — all three read this file. The other two steps are the route in App.jsx
    and the page component in pages/.
 
-   Every section lives inside a project: /p/R2T/board, /p/R2T/backlog… `to` is the part after
+   Every section lives inside a project: /p/R2T/board, /p/R2T/tickets… `to` is the part after
    the project (empty for Resumen); projectPath() builds the whole address. `badge` names what
    the item shows on its right (see navBadges). */
 export const NAV_ITEMS = [
   { to: '', label: 'Resumen', icon: LayoutGrid, end: true },
   { to: 'board', label: 'Tablero', icon: SquareKanban, badge: 'activeSprint' },
-  { to: 'backlog', label: 'Backlog', icon: List, badge: 'tickets' },
+  // Backlog is planning: the sprints and the tickets with no sprint. Tickets, the whole list.
+  { to: 'backlog', label: 'Backlog', icon: RotateCw },
+  { to: 'tickets', label: 'Tickets', icon: List, badge: 'tickets' },
   { to: 'epics', label: 'Épicas', icon: Diamond, badge: 'epics' },
-  { to: 'sprints', label: 'Sprints', icon: RotateCw },
   { to: 'team', label: 'Equipo', icon: User, badge: 'users' },
 ]
 
@@ -22,8 +23,10 @@ export const NAV_ITEMS = [
    the sidebar); your account, from the user menu at its foot, outside any project (/account). */
 export const SETTINGS_ITEM = { to: 'settings', label: 'Configuración del proyecto', icon: Settings }
 export const ACCOUNT_ITEM = { to: 'account', label: 'Mi cuenta', icon: CircleUser }
+// Also in the user menu, only for a SuperAdmin: the platform's users and every project.
+export const ADMIN_ITEM = { to: 'admin', label: 'Administración', icon: Shield }
 
-export const ALL_NAV_ITEMS = [...NAV_ITEMS, SETTINGS_ITEM, ACCOUNT_ITEM]
+export const ALL_NAV_ITEMS = [...NAV_ITEMS, SETTINGS_ITEM, ACCOUNT_ITEM, ADMIN_ITEM]
 
 /* /p/R2T for Resumen, /p/R2T/backlog for a section. */
 export function projectPath(projectKey, to = '') {

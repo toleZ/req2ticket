@@ -9,8 +9,8 @@ import { CODE, POINTS, ROW, TITLE } from './TicketSummaryList.styles'
    edge, so the grey band crossed the full width to point at something you read on the left. */
 
 /**
- * A compact listing of tickets: today, the Sprints page's Backlog block (the tickets with no
- * sprint). The expanded epic and sprint rows used to draw it too; they now show
+ * A compact listing of tickets: today, the Backlog page's block of tickets with no sprint.
+ * The expanded epic and sprint rows used to draw it too; they now show
  * TicketBreakdown, whose list borrows this one's look.
  *
  * Each row opens the ticket: `onSelectTicket` arrives from the page, which is the one holding

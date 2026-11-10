@@ -27,7 +27,10 @@ import {
 } from '@/lib/queries/sprints'
 import { useTickets } from '@/lib/queries/tickets'
 
-export function Sprints() {
+/* The Backlog: planning. The sprints on top (active and planned, the completed ones folded at
+   the end) and below them the tickets with no sprint. A ticket's sprint is set from its detail.
+   The full list of tickets is the Tickets page. */
+export function Backlog() {
   const { projectId, projectKey, can } = useCurrentProject()
   const sprintsQuery = useSprints(projectId)
   const ticketsQuery = useTickets(projectId)
@@ -40,6 +43,7 @@ export function Sprints() {
   const tickets = ticketsQuery.data ?? []
   const loadState = loadStateOf(sprintsQuery, ticketsQuery)
   const canManage = can(PERMISSIONS.SPRINTS_MANAGE)
+  const canWrite = can(PERMISSIONS.TICKETS_WRITE)
 
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [completingSprintId, setCompletingSprintId] = useState(null)
@@ -60,8 +64,8 @@ export function Sprints() {
     return updateSprint.mutateAsync({ sprint, patch })
   }
 
-  function handleStartSprint(sprint) {
-    return startSprint.mutateAsync(sprint.id)
+  function handleStartSprint(sprint, { startDate, endDate }) {
+    return startSprint.mutateAsync({ sprintId: sprint.id, startDate, endDate })
   }
 
   function handleDeleteSprint(sprint) {
@@ -84,7 +88,7 @@ export function Sprints() {
 
   return (
     <section>
-      <PageHeader title="Sprints" meta={meta}>
+      <PageHeader title="Backlog" meta={meta}>
         {canManage && (
           <Button size="sm" onClick={() => setIsModalOpen(true)} className="shrink-0">
             <Plus className="size-4" aria-hidden="true" />
@@ -95,8 +99,8 @@ export function Sprints() {
 
       <LoadState
         state={loadState}
-        loadingText="Cargando sprints…"
-        errorText="No se pudieron cargar los sprints."
+        loadingText="Cargando el backlog…"
+        errorText="No se pudo cargar el backlog."
         onRetry={() => retryAll(sprintsQuery, ticketsQuery)}
         className="mt-4"
       />
@@ -124,7 +128,7 @@ export function Sprints() {
           tickets={tickets}
           activeSprint={activeSprint}
           canManage={canManage}
-          backlogPath={projectPath(projectKey, 'backlog')}
+          ticketsPath={projectPath(projectKey, 'tickets')}
           onSelectSprint={(sprint) => setDetailSprintId(sprint.id)}
           onStartSprint={handleStartSprint}
           onCompleteSprint={(sprint) => setCompletingSprintId(sprint.id)}
@@ -175,7 +179,7 @@ export function Sprints() {
             key={detailTicketId}
             projectId={projectId}
             ticketId={detailTicketId}
-            canWrite={can(PERMISSIONS.TICKETS_WRITE)}
+            canWrite={canWrite}
             canDelete={can(PERMISSIONS.TICKETS_DELETE)}
             onClose={() => setDetailTicketId(null)}
           />

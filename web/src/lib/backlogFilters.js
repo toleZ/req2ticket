@@ -9,9 +9,10 @@ export function pointsText(ticket) {
   return ticket.points === null || ticket.points === undefined ? '– pts' : `${ticket.points} pts`
 }
 
-/* The Backlog's filters: ?priority=high,critical&epic=3&mine=1&sort=priority&q=login
+/* The Tickets page's filters: ?priority=high,critical&epic=3&mine=1&sort=priority&q=login
    Reading them from the URL is shared with the Épicas page (lib/urlFilters.js); what is
-   the Backlog's own is which keys it has and how a ticket matches them. */
+   this page's own is which keys it has and how a ticket matches them. (The file keeps its
+   old name: the page was called Backlog before the planning page took that name.) */
 export const LIST_KEYS = ['status', 'type', 'priority', 'epic', 'sprint', 'assignee']
 
 export const SORT_OPTIONS = [

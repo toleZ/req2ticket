@@ -23,7 +23,8 @@ import { useSprints } from '@/lib/queries/sprints'
 import { useTickets } from '@/lib/queries/tickets'
 import { changeParams, countActive, readFilters, setListParam } from '@/lib/urlFilters'
 
-/* The Backlog: every ticket of the project, grouped by status, with the filters in the URL.
+/* Tickets: every ticket of the project, grouped by status, with the filters in the URL. (The
+   Backlog is another page: planning, the sprints and the tickets with no sprint.)
    It reads the same four lists as the rest of the project (the cache shares them), and the
    ticket sheets fetch their own detail. */
 export function Tickets() {
@@ -113,7 +114,7 @@ export function Tickets() {
 
   return (
     <section>
-      <PageHeader title="Backlog" meta={meta}>
+      <PageHeader title="Tickets" meta={meta}>
         <SearchBox value={search} placeholder="Buscar por texto o código" onChange={handleSearchChange} />
         {canWrite && (
           <Button size="sm" onClick={() => openCreate()} className="shrink-0">

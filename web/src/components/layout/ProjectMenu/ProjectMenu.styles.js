@@ -43,3 +43,9 @@ export const ITEM_ADD_TILE = 'grid size-7 shrink-0 place-items-center rounded-md
 export const ITEM_TEXT = 'min-w-0 flex-1'
 
 export const CHECK = 'size-4 shrink-0 text-blue'
+
+/* "Archivados (2)": a small caption row that folds the archived projects, quieter than a
+   project so the active ones stay the list. */
+export const ARCHIVED_TOGGLE = `flex min-h-11 w-full items-center gap-1.5 rounded-control-inner px-2 py-1.5 text-left
+  text-caption font-medium text-label-secondary transition-colors duration-fast hover:bg-fill-tertiary
+  hover:text-label focus-visible:bg-fill-tertiary focus-visible:outline-none lg:min-h-8`

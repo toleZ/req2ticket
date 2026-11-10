@@ -1,13 +1,11 @@
 import { useState } from 'react'
-import { ChevronRight } from 'lucide-react'
 
 import { TicketRow } from '@/components/tickets/TicketRow/TicketRow'
+import { FoldHeader } from '@/components/ui/FoldHeader/FoldHeader'
 import { LoadMore } from '@/components/ui/LoadMore/LoadMore'
 import { PAGE } from '@/components/ui/LoadMore/LoadMore.data'
-import { cn } from '@/lib/cn'
 import { readUiPref, writeUiPref } from '@/lib/uiPrefs'
 import { FOLDED_BY_DEFAULT } from './TicketList.data'
-import { COUNT_PILL, SECTION_TITLE, SECTION_TOGGLE } from './TicketList.styles'
 
 /**
  * The ticket list, grouped into one block per status.
@@ -57,27 +55,7 @@ function TicketSection({ status, tickets, epics, onSelectTicket }) {
 
   return (
     <div>
-      {/* The heading wraps the button (not the other way round) so the section stays in the
-          page's heading outline while the whole header folds it. */}
-      <h2>
-        <button
-          type="button"
-          onClick={toggle}
-          className={SECTION_TOGGLE}
-        >
-          <ChevronRight
-            className={cn(
-              'size-4 shrink-0 text-label-secondary transition-[rotate] duration-fast ease-out-quad',
-              !folded && 'rotate-90',
-            )}
-            aria-hidden="true"
-          />
-          <span className={SECTION_TITLE}>
-            {status.label}
-          </span>
-          <span className={COUNT_PILL}>{tickets.length}</span>
-        </button>
-      </h2>
+      <FoldHeader title={status.label} count={tickets.length} folded={folded} onToggle={toggle} />
 
       {!folded && (
         <div>

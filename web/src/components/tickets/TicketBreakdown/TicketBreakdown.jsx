@@ -36,10 +36,10 @@ import {
  *
  * It replaced the full ticket list those rows used to unfold. An epic with forty tickets turned
  * that into a wall to scroll past; this stays the same height whatever the size, and "Ver todos
- * en el Backlog" opens the Backlog filtered to it for the whole list.
+ * en Tickets" opens the Tickets page filtered to it for the whole list.
  *
  * The parts that differ between the two come in as props:
- * - `backlogHref`: the Backlog filtered to this epic or sprint ("/backlog?sprint=3").
+ * - `ticketsHref`: the Tickets page filtered to this epic or sprint ("/tickets?sprint=3").
  * - `note`: a note on the right of the totals (a sprint's capacity). When there is one, the
  *   cancelled count moves into the totals line, so the right side holds one thing only.
  * - `aside`: a column beside the list (the epic's EpicTypeProgress). Optional.
@@ -62,7 +62,7 @@ import {
  */
 export function TicketBreakdown({
   tickets,
-  backlogHref,
+  ticketsHref,
   note,
   aside,
   done,
@@ -107,7 +107,7 @@ export function TicketBreakdown({
           title={chosen.label}
           hint="Filtrado desde la barra · clic de nuevo para quitar"
           tickets={tickets.filter((ticket) => ticket.status === chosen.value)}
-          backlogHref={`${backlogHref}&status=${chosen.value}`}
+          ticketsHref={`${ticketsHref}&status=${chosen.value}`}
           onSelectTicket={onSelectTicket}
         />
       )
@@ -119,7 +119,7 @@ export function TicketBreakdown({
           <TicketBreakdownDone
             title="Todos los tickets están hechos"
             text={`${stats.completed} ${stats.completed === 1 ? 'ticket' : 'tickets'} · ${stats.pointsCompleted} pts.`}
-            backlogHref={backlogHref}
+            ticketsHref={ticketsHref}
           />
         )
       )
@@ -133,7 +133,7 @@ export function TicketBreakdown({
         hint={pendingHint}
         emptyText="Todos los tickets están cancelados."
         tickets={pending}
-        backlogHref={backlogHref}
+        ticketsHref={ticketsHref}
         onSelectTicket={onSelectTicket}
       />
     )

@@ -52,11 +52,16 @@ export function AppShell() {
   const { data: members } = useMembers(projectId)
   const badges = projectId ? navBadges({ tickets, epics, sprints, members }) : {}
 
-  /* The selector lists the active projects, plus the open one if it is archived. Its role is
+  /* Every project, each marked if archived: the selector lists the active ones and folds the
+     archived ones under "Archivados", so they can still be found and restored. The role is
      yours in it; a SuperAdmin outside the project sees "SuperAdmin". */
-  const selectorProjects = projects
-    .filter((item) => !item.isArchived || item.id === projectId)
-    .map((item) => ({ id: item.id, code: item.key, name: item.name, role: item.myRole ?? 'superAdmin' }))
+  const selectorProjects = projects.map((item) => ({
+    id: item.id,
+    code: item.key,
+    name: item.name,
+    role: item.myRole ?? 'superAdmin',
+    isArchived: item.isArchived,
+  }))
 
   function closeDrawer() {
     setIsDrawerOpen(false)

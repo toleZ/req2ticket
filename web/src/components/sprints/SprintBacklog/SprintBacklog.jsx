@@ -8,11 +8,9 @@ import { SPRINT_BACKLOG_ID } from './SprintBacklog.data'
 import { INTRO } from './SprintBacklog.styles'
 
 /**
- * The Backlog block at the foot of the Sprints page: the tickets nobody has put in a
- * sprint yet.
+ * The block at the foot of the Backlog page: the tickets nobody has put in a sprint yet.
  *
- * Each row opens that ticket's detail modal, which is where its sprint gets set — the copy
- * below used to send you to the Tickets page for that, and no longer needs to.
+ * Each row opens that ticket's detail, which is where its sprint gets set.
  *
  * The heading and the count stay visible even with nothing in the backlog, so an empty
  * backlog reads as "none left" rather than as a section that failed to load. A long backlog

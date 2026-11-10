@@ -1,4 +1,4 @@
-/* Helpers for list pages whose filters live in the URL (Backlog, Épicas), so a reload keeps
+/* Helpers for list pages whose filters live in the URL (Tickets, Épicas), so a reload keeps
    them, a link shares the exact view and Back undoes a change. What each page filters on and
    how it sorts lives in its own file (backlogFilters.js, epicFilters.js); what they share
    is here.

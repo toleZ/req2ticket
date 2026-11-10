@@ -10,10 +10,10 @@ import { ACTIONS, BADGE, CARD, ICON, LINK_CELL, TEXT, TITLE } from './TicketBrea
  * that says so, one line of context and, optionally, what to do next.
  *
  * `actions` is for the buttons that make sense at that moment (a sprint's "Completar sprint"
- * and "Agregar del Backlog"); without them the panel is just the news. The Backlog link stays
+ * and "Agregar del Backlog"); without them the panel is just the news. The Tickets link stays
  * either way, because the finished tickets are still worth opening.
  */
-export function TicketBreakdownDone({ title, text, actions, backlogHref }) {
+export function TicketBreakdownDone({ title, text, actions, ticketsHref }) {
   return (
     <section className={CARD}>
       <span className={BADGE} aria-hidden="true">
@@ -27,8 +27,8 @@ export function TicketBreakdownDone({ title, text, actions, backlogHref }) {
       </div>
 
       <div className={cn(LINK_CELL, !actions && '@lg:self-center')}>
-        <Link to={backlogHref} className={LINK}>
-          Ver todos en el Backlog
+        <Link to={ticketsHref} className={LINK}>
+          Ver todos en Tickets
           <ArrowRight className={LINK_ARROW} aria-hidden="true" />
         </Link>
       </div>

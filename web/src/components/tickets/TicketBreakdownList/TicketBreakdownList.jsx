@@ -47,10 +47,10 @@ import {
  * `tickets` arrives already filtered and sorted. The rows look like TicketSummaryList's and
  * open the ticket the same way.
  *
- * The Backlog link carries no count on purpose. The Backlog lists the cancelled tickets too,
- * so its number (22) never matched the 20 the rest of the panel counts, and read as an error.
+ * The Tickets link carries no count on purpose. Tickets lists the cancelled ones too, so its
+ * number (22) never matched the 20 the rest of the panel counts, and read as an error.
  */
-export function TicketBreakdownList({ title, hint, emptyText, tickets, revealFrom = null, backlogHref, onSelectTicket }) {
+export function TicketBreakdownList({ title, hint, emptyText, tickets, revealFrom = null, ticketsHref, onSelectTicket }) {
   const headingId = useId()
   const shown = tickets.slice(0, LIST_LIMIT)
   const hidden = tickets.length - shown.length
@@ -108,8 +108,8 @@ export function TicketBreakdownList({ title, hint, emptyText, tickets, revealFro
 
       <div className={FOOTER}>
         {hidden > 0 && <p className={MORE}>+{hidden} más</p>}
-        <Link to={backlogHref} className={LINK}>
-          Ver todos en el Backlog
+        <Link to={ticketsHref} className={LINK}>
+          Ver todos en Tickets
           <ArrowRight className={LINK_ARROW} aria-hidden="true" />
         </Link>
       </div>
