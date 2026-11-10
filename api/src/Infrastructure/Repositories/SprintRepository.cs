@@ -25,10 +25,11 @@ public class SprintRepository : BaseRepository<Sprint>, ISprintRepository
             .AsNoTracking()
             .FirstOrDefaultAsync(s => s.ProjectId == projectId && s.Status == SprintStatus.Active);
 
-    /* Committed points: the points of the sprint's stories and tasks, cancelled ones left out like
-       in every other rollup. A task inside a story of the same sprint counts on its own too — it is
-       the same sum the team sees on the board. The id filter goes before the Select: EF cannot
-       translate a condition on a record built by its constructor. */
+    /* Committed points: the points of the sprint's stories and of its loose tasks, cancelled ones
+       left out like in every other rollup. A task with a story is part of it and its points are
+       already in the story's, so it does not count again (the board sums the same way). The id
+       filter goes before the Select: EF cannot translate a condition on a record built by its
+       constructor. */
     private IQueryable<SprintSummary> Summaries(int projectId, int? id) =>
         _dbSet
             .AsNoTracking()
@@ -51,6 +52,6 @@ public class SprintRepository : BaseRepository<Sprint>, ISprintRepository
                     .Where(t => t.SprintId == s.Id && t.Status != TicketStatus.Cancelled)
                     .Sum(t => t.Points ?? 0)
                 + _context.Tickets.OfType<TicketTask>()
-                    .Where(t => t.SprintId == s.Id && t.Status != TicketStatus.Cancelled)
+                    .Where(t => t.SprintId == s.Id && t.ParentId == null && t.Status != TicketStatus.Cancelled)
                     .Sum(t => t.Points ?? 0)));
 }

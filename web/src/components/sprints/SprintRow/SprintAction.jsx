@@ -6,19 +6,26 @@ import { SPRINT_ACTIVE, SPRINT_PLANNED } from '@/lib/options'
 
 /**
  * The button that moves a sprint along its life (ENT-5): "Iniciar" on a planned sprint —
- * disabled, with the reason, while another one is active —, "Completar" on the active one, and
- * nothing on a completed one. Nothing either without sprints.manage (`canManage`).
+ * disabled, with the reason, while another one is active or while it has no tickets (the API
+ * refuses both) —, "Completar" on the active one, and nothing on a completed one. Nothing
+ * either without sprints.manage (`canManage`).
  *
  * SprintRow draws it twice, below the text under sm and beside it from sm up: `className` says
  * which of the two it is.
  */
-export function SprintAction({ sprint, activeSprint, canManage, isAllDone, className, onStart, onComplete }) {
+export function SprintAction({ sprint, activeSprint, canManage, isAllDone, isEmpty, className, onStart, onComplete }) {
   if (!canManage) return null
 
-  if (sprint.status === SPRINT_PLANNED && activeSprint) {
+  const startBlocked = activeSprint
+    ? `Ya hay un sprint activo: ${activeSprint.name}`
+    : isEmpty
+      ? 'Agregale tickets antes de iniciarlo'
+      : null
+
+  if (sprint.status === SPRINT_PLANNED && startBlocked) {
     return (
       <span className={className}>
-        <Tooltip label={`Ya hay un sprint activo: ${activeSprint.name}`} wrapsDisabled>
+        <Tooltip label={startBlocked} wrapsDisabled>
           <Button variant="neutral" size="sm" disabled>
             <Play className="size-4" aria-hidden="true" />
             Iniciar

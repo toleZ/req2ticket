@@ -3,6 +3,16 @@ import { TICKET_CANCELLED, TICKET_DONE } from '@/lib/options'
 /* Summary of a set of tickets. The sprint card and the epic row share it: both show the
    same numbers over different slices of the backlog. */
 
+/* Whether a ticket's points add to a sum. A task with a story is part of it, and its points are
+   already in the story's: the same rule as the API's committed points (SprintRepository). */
+export function countsPoints(ticket) {
+  return !(ticket.type === 'task' && ticket.parentId)
+}
+
+function pointsOf(tickets) {
+  return tickets.filter(countsPoints).reduce((sum, ticket) => sum + (ticket.points ?? 0), 0)
+}
+
 export function summarizeTickets(tickets) {
   /* Cancelled ones leave the count before anything else: they are neither done nor pending.
      If they counted towards `total`, a sprint with discarded work would never reach 100%.
@@ -19,8 +29,8 @@ export function summarizeTickets(tickets) {
     total: counted.length,
     completed: done.length,
     // Bugs and fixes have no points, and an unestimated story has null: both count as 0.
-    points: counted.reduce((sum, ticket) => sum + (ticket.points ?? 0), 0),
-    pointsCompleted: done.reduce((sum, ticket) => sum + (ticket.points ?? 0), 0),
+    points: pointsOf(counted),
+    pointsCompleted: pointsOf(done),
   }
 }
 

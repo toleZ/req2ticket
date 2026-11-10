@@ -51,9 +51,9 @@ public class SprintsController : ControllerBase
 
     [RequireProjectPermission(Permission.SprintsManage)]
     [HttpPost("{id:int}/start")]
-    public async Task<IActionResult> Start([FromRoute] int pid, [FromRoute] int id)
+    public async Task<IActionResult> Start([FromRoute] int pid, [FromRoute] int id, [FromBody] SprintStartRequest request)
     {
-        bool started = await _sprintService.StartAsync(pid, id);
+        bool started = await _sprintService.StartAsync(pid, id, request.StartDate!.Value, request.EndDate!.Value);
         return started ? Ok(await _sprintService.GetSummaryAsync(pid, id)) : NotFound();
     }
 

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { CalendarDays, ChevronRight, Flag, Trash2 } from 'lucide-react'
 
+import { StartSprintModal } from '@/components/sprints/StartSprintModal/StartSprintModal'
 import { Badge } from '@/components/ui/Badge/Badge'
 import { ConfirmModal } from '@/components/ui/ConfirmModal/ConfirmModal'
 import { IconButton } from '@/components/ui/IconButton/IconButton'
@@ -27,19 +28,21 @@ import { DATES, GOAL, LINE_ICON, OPEN_BUTTON, OPEN_NAME } from './SprintRow.styl
  * This file keeps the state (expanded, the two confirmations); the pieces are SprintAction,
  * SprintProgressLine and SprintRowPanel, which only draw what they get.
  *
+ *   sprints          every sprint of the project (starting one warns about overlapping dates)
  *   tickets          this sprint's tickets, already filtered by the page
  *   activeSprint     the project's active sprint, or undefined (the API allows one)
- *   backlogPath      the project's Backlog, which the breakdown filters to this sprint
- *   onStartSprint    returns the request's promise (the confirmation waits for it)
+ *   ticketsPath      the project's Tickets page, which the breakdown filters to this sprint
+ *   onStartSprint(sprint, { startDate, endDate })   returns the request's promise
  *   onCompleteSprint opens the page's CompleteSprintModal
  *   onDeleteSprint   returns the request's promise
  */
 export function SprintRow({
   sprint,
+  sprints,
   tickets,
   activeSprint,
   canManage,
-  backlogPath,
+  ticketsPath,
   onSelectSprint,
   onStartSprint,
   onCompleteSprint,
@@ -52,7 +55,7 @@ export function SprintRow({
 
   const status = findOption(SPRINT_STATUS_OPTIONS, sprint.status)
   const daysLeft = daysRemaining(sprint.endDate)
-  const backlogHref = `${backlogPath}?sprint=${sprint.id}`
+  const ticketsHref = `${ticketsPath}?sprint=${sprint.id}`
   const stats = summarizeTickets(tickets)
 
   const isPlanned = sprint.status === SPRINT_PLANNED
@@ -60,8 +63,8 @@ export function SprintRow({
   const isCompleted = sprint.status === SPRINT_COMPLETED
   const isAllDone = stats.total > 0 && stats.completed === stats.total
 
-  async function handleStart() {
-    await onStartSprint(sprint)
+  async function handleStart(dates) {
+    await onStartSprint(sprint, dates)
     toast.success(`${sprint.name} está en curso`)
   }
 
@@ -80,6 +83,7 @@ export function SprintRow({
     activeSprint,
     canManage,
     isAllDone,
+    isEmpty: tickets.length === 0,
     onStart: () => setIsStartOpen(true),
     onComplete: () => onCompleteSprint(sprint),
   }
@@ -154,27 +158,21 @@ export function SprintRow({
         isCompleted={isCompleted}
         daysLeft={daysLeft}
         canManage={canManage}
-        backlogHref={backlogHref}
+        ticketsHref={ticketsHref}
         onCompleteSprint={onCompleteSprint}
         onSelectTicket={onSelectTicket}
       />
 
       {canManage && isPlanned && (
         <>
-          <ConfirmModal
-            isOpen={isStartOpen}
-            title="Iniciar sprint"
-            confirmLabel="Iniciar sprint"
-            pendingLabel="Iniciando…"
-            confirmVariant="primary"
-            onClose={() => setIsStartOpen(false)}
-            onConfirm={handleStart}
-          >
-            <p>
-              ¿Iniciar <span className="font-medium text-label">{sprint.name}</span>? Pasa a ser el sprint
-              activo hasta que lo completes.
-            </p>
-          </ConfirmModal>
+          {isStartOpen && (
+            <StartSprintModal
+              sprint={sprint}
+              sprints={sprints}
+              onClose={() => setIsStartOpen(false)}
+              onStart={handleStart}
+            />
+          )}
 
           <ConfirmModal
             isOpen={isDeleteOpen}

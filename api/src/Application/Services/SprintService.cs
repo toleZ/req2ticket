@@ -63,9 +63,14 @@ public class SprintService
         return true;
     }
 
-    /* The check below is for the message. The real guarantee of one active sprint is the partial
-       unique index: two "Start" clicks at once both pass this check, and the index stops the second. */
-    public async Task<bool> StartAsync(int projectId, int id)
+    /* Starting confirms the dates (the planned ones were a guess) and needs something to work on.
+       That the end is not in the past is checked on the request (SprintStartRequest), not here, so
+       the demo seeder can start and complete sprints that are already over.
+
+       The "already active" check is for the message. The real guarantee of one active sprint is
+       the partial unique index: two "Start" clicks at once both pass this check, and the index
+       stops the second. */
+    public async Task<bool> StartAsync(int projectId, int id, DateOnly startDate, DateOnly endDate)
     {
         Sprint? sprint = await _sprintRepository.GetInProjectAsync(projectId, id);
         if (sprint is null)
@@ -78,10 +83,19 @@ public class SprintService
             throw new ArgumentException("Only a planned sprint can be started.");
         }
 
+        if (await _ticketRepository.CountInSprintAsync(id) == 0)
+        {
+            throw new ArgumentException("An empty sprint can't be started.");
+        }
+
         if (await _sprintRepository.GetActiveAsync(projectId) is not null)
         {
             throw new ArgumentException("Another sprint is already active.");
         }
+
+        sprint.StartDate = startDate;
+        sprint.EndDate = endDate;
+        EnsureDatesAreValid(sprint);
 
         sprint.Status = SprintStatus.Active;
         await _sprintRepository.UpdateAsync(sprint);

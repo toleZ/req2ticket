@@ -2,20 +2,22 @@ import { remainingText } from '@/components/board/board.helpers'
 import { ProgressBar } from '@/components/ui/ProgressBar/ProgressBar'
 import { daysRemaining, formatDateRange } from '@/lib/dates'
 import { TICKET_DONE } from '@/lib/options'
+import { countsPoints } from '@/lib/ticketStats'
 import { HEADER, META, POINTS, TITLE } from './BoardHeader.styles'
 
 /**
  * Where the sprint stands: its name and goal, its dates, how many days are left, and the points
  * done against the points committed.
  *
- * Committed points are the API's: the points of the sprint's stories and tasks, cancelled ones
- * left out. Done points add the same over the tickets already done. The capacity is shown apart,
- * as the reference the team planned against.
+ * Committed points are the API's: the points of the sprint's stories and loose tasks, cancelled
+ * ones left out (a task with a story is already in the story's). Done points add the same over
+ * the tickets already done. The capacity is shown apart, as the reference the team planned
+ * against.
  */
 export function BoardHeader({ sprint, tickets, action }) {
   const days = daysRemaining(sprint.endDate)
   const donePoints = tickets
-    .filter((ticket) => ticket.status === TICKET_DONE)
+    .filter((ticket) => ticket.status === TICKET_DONE && countsPoints(ticket))
     .reduce((sum, ticket) => sum + (ticket.points ?? 0), 0)
 
   return (

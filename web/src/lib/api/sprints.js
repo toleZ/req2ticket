@@ -26,8 +26,10 @@ export function updateSprint(projectId, sprint, patch) {
   return put(`/api/projects/${projectId}/sprints/${sprint.id}`, toPayload({ ...sprint, ...patch }))
 }
 
-export function startSprint(projectId, sprintId) {
-  return post(`/api/projects/${projectId}/sprints/${sprintId}/start`)
+/* Starting confirms the dates: { startDate, endDate } as 'YYYY-MM-DD'. The API refuses an empty
+   sprint, and an end date in the past. */
+export function startSprint(projectId, sprintId, { startDate, endDate }) {
+  return post(`/api/projects/${projectId}/sprints/${sprintId}/start`, { startDate, endDate })
 }
 
 /* `moveOpenTicketsTo`: a planned sprint's id, or null for the backlog. Answers

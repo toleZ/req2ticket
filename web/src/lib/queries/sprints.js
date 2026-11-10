@@ -33,11 +33,12 @@ export function useUpdateSprint(projectId) {
   })
 }
 
+/* mutate({ sprintId, startDate, endDate }) */
 export function useStartSprint(projectId) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (sprintId) => startSprint(projectId, sprintId),
+    mutationFn: ({ sprintId, startDate, endDate }) => startSprint(projectId, sprintId, { startDate, endDate }),
     onSuccess: () => invalidateAfterSprintSave(queryClient, projectId),
   })
 }

@@ -26,7 +26,7 @@ export function SprintRowPanel({
   isCompleted,
   daysLeft,
   canManage,
-  backlogHref,
+  ticketsHref,
   onCompleteSprint,
   onSelectTicket,
 }) {
@@ -37,7 +37,7 @@ export function SprintRowPanel({
         <TicketBreakdownDone
           title="Se entregó todo lo comprometido"
           text={`${stats.completed} ${stats.completed === 1 ? 'ticket' : 'tickets'} · ${stats.pointsCompleted} pts entregados.`}
-          backlogHref={backlogHref}
+          ticketsHref={ticketsHref}
         />
       )
     }
@@ -47,7 +47,7 @@ export function SprintRowPanel({
         <TicketBreakdownDone
           title="Todos los tickets están hechos"
           text={`${remainingLabel(daysLeft)}. Podés cerrar el sprint ahora o sumar algo del Backlog.`}
-          backlogHref={backlogHref}
+          ticketsHref={ticketsHref}
           actions={
             canManage && (
               <>
@@ -90,7 +90,7 @@ export function SprintRowPanel({
             ) : (
               <TicketBreakdown
                 tickets={tickets}
-                backlogHref={backlogHref}
+                ticketsHref={ticketsHref}
                 note={<SprintCapacityNote points={sprint.committedPoints} capacity={sprint.capacity} />}
                 done={renderDone()}
                 pendingTitle={isCompleted ? 'Sin terminar' : undefined}

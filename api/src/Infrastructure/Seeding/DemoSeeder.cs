@@ -174,13 +174,13 @@ public class DemoSeeder
 
         DateOnly today = DateOnly.FromDateTime(DateTime.UtcNow);
 
-        Epic auth = await CreateEpicAsync(pid, "Autenticación y cuentas", EpicAccentColor.Blue, EpicStatus.Active, productOwner.Id,
+        Epic auth = await CreateEpicAsync(pid, "Autenticación y cuentas", EpicAccentColor.Blue, productOwner.Id,
             "Registro, inicio de sesión y recuperación de la cuenta.");
-        Epic board = await CreateEpicAsync(pid, "Tablero y sprints", EpicAccentColor.Purple, EpicStatus.Active, scrumMaster.Id,
+        Epic board = await CreateEpicAsync(pid, "Tablero y sprints", EpicAccentColor.Purple, scrumMaster.Id,
             "Planificar el trabajo y seguirlo en el tablero.");
-        Epic notifications = await CreateEpicAsync(pid, "Notificaciones", EpicAccentColor.Teal, EpicStatus.Backlog, null,
+        Epic notifications = await CreateEpicAsync(pid, "Notificaciones", EpicAccentColor.Teal, null,
             "Avisar a cada persona de lo que le toca.");
-        Epic onboarding = await CreateEpicAsync(pid, "Onboarding", EpicAccentColor.Green, EpicStatus.Active, productOwner.Id,
+        Epic onboarding = await CreateEpicAsync(pid, "Onboarding", EpicAccentColor.Green, productOwner.Id,
             "La primera experiencia de un equipo nuevo.");
 
         Sprint sprint1 = await _sprintService.CreateAsync(pid, new Sprint
@@ -199,9 +199,7 @@ public class DemoSeeder
             StartDate = today.AddDays(5), EndDate = today.AddDays(18)
         });
 
-        // Sprint 1, already finished.
-        await _sprintService.StartAsync(pid, sprint1.Id);
-
+        // Sprint 1, already finished. Its tickets go in first: an empty sprint can't be started.
         Ticket login = await CreateTicketAsync(pid, admin.Id, new UserStory
         {
             Title = "Login con email y contraseña", EpicId = auth.Id, SprintId = sprint1.Id, AssigneeId = developer.Id,
@@ -224,6 +222,7 @@ public class DemoSeeder
             Points = 2, AcceptanceCriteria = Items(("Explica qué es un proyecto", true))
         });
 
+        await StartAsync(pid, sprint1);
         await SetStatusesAsync(pid, (loginForm, TicketStatus.Done), (login, TicketStatus.Done), (welcome, TicketStatus.Done));
         await _sprintService.CompleteAsync(pid, sprint1.Id, null);
 
@@ -235,8 +234,6 @@ public class DemoSeeder
         });
 
         // Sprint 2, in progress: the board of the demo.
-        await _sprintService.StartAsync(pid, sprint2.Id);
-
         Ticket register = await CreateTicketAsync(pid, productOwner.Id, new UserStory
         {
             Title = "Registro de usuarios", EpicId = auth.Id, SprintId = sprint2.Id, AssigneeId = developer.Id,
@@ -288,7 +285,15 @@ public class DemoSeeder
             Title = "El tablero no refresca al cambiar de sprint", EpicId = board.Id, SprintId = sprint2.Id,
             Severity = BugSeverity.Minor, StepsToReproduce = "1. Abrir el tablero\n2. Completar el sprint desde otra pestaña"
         });
+        // Not every bug belongs to an epic: this one is about the whole app.
+        await CreateTicketAsync(pid, qa.Id, new Bug
+        {
+            Title = "El modo oscuro se pierde al recargar", SprintId = sprint2.Id, AssigneeId = developer.Id,
+            Severity = BugSeverity.Minor, StepsToReproduce = "1. Activar el modo oscuro\n2. Recargar la página",
+            ExpectedResult = "Sigue oscuro.", ActualResult = "Vuelve al modo claro."
+        });
 
+        await StartAsync(pid, sprint2);
         await SetStatusesAsync(pid,
             (register, TicketStatus.InProgress),
             (passwordRules, TicketStatus.InReview),
@@ -312,7 +317,20 @@ public class DemoSeeder
             Title = "Avisos por email", EpicId = notifications.Id, Priority = TicketPriority.Low
         });
 
-        // Last, so the statuses above did not have to follow it.
+        // Work that belongs to no epic: upkeep, and a bug nobody has looked at yet.
+        await CreateTicketAsync(pid, developer.Id, new TicketTask
+        {
+            Title = "Actualizar dependencias del front", Points = 1, Priority = TicketPriority.Low,
+            Checklist = Items(("React y Vite", false), ("TanStack Query", false))
+        });
+        await CreateTicketAsync(pid, viewer.Id, new Bug
+        {
+            Title = "El favicon no aparece en Firefox", Severity = BugSeverity.Trivial,
+            StepsToReproduce = "1. Abrir la app en Firefox\n2. Mirar la pestaña"
+        });
+
+        // Last, so the statuses above did not have to follow it. Done and cancelled can be
+        // reopened: a mistaken click is never final.
         await _workflowService.ReplaceAsync(pid,
         [
             (TicketStatus.Todo, TicketStatus.InProgress),
@@ -325,7 +343,9 @@ public class DemoSeeder
             (TicketStatus.InReview, TicketStatus.Cancelled),
             (TicketStatus.Testing, TicketStatus.InReview),
             (TicketStatus.Testing, TicketStatus.Done),
-            (TicketStatus.Testing, TicketStatus.Cancelled)
+            (TicketStatus.Testing, TicketStatus.Cancelled),
+            (TicketStatus.Done, TicketStatus.InProgress),
+            (TicketStatus.Cancelled, TicketStatus.Todo)
         ]);
     }
 
@@ -341,7 +361,7 @@ public class DemoSeeder
 
         DateOnly today = DateOnly.FromDateTime(DateTime.UtcNow);
 
-        Epic catalog = await CreateEpicAsync(pid, "Catálogo de productos", EpicAccentColor.Orange, EpicStatus.Active, admin.Id,
+        Epic catalog = await CreateEpicAsync(pid, "Catálogo de productos", EpicAccentColor.Orange, admin.Id,
             "Que se puedan ver y buscar los productos.");
 
         Sprint sprint = await _sprintService.CreateAsync(pid, new Sprint
@@ -349,7 +369,6 @@ public class DemoSeeder
             Name = "Sprint 1", Goal = "Un catálogo navegable.", Capacity = 15,
             StartDate = today.AddDays(-3), EndDate = today.AddDays(11)
         });
-        await _sprintService.StartAsync(pid, sprint.Id);
 
         Ticket list = await CreateTicketAsync(pid, admin.Id, new UserStory
         {
@@ -366,7 +385,12 @@ public class DemoSeeder
             Title = "Las imágenes no cargan en Safari", EpicId = catalog.Id, SprintId = sprint.Id,
             Severity = BugSeverity.Major, StepsToReproduce = "1. Abrir el catálogo en Safari\n2. Mirar las fotos"
         });
+        await CreateTicketAsync(pid, developer.Id, new TicketTask
+        {
+            Title = "Configurar el dominio de la tienda", Points = 2
+        });
 
+        await StartAsync(pid, sprint);
         await SetStatusesAsync(pid, (filter, TicketStatus.InProgress));
     }
 
@@ -384,13 +408,19 @@ public class DemoSeeder
             password);
     }
 
+    // Every epic is born open; closing one is an update (see Onboarding).
     private async Task<Epic> CreateEpicAsync(
-        int projectId, string name, EpicAccentColor color, EpicStatus status, int? ownerId, string description) =>
+        int projectId, string name, EpicAccentColor color, int? ownerId, string description) =>
         await _epicService.CreateAsync(projectId, new Epic
         {
-            Name = name, Description = description, AccentColor = color, Status = status, OwnerId = ownerId,
+            Name = name, Description = description, AccentColor = color, OwnerId = ownerId,
             Priority = EpicPriority.Medium
         });
+
+    // Starts it with the dates it was planned with, past ones included (the request's "not in the
+    // past" check is not on this path).
+    private async Task StartAsync(int projectId, Sprint sprint) =>
+        await _sprintService.StartAsync(projectId, sprint.Id, sprint.StartDate, sprint.EndDate);
 
     private async Task<Ticket> CreateTicketAsync(int projectId, int reporterId, Ticket ticket) =>
         await _ticketService.CreateAsync(projectId, reporterId, ticket);
