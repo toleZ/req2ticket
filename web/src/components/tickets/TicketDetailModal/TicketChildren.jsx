@@ -7,9 +7,17 @@ import { SHEET_LABEL } from '@/components/ui/SheetField/SheetField.styles'
 import { cn } from '@/lib/cn'
 import { childrenProgress, statusOf } from './TicketDetailModal.helpers'
 
-/* What the ticket divides into: a story's tasks and bugs, a bug's fixes. */
-export function TicketChildren({ ticket }) {
+/* What the ticket divides into: a story's tasks and bugs, a bug's fixes. A child in another
+   sprint than this ticket says which ("En Sprint 3"): open tasks follow their story, but a bug
+   or a fix can be planned apart. `tickets` and `sprints` are the project's lists. */
+export function TicketChildren({ ticket, tickets, sprints }) {
   if (ticket.children.length === 0) return null
+
+  function otherSprint(child) {
+    const sprintId = tickets.find((current) => current.id === child.id)?.sprintId ?? null
+    if (sprintId === ticket.sprintId) return null
+    return sprints.find((sprint) => sprint.id === sprintId)?.name ?? 'Sin sprint'
+  }
 
   return (
     <section>
@@ -20,6 +28,7 @@ export function TicketChildren({ ticket }) {
       <ul className="flex flex-col gap-1.5">
         {ticket.children.map((child) => {
           const childStatus = statusOf(child.status)
+          const sprintName = otherSprint(child)
           return (
             <li key={child.id} className="flex items-center gap-2 text-footnote">
               <TicketTypeIcon type={child.type} className="size-3.5" />
@@ -27,6 +36,11 @@ export function TicketChildren({ ticket }) {
               <span className="min-w-0 flex-1 truncate text-label" title={child.title}>
                 {child.title}
               </span>
+              {sprintName && (
+                <span className="shrink-0 whitespace-nowrap text-caption text-label-secondary">
+                  {sprintName === 'Sin sprint' ? sprintName : `En ${sprintName}`}
+                </span>
+              )}
               {childStatus && <Badge tone={childStatus.tone}>{childStatus.label}</Badge>}
             </li>
           )

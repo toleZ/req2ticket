@@ -2,12 +2,13 @@ import { findOption, isOpenStatus, TICKET_STATUS_OPTIONS } from '@/lib/options'
 import { allowedStatuses, statusBlockReason } from '@/lib/workflow'
 
 /* The status selector's options (ENT-3): the current status plus the ones the workflow allows
-   from it. Done stays visible but off, with the reason, while the ticket has open children. */
-export function statusOptions(ticket, workflow) {
+   from it. One the other rules forbid stays visible but off, with the reason: closing with open
+   children, reopening under a closed parent. `context` comes from statusContext. */
+export function statusOptions(ticket, workflow, context) {
   const reachable = [ticket.status, ...allowedStatuses(workflow, ticket.status)]
 
   return TICKET_STATUS_OPTIONS.filter((option) => reachable.includes(option.value)).map((option) => {
-    const reason = statusBlockReason(ticket, option.value, workflow)
+    const reason = statusBlockReason(ticket, option.value, workflow, context)
     return { ...option, disabled: Boolean(reason), description: reason ?? undefined }
   })
 }

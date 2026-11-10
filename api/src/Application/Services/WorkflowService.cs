@@ -76,5 +76,33 @@ public class WorkflowService
                 throw new ArgumentException($"{EnumNames.Of(status)} has no way out.");
             }
         }
+
+        // Every status having a way out is not enough: they could all lead to cancelled. A ticket
+        // born in todo has to be able to reach done. Statuses nobody reaches are allowed.
+        if (!Reachable(transitions, TicketStatus.Todo).Contains(TicketStatus.Done))
+        {
+            throw new ArgumentException("Done can't be reached from To do.");
+        }
+    }
+
+    // Every status a ticket can get to from `start`, walking the transitions breadth first.
+    private static HashSet<TicketStatus> Reachable(List<(TicketStatus From, TicketStatus To)> transitions, TicketStatus start)
+    {
+        var reached = new HashSet<TicketStatus> { start };
+        var pending = new Queue<TicketStatus>([start]);
+
+        while (pending.Count > 0)
+        {
+            TicketStatus current = pending.Dequeue();
+            foreach (var (_, to) in transitions.Where(t => t.From == current))
+            {
+                if (reached.Add(to))
+                {
+                    pending.Enqueue(to);
+                }
+            }
+        }
+
+        return reached;
     }
 }

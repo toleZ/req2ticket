@@ -12,7 +12,15 @@ import { TICKET_STATUS_OPTIONS } from '@/lib/options'
 import { useDeleteWorkflow, useSaveWorkflow } from '@/lib/queries/workflow'
 import { DEFAULT_WORKFLOW } from '@/lib/workflow'
 import { ACTIONS, SECTION, SECTION_INTRO, SECTION_TITLE } from '../Settings.styles'
-import { deadEnds, sameKeys, toKeys, toTransitions, transitionKey } from './WorkflowEditor.helpers'
+import {
+  deadEnds,
+  doneUnreachable,
+  sameKeys,
+  toKeys,
+  toTransitions,
+  transitionKey,
+  unreachable,
+} from './WorkflowEditor.helpers'
 
 /**
  * The project's workflow (ENT-3): which status may move to which, as a grid — rows are "desde",
@@ -36,7 +44,9 @@ export function WorkflowEditor({ projectId, workflow, canEdit }) {
 
   const editing = Boolean(workflow) || isCreating
   const problems = deadEnds(draft)
-  const firstProblem = Object.values(problems)[0]
+  // What blocks the save: a status with no way out first, then no road from todo to done.
+  const firstProblem = Object.values(problems)[0] ?? doneUnreachable(draft)
+  const notes = unreachable(draft)
   const changed = isCreating || !sameKeys(draft, saved)
   const saving = saveWorkflow.isPending
 
@@ -88,7 +98,7 @@ export function WorkflowEditor({ projectId, workflow, canEdit }) {
         </div>
       ) : (
         <>
-          <div className="mt-4 overflow-x-auto rounded-group bg-grouped p-3 ring-[0.5px] ring-separator">
+          <div className="mt-4 overflow-x-auto rounded-group bg-fill-tertiary p-3 ring-[0.5px] ring-separator">
             <table className="w-full text-left">
               <caption className="sr-only">Transiciones permitidas: filas desde, columnas hacia</caption>
               <thead>
@@ -112,6 +122,9 @@ export function WorkflowEditor({ projectId, workflow, canEdit }) {
                       </span>
                       {problems[from.value] && (
                         <span className="block text-footnote text-red-text">{problems[from.value]}</span>
+                      )}
+                      {!problems[from.value] && notes[from.value] && (
+                        <span className="block text-footnote text-label-secondary">{notes[from.value]}</span>
                       )}
                     </th>
                     {TICKET_STATUS_OPTIONS.map((to) => (

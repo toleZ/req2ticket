@@ -31,7 +31,7 @@ import { BoardCardMenu } from '@/components/board/BoardCardMenu/BoardCardMenu'
 import { BoardColumn } from '@/components/board/BoardColumn/BoardColumn'
 import { sortCards } from '@/components/board/board.helpers'
 import { cn } from '@/lib/cn'
-import { statusBlockReason } from '@/lib/workflow'
+import { statusBlockReason, statusContext } from '@/lib/workflow'
 import { CARD_HANDLE, COLUMNS } from './BoardDnd.styles'
 
 /**
@@ -39,13 +39,27 @@ import { CARD_HANDLE, COLUMNS } from './BoardDnd.styles'
  *
  *   columns         the statuses to draw ({ value, label, tone })
  *   tickets         the cards (already filtered), as TicketSummary
+ *   allTickets      every ticket of the project: a card's parent may be off the board, and
+ *                   reopening a child needs its parent open
  *   workflow        the project's workflow, or null
  *   epics, members  to colour the card and put a face on it
  *   canWrite        tickets.write: without it nothing is draggable and there is no menu
  *   savingId        the ticket whose move is being saved: it cannot be dragged again yet
  *   onMove(ticket, status), onCancel(ticket), onOpen(ticket)
  */
-export function BoardDnd({ columns, tickets, workflow, epics, members, canWrite, savingId, onMove, onCancel, onOpen }) {
+export function BoardDnd({
+  columns,
+  tickets,
+  allTickets,
+  workflow,
+  epics,
+  members,
+  canWrite,
+  savingId,
+  onMove,
+  onCancel,
+  onOpen,
+}) {
   const [activeId, setActiveId] = useState(null)
   const [overId, setOverId] = useState(null)
 
@@ -57,10 +71,12 @@ export function BoardDnd({ columns, tickets, workflow, epics, members, canWrite,
   const active = tickets.find((ticket) => ticket.id === activeId)
   const epicOf = (ticket) => epics.find((epic) => epic.id === ticket.epicId)
   const assigneeOf = (ticket) => members.find((member) => member.id === ticket.assigneeId)
+  // The board shows the active sprint only, so no card is in a completed one: no sprints needed.
+  const blockReason = (ticket, status) => statusBlockReason(ticket, status, workflow, statusContext(ticket, allTickets))
 
   function columnState(status) {
     if (!active) return 'idle'
-    if (status !== active.status && statusBlockReason(active, status, workflow)) return 'blocked'
+    if (status !== active.status && blockReason(active, status)) return 'blocked'
     return overId === status && status !== active.status ? 'over' : 'open'
   }
 
@@ -73,7 +89,7 @@ export function BoardDnd({ columns, tickets, workflow, epics, members, canWrite,
     const ticket = tickets.find((item) => item.id === dragged.id)
     reset()
     if (!ticket || !over || over.id === ticket.status) return
-    if (statusBlockReason(ticket, over.id, workflow)) return
+    if (blockReason(ticket, over.id)) return
     onMove(ticket, over.id)
   }
 
@@ -97,7 +113,7 @@ export function BoardDnd({ columns, tickets, workflow, epics, members, canWrite,
               column={column}
               count={cards.length}
               state={state}
-              reason={state === 'blocked' && overId === column.value ? statusBlockReason(active, column.value, workflow) : null}
+              reason={state === 'blocked' && overId === column.value ? blockReason(active, column.value) : null}
             >
               {cards.map((ticket) => (
                 <DraggableCard
@@ -107,7 +123,7 @@ export function BoardDnd({ columns, tickets, workflow, epics, members, canWrite,
                   assignee={assigneeOf(ticket)}
                   canWrite={canWrite}
                   saving={ticket.id === savingId}
-                  cancelReason={statusBlockReason(ticket, 'cancelled', workflow)}
+                  cancelReason={blockReason(ticket, 'cancelled')}
                   onCancel={onCancel}
                   onOpen={onOpen}
                 />

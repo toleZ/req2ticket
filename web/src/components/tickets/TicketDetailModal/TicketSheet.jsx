@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Lock } from 'lucide-react'
 
+import { withParent } from '@/components/tickets/TicketPickers/TicketPickers'
 import { TicketTypeFields } from '@/components/tickets/TicketTypeFields/TicketTypeFields'
 import { TicketTypeIcon } from '@/components/tickets/TicketTypeIcon/TicketTypeIcon'
 import { Badge } from '@/components/ui/Badge/Badge'
@@ -18,8 +19,10 @@ import { useMembers } from '@/lib/queries/members'
 import { useSprints } from '@/lib/queries/sprints'
 import { useChangeTicketStatus, useDeleteTicket, useTickets, useUpdateTicket } from '@/lib/queries/tickets'
 import { useWorkflow } from '@/lib/queries/workflow'
+import { isOpenStatus } from '@/lib/options'
 import { ticketToFormValues, toFormErrors } from '@/lib/ticketTypes'
 import { validateTicketForm } from '@/lib/validate'
+import { isFinalStatus, labelOf, statusContext } from '@/lib/workflow'
 import { ChildShortcuts, TicketChildren } from './TicketChildren'
 import { TicketDescription } from './TicketDescription'
 import { deleteMessage, statusOf } from './TicketDetailModal.helpers'
@@ -48,6 +51,8 @@ export function TicketSheet({ projectId, ticket, canWrite, canDelete, onClose, o
      unsaved changes" — instead of a ConfirmModal on top: two modals would be two Escape
      listeners, and one key press would close both. */
   const [footerMode, setFooterMode] = useState('edit')
+  /* The status waiting for "Cambiar estado" while the footer asks (footerMode 'confirmStatus'). */
+  const [pendingStatus, setPendingStatus] = useState(null)
   const formRef = useRef(null)
 
   const { data: workflow } = useWorkflow(projectId)
@@ -67,22 +72,20 @@ export function TicketSheet({ projectId, ticket, canWrite, canDelete, onClose, o
   const editable = canWrite && !epicClosed
   const readOnly = !editable
   const status = statusOf(ticket.status)
+  const context = statusContext(ticket, tickets, sprints)
 
   /* FIX-3: the confirmation starts with the focus on Cancelar, so an Enter pressed in a hurry
      never deletes. It is the first button of the footer in that mode. No hace falta leer esto
      para cambiar el mensaje: it only moves the focus. */
   useEffect(() => {
-    if (footerMode === 'confirmDelete') formRef.current?.lastElementChild?.querySelector('button')?.focus()
+    if (footerMode === 'confirmDelete' || footerMode === 'confirmStatus') {
+      formRef.current?.lastElementChild?.querySelector('button')?.focus()
+    }
   }, [footerMode])
 
   function handleFieldChange(name, value) {
-    const nextValues = { ...values, [name]: value }
-
-    // The parent has to be in the same epic: moving epic drops a parent from another one.
-    if (name === 'epicId' && values.parentId) {
-      const parent = tickets.find((current) => String(current.id) === String(values.parentId))
-      if (String(parent?.epicId) !== String(value)) nextValues.parentId = ''
-    }
+    // Choosing a parent brings its epic (and a story's sprint, for a task): see withParent.
+    const nextValues = name === 'parentId' ? withParent(values, tickets, value) : { ...values, [name]: value }
 
     setValues(nextValues)
     setDirty(true)
@@ -116,15 +119,27 @@ export function TicketSheet({ projectId, ticket, canWrite, canDelete, onClose, o
     }
   }
 
-  /* Status is not part of the form: it saves on its own, through the API's rules. If the API
+  /* Status is not part of the form: it saves on its own, through the API's rules, and a toast
+     says so. A status with no way out under the workflow asks first, in the footer. If the API
      still says no, the reason shows next to the selector and the status stays as it was. */
-  async function handleStatusChange(nextStatus) {
+  function handleStatusChange(nextStatus) {
+    if (isFinalStatus(workflow, nextStatus)) {
+      setPendingStatus(nextStatus)
+      setFooterMode('confirmStatus')
+      return
+    }
+    saveStatus(nextStatus)
+  }
+
+  async function saveStatus(nextStatus) {
     setStatusError('')
     try {
       await changeStatus.mutateAsync({ ticketId: ticket.id, status: nextStatus })
+      toast.success(`${ticket.code} pasó a ${labelOf(nextStatus)}`)
     } catch (err) {
       setStatusError(errorMessage(err))
     }
+    setFooterMode('edit')
   }
 
   /* The X, the backdrop and Escape all end up here. */
@@ -207,14 +222,6 @@ export function TicketSheet({ projectId, ticket, canWrite, canDelete, onClose, o
           onClose={handleRequestClose}
         />
 
-        {epicClosed && (
-          <div className="px-5 pt-4">
-            <Banner tone="warning" icon={Lock} title="Épica cerrada">
-              Reabrila para hacer cambios en sus tickets.
-            </Banner>
-          </div>
-        )}
-
         <DetailLayout
           side={
             <TicketSideFields
@@ -230,12 +237,21 @@ export function TicketSheet({ projectId, ticket, canWrite, canDelete, onClose, o
               tickets={tickets}
               statusError={statusError}
               changingStatus={changeStatus.isPending}
+              context={context}
               onFieldChange={handleFieldChange}
               onTypeFieldChange={handleTypeFieldChange}
               onStatusChange={handleStatusChange}
             />
           }
         >
+          {/* Inside the main column, like the epic's: above the columns it ran the full width
+              and the side column started glued under it. */}
+          {epicClosed && (
+            <Banner tone="warning" icon={Lock} title="Épica cerrada">
+              Reabrila para hacer cambios en sus tickets.
+            </Banner>
+          )}
+
           <TicketTitle
             ticket={ticket}
             value={values.title}
@@ -271,9 +287,10 @@ export function TicketSheet({ projectId, ticket, canWrite, canDelete, onClose, o
             checklistError={checklistError}
           />
 
-          <TicketChildren ticket={ticket} />
+          <TicketChildren ticket={ticket} tickets={tickets} sprints={sprints} />
 
-          {onCreateChild && editable && (
+          {/* A closed ticket takes no new children (the API refuses them too). */}
+          {onCreateChild && editable && isOpenStatus(ticket.status) && (
             <ChildShortcuts ticket={ticket} disabled={submitting} onCreateChild={onCreateChild} />
           )}
         </DetailLayout>
@@ -291,10 +308,13 @@ export function TicketSheet({ projectId, ticket, canWrite, canDelete, onClose, o
             error={formError}
             submitting={submitting}
             confirmDeleteMessage={deleteMessage(ticket)}
+            confirmStatusMessage={`${ticket.code} va a pasar a ${labelOf(pendingStatus)} y el workflow no permite volver atrás.`}
+            changingStatus={changeStatus.isPending}
             onExitConfirm={() => setFooterMode('edit')}
             onDelete={handleDelete}
             onCancel={handleRequestClose}
             onDiscard={onClose}
+            onConfirmStatus={() => saveStatus(pendingStatus)}
           />
         )}
       </form>

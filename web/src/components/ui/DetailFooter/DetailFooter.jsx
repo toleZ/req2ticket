@@ -2,8 +2,9 @@ import { DELETE_NOTE, ERROR, FOOTER, NOTE } from './DetailFooter.styles'
 import { Button } from '@/components/ui/Button/Button'
 
 /**
- * The foot of a detail sheet, which has three faces: the normal one, the "are you sure you
- * want to delete it?" and the "you have unsaved changes".
+ * The foot of a detail sheet, which has four faces: the normal one, the "are you sure you
+ * want to delete it?", the "you have unsaved changes" and, on a ticket, "this status has no way
+ * back" (`confirmStatus`, with `confirmStatusMessage` and `onConfirmStatus`).
  *
  * All three live here rather than in a ConfirmModal on top, because two modals at once are two
  * useEscapeKey listeners on `document`: one Escape would close both. Swapping the footer has no such problem, and it does not cover up what you are about
@@ -18,7 +19,7 @@ import { Button } from '@/components/ui/Button/Button'
  *     otherwise         → close
  *
  * That way a reader of the modal still sees the whole state machine in that file; only the
- * markup moved here. No reducer, no effect — three `mode === '…' &&` blocks.
+ * markup moved here. No reducer, no effect — one `mode === '…' &&` block per face.
  *
  * The submit button needs no handler: this renders inside the parent's <form>, so
  * `type="submit"` reaches its onSubmit.
@@ -31,10 +32,13 @@ export function DetailFooter({
   error,
   submitting = false,
   confirmDeleteMessage,
+  confirmStatusMessage,
+  changingStatus = false,
   onExitConfirm,
   onDelete,
   onCancel,
   onDiscard,
+  onConfirmStatus,
 }) {
   return (
     <div className={FOOTER}>
@@ -75,6 +79,18 @@ export function DetailFooter({
           </Button>
           <Button variant="danger" onClick={onDiscard}>
             Descartar
+          </Button>
+        </>
+      )}
+
+      {mode === 'confirmStatus' && (
+        <>
+          <p className={NOTE}>{confirmStatusMessage}</p>
+          <Button variant="ghost" onClick={onExitConfirm} disabled={changingStatus}>
+            Cancelar
+          </Button>
+          <Button variant="danger" onClick={onConfirmStatus} disabled={changingStatus}>
+            {changingStatus ? 'Cambiando…' : 'Cambiar estado'}
           </Button>
         </>
       )}

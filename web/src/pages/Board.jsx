@@ -12,6 +12,7 @@ import { CompleteSprintModal } from '@/components/sprints/CompleteSprintModal/Co
 import { TicketDetailModal } from '@/components/tickets/TicketDetailModal/TicketDetailModal'
 import { Button } from '@/components/ui/Button/Button'
 import { BASE, SIZE_CLASSES, VARIANT_CLASSES } from '@/components/ui/Button/Button.styles'
+import { ConfirmModal } from '@/components/ui/ConfirmModal/ConfirmModal'
 import { EmptyState } from '@/components/ui/EmptyState/EmptyState'
 import { LoadState } from '@/components/ui/LoadState/LoadState'
 import { toast } from '@/components/ui/Toast/toast'
@@ -27,6 +28,7 @@ import { useMembers } from '@/lib/queries/members'
 import { useSprints } from '@/lib/queries/sprints'
 import { useTickets } from '@/lib/queries/tickets'
 import { useWorkflow } from '@/lib/queries/workflow'
+import { isFinalStatus, labelOf } from '@/lib/workflow'
 
 /**
  * The board of the active sprint (BOARD-1): one column per status, one card per ticket.
@@ -41,6 +43,7 @@ export function Board() {
   const [filters, setFilters] = useState(INITIAL_FILTERS)
   const [openTicketId, setOpenTicketId] = useState(null)
   const [isCompleteOpen, setIsCompleteOpen] = useState(false)
+  const [pendingMove, setPendingMove] = useState(null) // { ticket, status } waiting for "Cambiar estado"
 
   const sprints = useSprints(projectId)
   const tickets = useTickets(projectId)
@@ -56,14 +59,19 @@ export function Board() {
   // While a move is being saved, that card cannot be dragged again (FIX-2).
   const savingId = moveTicket.isPending ? moveTicket.variables?.ticketId : null
 
-  function handleMove(ticket, status) {
-    moveTicket.mutate({ ticketId: ticket.id, status })
+  /* A status with no way out under the workflow asks first (pendingMove holds it meanwhile);
+     any other move saves at once. The optimistic move starts only once confirmed. */
+  function requestMove(ticket, status) {
+    if (isFinalStatus(workflow.data, status)) setPendingMove({ ticket, status })
+    else saveMove(ticket, status)
   }
 
-  function handleCancel(ticket) {
+  function saveMove(ticket, status) {
     moveTicket.mutate(
-      { ticketId: ticket.id, status: 'cancelled' },
-      { onSuccess: () => toast.success(`${ticket.code} cancelado. Sigue en el Backlog.`) },
+      { ticketId: ticket.id, status },
+      status === 'cancelled'
+        ? { onSuccess: () => toast.success(`${ticket.code} cancelado. Sigue en Tickets.`) }
+        : undefined,
     )
   }
 
@@ -90,10 +98,10 @@ export function Board() {
         <EmptyState
           icon={CalendarRange}
           title="No hay un sprint activo"
-          description="El tablero muestra el sprint en curso. Iniciá uno planificado desde Sprints."
+          description="El tablero muestra el sprint en curso. Iniciá uno planificado desde el Backlog."
           action={
-            <Link to={projectPath(projectKey, 'sprints')} className={`${BASE} ${SIZE_CLASSES.md} ${VARIANT_CLASSES.primary}`}>
-              Ir a Sprints
+            <Link to={projectPath(projectKey, 'backlog')} className={`${BASE} ${SIZE_CLASSES.md} ${VARIANT_CLASSES.primary}`}>
+              Ir al Backlog
             </Link>
           }
         />
@@ -147,13 +155,14 @@ export function Board() {
           <BoardDnd
             columns={BOARD_COLUMNS}
             tickets={onBoard}
+            allTickets={tickets.data}
             workflow={workflow.data}
             epics={epics.data}
             members={members.data}
             canWrite={canWrite}
             savingId={savingId}
-            onMove={handleMove}
-            onCancel={handleCancel}
+            onMove={requestMove}
+            onCancel={(ticket) => requestMove(ticket, 'cancelled')}
             onOpen={(ticket) => setOpenTicketId(ticket.id)}
           />
         </>
@@ -172,6 +181,24 @@ export function Board() {
           />
         )}
       </AnimatePresence>
+
+      <ConfirmModal
+        isOpen={pendingMove !== null}
+        title="Cambiar a un estado final"
+        confirmLabel="Cambiar estado"
+        onClose={() => setPendingMove(null)}
+        onConfirm={() => {
+          saveMove(pendingMove.ticket, pendingMove.status)
+          setPendingMove(null)
+        }}
+      >
+        {pendingMove && (
+          <p>
+            {pendingMove.ticket.code} va a pasar a {labelOf(pendingMove.status)} y el workflow no permite volver
+            atrás.
+          </p>
+        )}
+      </ConfirmModal>
 
       {isCompleteOpen && (
         <CompleteSprintModal

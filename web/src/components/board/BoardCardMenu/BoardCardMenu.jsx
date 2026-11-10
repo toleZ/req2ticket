@@ -10,7 +10,8 @@ import { ITEM, MENU, REASON } from './BoardCardMenu.styles'
  * ticket leaves the board. When a rule blocks it (the workflow), the item stays visible,
  * disabled, and says why.
  *
- * No confirmation: changing status is undone the same way it was done (FIX-3).
+ * It asks first only when the workflow gives cancelled no way out (Board.jsx decides that):
+ * otherwise a cancel is undone the same way it was done.
  */
 export function BoardCardMenu({ ticket, cancelReason, disabled, onCancel }) {
   const [open, setOpen] = useState(false)
